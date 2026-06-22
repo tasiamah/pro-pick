@@ -5,16 +5,18 @@ Revises:
 Create Date: 2026-06-22 20:39:24.344579
 
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "d771cf63af08"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -28,9 +30,14 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        op.f("ix_competitions_external_id"), "competitions", ["external_id"], unique=True
+        op.f("ix_competitions_external_id"),
+        "competitions",
+        ["external_id"],
+        unique=True,
     )
-    op.create_index(op.f("ix_competitions_name"), "competitions", ["name"], unique=False)
+    op.create_index(
+        op.f("ix_competitions_name"), "competitions", ["name"], unique=False
+    )
 
     op.create_table(
         "teams",
@@ -61,7 +68,9 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["home_team_id"], ["teams.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_matches_external_id"), "matches", ["external_id"], unique=True)
+    op.create_index(
+        op.f("ix_matches_external_id"), "matches", ["external_id"], unique=True
+    )
     op.create_index(op.f("ix_matches_kickoff"), "matches", ["kickoff"], unique=False)
 
     op.create_table(
@@ -85,7 +94,12 @@ def upgrade() -> None:
         sa.Column("prob_home", sa.Float(), nullable=False),
         sa.Column("prob_draw", sa.Float(), nullable=False),
         sa.Column("prob_away", sa.Float(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["match_id"], ["matches.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -106,7 +120,12 @@ def upgrade() -> None:
         sa.Column("confidence", sa.Float(), nullable=False),
         sa.Column("settled", sa.Boolean(), nullable=False),
         sa.Column("profit", sa.Float(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["match_id"], ["matches.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
