@@ -7,13 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
 from app.core.config import settings
-from app.core.database import init_db
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Voor dev: maak tabellen aan bij startup. In productie gebruik je Alembic.
-    init_db()
+    # Database-schema wordt beheerd via Alembic-migraties (zie backend/README.md).
     yield
 
 

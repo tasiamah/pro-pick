@@ -38,8 +38,11 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db() -> None:
-    """Maak tabellen aan op basis van de modellen (voor dev/start zonder Alembic)."""
-    # Belangrijk: importeer modellen zodat ze bij Base geregistreerd staan.
+    """Maak tabellen aan op basis van de modellen.
+
+    Alleen bedoeld voor lokale tests. Gebruik in dev/productie:
+    `alembic upgrade head`.
+    """
     from app import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)

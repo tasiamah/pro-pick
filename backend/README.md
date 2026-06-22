@@ -9,22 +9,40 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
 - API-docs (Swagger): http://localhost:8000/docs
 - Healthcheck: http://localhost:8000/health
 
-## PostgreSQL (Docker)
+## PostgreSQL + Alembic (Docker Compose)
 
 ```bash
 docker compose up --build
 ```
 
-Of zet zelf een `DATABASE_URL` in `.env`:
+Dit start PostgreSQL en de API. Bij opstarten draait automatisch `alembic upgrade head`
+voordat de server start.
+
+Of zet zelf een `DATABASE_URL` in `.env` en draai migraties handmatig:
 
 ```
 DATABASE_URL=postgresql+psycopg2://voetbalai:voetbalai@localhost:5432/voetbalai
+alembic upgrade head
+```
+
+## Database-migraties (Alembic)
+
+```bash
+# Eerste migratie toepassen
+alembic upgrade head
+
+# Nieuwe migratie genereren na modelwijziging
+alembic revision --autogenerate -m "beschrijving"
+
+# Terugdraaien
+alembic downgrade -1
 ```
 
 ## Tests
