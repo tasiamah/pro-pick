@@ -30,6 +30,7 @@ def test_alembic_upgrade_head_creates_tables(fresh_sqlite_db):
         capture_output=True,
         text=True,
         check=False,
+        timeout=60,
     )
 
     assert result.returncode == 0, result.stderr or result.stdout
