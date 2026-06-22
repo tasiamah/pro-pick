@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#
+# Blocks direct pushes to protected branches (default: main).
+# This is a local guardrail only. It can be bypassed with `--no-verify`
+# and is NOT a substitute for server-side branch protection.
+#
+# Enable in your clone with:
+#   git config core.hooksPath .githooks
+
+protected_branches="main"
+
+remote="$1"
+
+zero="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+	# remote_ref looks like refs/heads/main
+	branch="${remote_ref#refs/heads/}"
+
+	for protected in $protected_branches; do
+		if [ "$branch" = "$protected" ]; then
+			# Allow branch deletion to be handled elsewhere; block updates/creates.
+			if [ "$local_sha" != "$zero" ]; then
+				echo "" >&2
+				echo "  ⛔  Direct pushes to '$protected' are not allowed." >&2
+				echo "      Open a pull request instead:" >&2
+				echo "        git switch -c your-feature-branch" >&2
+				echo "        git push -u origin your-feature-branch" >&2
+				echo "" >&2
+				echo "      (To bypass intentionally: git push --no-verify)" >&2
+				echo "" >&2
+				exit 1
+			fi
+		fi
+	done
+done
+
+exit 0
