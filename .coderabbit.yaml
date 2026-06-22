@@ -3,7 +3,7 @@
 language: en-US
 
 reviews:
-  # "chill" geeft minder nitpicks; zet op "assertive" voor strengere reviews.
+  # "chill" produces fewer nitpicks; set to "assertive" for stricter reviews.
   profile: chill
   request_changes_workflow: false
   high_level_summary: true
@@ -27,13 +27,13 @@ reviews:
   path_instructions:
     - path: "backend/**"
       instructions: >-
-        Python (FastAPI) backend. Verwacht code die ruff-clean is en getypeerd.
-        Let op: ontbrekende tests voor nieuwe endpoints, onveilige SQL,
-        ongevalideerde input en het lekken van secrets/credentials.
+        Python (FastAPI) backend. Expect code that is ruff-clean and typed.
+        Watch for: missing tests for new endpoints, unsafe SQL, unvalidated
+        input, and leaking secrets/credentials.
     - path: "mobile/**"
       instructions: >-
-        Expo / React Native (TypeScript). Let op type-safety, onnodige
-        re-renders en het hardcoden van API-keys of endpoints.
+        Expo / React Native (TypeScript). Watch for type-safety, unnecessary
+        re-renders, and hardcoding API keys or endpoints.
 
   tools:
     ruff:
