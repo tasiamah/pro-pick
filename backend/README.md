@@ -40,14 +40,14 @@ cp .env.example .env
 Set `DATABASE_URL` in `.env`:
 
 ```env
-DATABASE_URL=postgresql+psycopg2://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql+psycopg2://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@[POOLER-HOST]:5432/postgres
 ```
 
 Replace:
 
 - `[PROJECT-REF]` — your Supabase project reference (from the URI)
 - `[YOUR-PASSWORD]` — your database password
-- Host/region — use the values shown in your Supabase dashboard (e.g. `aws-1-eu-central-1`)
+- `[POOLER-HOST]` — pooler hostname from the Supabase dashboard (e.g. `aws-1-eu-central-1.pooler.supabase.com`)
 
 **Important:** add `+psycopg2` after `postgresql` (required for SQLAlchemy).
 
