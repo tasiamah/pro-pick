@@ -124,7 +124,7 @@ setup.
 
 ## Project structure
 
-```
+```text
 app/
 ├── main.py            # FastAPI entrypoint
 ├── core/              # config + database
