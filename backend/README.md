@@ -1,19 +1,19 @@
 # VoetbalAI — Backend
 
-FastAPI-backend met datapijplijn, ML-voorspelmodel en value-bet-engine.
+FastAPI backend with data pipeline, ML prediction model and value-bet engine.
 
-## Starten (lokaal, SQLite — nul-configuratie)
+## Getting started (local, SQLite — zero configuration)
 
 ```bash
-python3 -m venv .venv
+python3.11 -m venv .venv   # the project runs on Python 3.11
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 uvicorn app.main:app --reload
 ```
 
-- API-docs (Swagger): http://localhost:8000/docs
-- Healthcheck: http://localhost:8000/health
+- API docs (Swagger): http://localhost:8000/docs
+- Health check: http://localhost:8000/health
 
 ## PostgreSQL (Docker)
 
@@ -21,42 +21,61 @@ uvicorn app.main:app --reload
 docker compose up --build
 ```
 
-Of zet zelf een `DATABASE_URL` in `.env`:
+Or set a `DATABASE_URL` yourself in `.env`:
 
 ```
 DATABASE_URL=postgresql+psycopg2://voetbalai:voetbalai@localhost:5432/voetbalai
 ```
 
-## Tests
+## Linting & formatting
 
 ```bash
-pytest
+pip install -r requirements-dev.txt
+ruff check .          # lint
+ruff format .         # auto-format
+ruff format --check . # check without modifying (as in CI)
 ```
 
-## Structuur
+## Tests
+
+Tests are split into **unit** (`tests/unit/`, fast and isolated) and
+**integration** (`tests/integration/`, app + database together).
+
+```bash
+pytest                 # everything
+pytest -m unit         # unit tests only
+pytest -m integration  # integration tests only (uses DATABASE_URL, else SQLite)
+```
+
+In CI the integration tests run against a real PostgreSQL service via
+`DATABASE_URL`. Locally they fall back to SQLite, so `pytest` works without extra
+setup.
+
+## Structure
 
 ```
 app/
 ├── main.py            # FastAPI entrypoint
 ├── core/              # config + database
 ├── api/               # endpoints (health, matches, predictions, value_bets, analytics, dashboard)
-├── models/            # SQLAlchemy-modellen
-├── schemas/           # Pydantic request/response-modellen
+├── models/            # SQLAlchemy models
+├── schemas/           # Pydantic request/response models
 ├── services/          # data_ingestion, prediction, value_bets
 ├── ml/                # features, train, model.pkl
-└── scheduler/         # geplande taken (dagelijkse update)
+└── scheduler/         # scheduled jobs (daily update)
 ```
 
 ## Endpoints (v1)
 
-| Methode | Pad | Omschrijving |
-|---------|-----|--------------|
-| GET | `/health` | Healthcheck |
-| GET | `/dashboard` | Samengevat overzicht |
-| GET | `/matches` | Wedstrijdoverzicht |
-| GET | `/matches/{id}` | Wedstrijddetail |
-| GET | `/predictions` | Voorspellingen |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| GET | `/dashboard` | Summary overview |
+| GET | `/matches` | Match overview |
+| GET | `/matches/{id}` | Match detail |
+| GET | `/predictions` | Predictions |
 | GET | `/value-bets` | Value bets |
-| GET | `/analytics` | Modelprestaties & ROI |
+| GET | `/analytics` | Model performance & ROI |
 
-> De data-ingestie, het ML-model en de scheduler zijn als stubs opgezet en worden in Dag 2-3 ingevuld.
+> The data ingestion, the ML model and the scheduler are set up as stubs and
+> will be filled in on Day 2-3.
