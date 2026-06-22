@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("", response_model=AnalyticsOut)
 def get_analytics(db: Session = Depends(get_db)) -> AnalyticsOut:
-    """Modelprestaties en ROI van value bets (PP: GET /analytics)."""
+    """Model performance and ROI of value bets (PP: GET /analytics)."""
     value_bets = db.execute(select(ValueBet)).scalars().all()
     settled = [v for v in value_bets if v.settled and v.profit is not None]
 

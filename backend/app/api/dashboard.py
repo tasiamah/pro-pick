@@ -15,7 +15,7 @@ router = APIRouter()
 
 @router.get("", response_model=DashboardOut)
 def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
-    """Samengevat overzicht voor het dashboard (PP: GET /dashboard)."""
+    """Summary overview for the dashboard (PP: GET /dashboard)."""
     now = datetime.utcnow()
     start_of_day = datetime(now.year, now.month, now.day)
     end_of_day = start_of_day + timedelta(days=1)

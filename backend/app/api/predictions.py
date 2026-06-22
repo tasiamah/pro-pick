@@ -16,7 +16,7 @@ def list_predictions(
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
 ) -> list[PredictionOut]:
-    """Voorspellingen (modelkansen) per wedstrijd (PP: GET /predictions)."""
+    """Predictions (model probabilities) per match (PP: GET /predictions)."""
     stmt = select(Prediction).order_by(Prediction.created_at.desc()).limit(limit)
     predictions = db.execute(stmt).scalars().all()
     return [PredictionOut.model_validate(p) for p in predictions]
