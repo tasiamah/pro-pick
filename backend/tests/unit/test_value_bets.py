@@ -1,3 +1,5 @@
+import pytest
+
 from app.services.value_bets import (
     evaluate_outcome,
     expected_value,
@@ -5,9 +7,11 @@ from app.services.value_bets import (
     kelly_fraction,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def test_expected_value_matches_example():
-    # Voorbeeld uit de projectgids: P=0.55, odd=2.10 -> EV = +0.155
+    # Example from the project guide: P=0.55, odd=2.10 -> EV = +0.155
     assert round(expected_value(0.55, 2.10), 3) == 0.155
 
 
@@ -16,7 +20,7 @@ def test_implied_probability():
 
 
 def test_kelly_fraction_positive_edge():
-    # Positieve edge -> positieve, begrensde inzetfractie.
+    # Positive edge -> positive, bounded stake fraction.
     f = kelly_fraction(0.55, 2.10)
     assert 0.0 < f <= 1.0
 
