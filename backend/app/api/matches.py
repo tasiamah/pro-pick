@@ -34,7 +34,7 @@ def list_matches(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ) -> list[MatchOut]:
-    """Komende wedstrijden met basisinformatie (PP: GET /matches)."""
+    """Upcoming matches with basic information (PP: GET /matches)."""
     stmt = select(Match).order_by(Match.kickoff).limit(limit).offset(offset)
     matches = db.execute(stmt).scalars().all()
     return [_to_match_out(m) for m in matches]
@@ -42,10 +42,10 @@ def list_matches(
 
 @router.get("/{match_id}", response_model=MatchDetailOut)
 def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchDetailOut:
-    """Wedstrijddetail incl. odds en voorspelling (PP: GET /matches/{id})."""
+    """Match detail including odds and prediction (PP: GET /matches/{id})."""
     match = db.get(Match, match_id)
     if match is None:
-        raise HTTPException(status_code=404, detail="Wedstrijd niet gevonden")
+        raise HTTPException(status_code=404, detail="Match not found")
 
     latest_prediction = match.predictions[-1] if match.predictions else None
 

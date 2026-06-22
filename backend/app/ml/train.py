@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-"""Modeltraining (EPIC-3 / Dag 3).
+"""Model training (EPIC-3 / Day 3).
 
-Traint een 1X2-model (start met logistische regressie) en serialiseert het
-naar model.pkl. Stub: vul de trainingsdata-pijplijn in tijdens Dag 3.
+Trains a 1X2 model (starting with logistic regression) and serializes it
+to model.pkl. Stub: fill in the training-data pipeline during Day 3.
 """
 
 MODEL_PATH = Path(__file__).parent / "model.pkl"
@@ -13,7 +13,7 @@ MODEL_PATH = Path(__file__).parent / "model.pkl"
 
 def train() -> None:
     raise NotImplementedError(
-        "Trainings-pipeline volgt in Dag 3 (EPIC-3). Zie app/ml/features.py."
+        "Training pipeline follows in Day 3 (EPIC-3). See app/ml/features.py."
     )
 
 

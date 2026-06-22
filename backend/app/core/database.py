@@ -9,14 +9,12 @@ from app.core.config import settings
 
 
 class Base(DeclarativeBase):
-    """Basisklasse voor alle ORM-modellen."""
+    """Base class for all ORM models."""
 
 
-# SQLite heeft een speciale connect-arg nodig voor multi-threaded gebruik.
+# SQLite needs a special connect arg for multi-threaded use.
 _connect_args = (
-    {"check_same_thread": False}
-    if settings.database_url.startswith("sqlite")
-    else {}
+    {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 )
 
 engine = create_engine(
@@ -29,7 +27,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_db() -> Generator[Session, None, None]:
-    """FastAPI-dependency die een DB-sessie levert en netjes afsluit."""
+    """FastAPI dependency that provides a DB session and closes it cleanly."""
     db = SessionLocal()
     try:
         yield db
@@ -38,8 +36,8 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db() -> None:
-    """Maak tabellen aan op basis van de modellen (voor dev/start zonder Alembic)."""
-    # Belangrijk: importeer modellen zodat ze bij Base geregistreerd staan.
+    """Create tables based on the models (for dev/startup without Alembic)."""
+    # Important: import models so they are registered on Base.
     from app import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)

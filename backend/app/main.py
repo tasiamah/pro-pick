@@ -12,7 +12,7 @@ from app.core.database import init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Voor dev: maak tabellen aan bij startup. In productie gebruik je Alembic.
+    # For dev: create tables at startup. In production, use Alembic.
     init_db()
     yield
 
@@ -21,8 +21,8 @@ app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
     description=(
-        "AI-analyse voor voetbalwedstrijden. Uitsluitend voor entertainment; "
-        "geen gok- of weddenschapsdienst."
+        "AI analysis for football matches. For entertainment only; "
+        "not a gambling or betting service."
     ),
     lifespan=lifespan,
 )

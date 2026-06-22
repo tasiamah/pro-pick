@@ -1,10 +1,10 @@
-from __future__ import annotations
+"""Scheduled jobs (EPIC-2 / Day 2).
 
-"""Geplande taken (EPIC-2 / Dag 2).
-
-Dagelijkse update: data + odds ophalen, voorspellingen genereren en
-value bets (her)berekenen. Stub met APScheduler-opzet voor later.
+Daily update: fetch data + odds, generate predictions and (re)calculate
+value bets. Stub with an APScheduler setup for later.
 """
+
+from __future__ import annotations
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -12,8 +12,8 @@ scheduler = BackgroundScheduler()
 
 
 def daily_update() -> None:
-    """Placeholder voor de dagelijkse data- en predictie-update."""
-    # Volgt in de datapijplijn-tickets.
+    """Placeholder for the daily data and prediction update."""
+    # Follows in the data-pipeline tickets.
     pass
 
 

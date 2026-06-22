@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -11,7 +10,7 @@ class TeamOut(BaseModel):
 
     id: int
     name: str
-    logo_url: Optional[str] = None
+    logo_url: str | None = None
 
 
 class OddsOut(BaseModel):
@@ -36,16 +35,16 @@ class MatchOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    kickoff: Optional[datetime] = None
+    kickoff: datetime | None = None
     status: str
     home_team: TeamOut
     away_team: TeamOut
-    competition_name: Optional[str] = None
+    competition_name: str | None = None
 
 
 class MatchDetailOut(MatchOut):
     odds: list[OddsOut] = []
-    prediction: Optional[PredictionOut] = None
+    prediction: PredictionOut | None = None
 
 
 class ValueBetOut(BaseModel):
@@ -63,9 +62,9 @@ class ValueBetOut(BaseModel):
 
 
 class AnalyticsOut(BaseModel):
-    accuracy: Optional[float] = None
-    log_loss: Optional[float] = None
-    roi: Optional[float] = None
+    accuracy: float | None = None
+    log_loss: float | None = None
+    roi: float | None = None
     total_value_bets: int = 0
     settled_value_bets: int = 0
     roi_trend: list[dict] = []
@@ -75,5 +74,5 @@ class DashboardOut(BaseModel):
     matches_today: int = 0
     upcoming_matches: int = 0
     top_value_bets: list[ValueBetOut] = []
-    model_accuracy: Optional[float] = None
-    roi: Optional[float] = None
+    model_accuracy: float | None = None
+    roi: float | None = None

@@ -10,14 +10,14 @@ from app.core.database import Base
 
 
 class ValueBet(Base):
-    """Een geïdentificeerde value bet op basis van modelkans vs. bookmaker-odd."""
+    """An identified value bet based on model probability vs. bookmaker odd."""
 
     __tablename__ = "value_bets"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"), index=True)
 
-    # Uitkomst waarop de value bet betrekking heeft: "home" | "draw" | "away".
+    # Outcome the value bet refers to: "home" | "draw" | "away".
     outcome: Mapped[str] = mapped_column(String(10))
 
     model_prob: Mapped[float] = mapped_column(Float)
@@ -27,12 +27,10 @@ class ValueBet(Base):
     recommended_stake: Mapped[float] = mapped_column(Float, default=0.0)
     confidence: Mapped[float] = mapped_column(Float, default=0.0)
 
-    # ROI-tracking: gevuld nadat de uitslag bekend is.
+    # ROI tracking: filled in after the result is known.
     settled: Mapped[bool] = mapped_column(Boolean, default=False)
     profit: Mapped[Optional[float]] = mapped_column(Float)
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     match: Mapped["Match"] = relationship(back_populates="value_bets")

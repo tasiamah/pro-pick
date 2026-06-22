@@ -13,20 +13,16 @@ class Match(Base):
     __tablename__ = "matches"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    external_id: Mapped[Optional[int]] = mapped_column(
-        Integer, unique=True, index=True
-    )
+    external_id: Mapped[Optional[int]] = mapped_column(Integer, unique=True, index=True)
 
-    competition_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("competitions.id")
-    )
+    competition_id: Mapped[Optional[int]] = mapped_column(ForeignKey("competitions.id"))
     home_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
     away_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
 
     kickoff: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True)
     status: Mapped[str] = mapped_column(String(20), default="scheduled")
 
-    # Eindstand (gevuld na afloop, voor evaluatie/ROI).
+    # Final score (filled in after the match, for evaluation/ROI).
     home_goals: Mapped[Optional[int]] = mapped_column(Integer)
     away_goals: Mapped[Optional[int]] = mapped_column(Integer)
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-"""Feature engineering (EPIC-3 / Dag 3).
+"""Feature engineering (EPIC-3 / Day 3).
 
-Bouwt features per wedstrijd: recente vorm, thuis/uit-prestaties,
-doelpunten voor/tegen, head-to-head, enz. Stub voor nu.
+Builds per-match features: recent form, home/away performance,
+goals for/against, head-to-head, etc. Stub for now.
 """
 
 FEATURE_COLUMNS: list[str] = [
@@ -19,5 +19,5 @@ FEATURE_COLUMNS: list[str] = [
 
 
 def build_features(match: dict) -> dict:
-    """Zet ruwe wedstrijddata om naar een feature-dict. Placeholder."""
+    """Convert raw match data into a feature dict. Placeholder."""
     return {col: 0.0 for col in FEATURE_COLUMNS}

@@ -7,7 +7,7 @@ from app.core.database import Base
 
 
 class Odds(Base):
-    """Bookmaker-odds voor de 1X2-markt per wedstrijd."""
+    """Bookmaker odds for the 1X2 market per match."""
 
     __tablename__ = "odds"
 

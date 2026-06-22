@@ -1,0 +1,38 @@
+[project]
+name = "voetbalai-backend"
+version = "0.1.0"
+description = "AI-driven football prediction backend (FastAPI + ML + value bets)."
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+src = ["."]
+extend-exclude = [".venv", ".venv-ci"]
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = pyflakes, I = isort, UP = pyupgrade,
+# B = flake8-bugbear, C4 = comprehensions, SIM = simplify.
+select = ["E", "W", "F", "I", "UP", "B", "C4", "SIM"]
+# FastAPI intentionally uses `Depends(...)`/`Query(...)` as default values.
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy models use string forward-references (e.g. Mapped["Team"]) that the
+# ORM only resolves lazily. Therefore, here:
+#   - UP037/F821: leave the string annotations alone (ruff sees them as
+#     undefined/redundant),
+#   - UP007: do NOT rewrite to `X | None`. With `Optional["Team"]` that would
+#     become `"Team" | None`, an unparseable annotation that SQLAlchemy
+#     evaluates during mapping. The `typing` style is kept here on purpose.
+"app/models/**" = ["UP007", "UP037", "F821"]
+# Tests may use asserts and slightly looser conventions.
+"tests/**" = ["S101"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
+markers = [
+    "unit: fast, isolated tests without external dependencies",
+    "integration: tests that exercise the app + database (Postgres) together",
+]

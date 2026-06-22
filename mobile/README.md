@@ -1,12 +1,12 @@
 # VoetbalAI — Mobile (iOS)
 
-React Native (Expo) + TypeScript app. Toont dashboard, wedstrijdoverzicht,
-favorieten en analytics op basis van de backend-API.
+React Native (Expo) + TypeScript app. Shows the dashboard, match overview,
+favorites and analytics based on the backend API.
 
-> Deze map bevat voorlopig alleen de structuur/README. De Expo-app wordt
-> opgezet in ticket **PP-43 "Expo + RN + TypeScript-app initialiseren"**.
+> This folder currently contains only the structure/README. The Expo app is
+> set up in ticket **PP-43 "Initialize Expo + RN + TypeScript app"**.
 
-## Geplande structuur
+## Planned structure
 
 ```
 mobile/
@@ -15,11 +15,11 @@ mobile/
 ├── tsconfig.json
 ├── App.tsx                # entrypoint
 └── src/
-    ├── api/               # API-client + types
-    ├── navigation/        # tab- en stack-navigatie
-    ├── theme/             # kleuren, fonts, spacing
-    ├── components/        # herbruikbare UI (MatchCard, ValueBetCard, ...)
-    ├── store/             # favorieten / app-state
+    ├── api/               # API client + types
+    ├── navigation/        # tab and stack navigation
+    ├── theme/             # colors, fonts, spacing
+    ├── components/        # reusable UI (MatchCard, ValueBetCard, ...)
+    ├── store/             # favorites / app state
     └── screens/
         ├── DashboardScreen.tsx
         ├── MatchesScreen.tsx
@@ -28,7 +28,7 @@ mobile/
         └── AnalyticsScreen.tsx
 ```
 
-## Starten (na PP-43)
+## Getting started (after PP-43)
 
 ```bash
 npm install

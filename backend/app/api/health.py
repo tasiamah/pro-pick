@@ -9,5 +9,5 @@ router = APIRouter()
 
 @router.get("/health")
 def health() -> dict:
-    """Eenvoudige healthcheck voor monitoring en deploys."""
+    """Simple health check for monitoring and deploys."""
     return {"status": "ok", "app": settings.app_name, "env": settings.environment}

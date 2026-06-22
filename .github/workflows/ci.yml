@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel earlier runs for the same branch/PR when new commits arrive.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # --- Stage 1: Lint ------------------------------------------------------
+  lint:
+    name: Lint (backend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Ruff lint
+        run: ruff check --output-format=github .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+  # --- Stage 2: Unit tests -----------------------------------------------
+  unit-tests:
+    name: Unit tests (backend)
+    needs: lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run unit tests
+        run: pytest -m unit
+
+  # --- Stage 3: Integration tests (app + PostgreSQL) ---------------------
+  integration-tests:
+    name: Integration tests (backend)
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: voetbalai
+          POSTGRES_PASSWORD: voetbalai
+          POSTGRES_DB: voetbalai_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U voetbalai"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      ENVIRONMENT: ci
+      DATABASE_URL: postgresql+psycopg2://voetbalai:voetbalai@localhost:5432/voetbalai_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run integration tests
+        run: pytest -m integration
+
+  # --- Mobile (Expo / React Native) --------------------------------------
+  # Only runs for real once the Expo app exists (ticket PP-43). Until then the
+  # job detects that there is no mobile/package.json yet and skips it, so the
+  # pipeline stays green without manual changes.
+  mobile:
+    name: Mobile (lint + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect Expo app
+        id: detect
+        run: |
+          if [ -f mobile/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::mobile/package.json not present yet — mobile checks skipped (see PP-43)."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.detect.outputs.exists == 'true'
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: mobile
+        run: npm ci
+
+      - name: Lint
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: mobile
+        run: npm run lint --if-present
+
+      - name: Typecheck
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: mobile
+        run: npm run typecheck --if-present
+
+      - name: Test
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: mobile
+        run: npm test --if-present

@@ -18,17 +18,17 @@ class ValueBetResult:
 
 
 def expected_value(prob: float, odd: float) -> float:
-    """EV per ingezette eenheid: kans * odd - 1."""
+    """EV per unit staked: prob * odd - 1."""
     return prob * odd - 1.0
 
 
 def implied_probability(odd: float) -> float:
-    """Impliciete kans van een bookmaker-odd (zonder marge-correctie)."""
+    """Implied probability of a bookmaker odd (without margin correction)."""
     return 1.0 / odd if odd > 0 else 0.0
 
 
 def kelly_fraction(prob: float, odd: float) -> float:
-    """Volledige Kelly-fractie; begrensd op [0, 1]."""
+    """Full Kelly fraction; bounded to [0, 1]."""
     b = odd - 1.0
     if b <= 0:
         return 0.0
@@ -44,7 +44,7 @@ def evaluate_outcome(
     edge_threshold: float | None = None,
     kelly_multiplier: float | None = None,
 ) -> ValueBetResult:
-    """Bereken EV, edge, aanbevolen inzet (fractionele Kelly) en value-status."""
+    """Compute EV, edge, recommended stake (fractional Kelly) and value status."""
     threshold = (
         settings.value_bet_edge_threshold if edge_threshold is None else edge_threshold
     )
@@ -69,7 +69,7 @@ def evaluate_outcome(
 def evaluate_match(
     probs: dict[str, float], odds: dict[str, float]
 ) -> list[ValueBetResult]:
-    """Evalueer alle 1X2-uitkomsten; geef alleen de echte value bets terug."""
+    """Evaluate all 1X2 outcomes; return only the actual value bets."""
     results = []
     for outcome in ("home", "draw", "away"):
         if outcome in probs and outcome in odds and odds[outcome] > 0:
