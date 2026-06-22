@@ -7,13 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
 from app.core.config import settings
-from app.core.database import init_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # For dev: create tables at startup. In production, use Alembic.
-    init_db()
+    # Database schema is managed via Alembic migrations (see backend/README.md).
     yield
 
 

@@ -9,22 +9,40 @@ python3.11 -m venv .venv   # the project runs on Python 3.11
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
 - API docs (Swagger): http://localhost:8000/docs
 - Health check: http://localhost:8000/health
 
-## PostgreSQL (Docker)
+## PostgreSQL + Alembic (Docker Compose)
 
 ```bash
 docker compose up --build
 ```
 
-Or set a `DATABASE_URL` yourself in `.env`:
+Starts PostgreSQL and the API. Runs `alembic upgrade head` automatically before the
+server starts.
+
+Or set `DATABASE_URL` in `.env` and run migrations manually:
 
 ```
 DATABASE_URL=postgresql+psycopg2://voetbalai:voetbalai@localhost:5432/voetbalai
+alembic upgrade head
+```
+
+## Database migrations (Alembic)
+
+```bash
+# Apply pending migrations
+alembic upgrade head
+
+# Generate a new migration after model changes
+alembic revision --autogenerate -m "description"
+
+# Roll back one migration
+alembic downgrade -1
 ```
 
 ## Linting & formatting
@@ -63,6 +81,7 @@ app/
 ├── services/          # data_ingestion, prediction, value_bets
 ├── ml/                # features, train, model.pkl
 └── scheduler/         # scheduled jobs (daily update)
+alembic/               # database migrations
 ```
 
 ## Endpoints (v1)
