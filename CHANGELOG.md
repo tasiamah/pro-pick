@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Monorepo structure (`backend/` + `mobile/`).
 - FastAPI skeleton with health, dashboard, matches, predictions, value-bets
   and analytics endpoints.
+- Alembic database migrations with initial schema (competitions, teams,
+  matches, odds, predictions, value bets).
+- Docker Compose setup for local PostgreSQL + API with automatic migrations.
+- Supabase managed PostgreSQL setup guide in `backend/README.md` and
+  `.env.example` (Session pooler, secrets in `.env` only).
 - CI pipeline (GitHub Actions) with three stages: lint, unit tests and
   integration tests against PostgreSQL.
 - Ruff configuration for linting and formatting; pytest split into
@@ -26,5 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Standardized on Python 3.11 (CI, Docker, `pyproject.toml`,
   `.python-version`).
+- Backend startup uses Alembic migrations instead of `create_all` at runtime.
+- Docker Compose database credentials parameterized via environment variables.
+- `.env.example` uses explicit localhost CORS origins instead of a wildcard.
 
 [Unreleased]: https://github.com/tasiamah/pro-pick/commits/main

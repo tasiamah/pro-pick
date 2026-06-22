@@ -1,30 +1,101 @@
 # VoetbalAI — Backend
 
-FastAPI backend with data pipeline, ML prediction model and value-bet engine.
+FastAPI backend with data pipeline, ML prediction model, and value-bet engine.
 
-## Getting started (local, SQLite — zero configuration)
+## Quick start (local, SQLite)
 
 ```bash
 python3.11 -m venv .venv   # the project runs on Python 3.11
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
 - API docs (Swagger): http://localhost:8000/docs
 - Health check: http://localhost:8000/health
 
-## PostgreSQL (Docker)
+## Managed PostgreSQL (Supabase)
+
+Use Supabase for a production-ready database. Store the connection string in `.env` only — never commit it to git.
+
+### 1. Create a Supabase project
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. Save the **database password** when prompted (Supabase will not show it again).
+
+### 2. Get the connection string
+
+1. Open **Connect** in the Supabase dashboard.
+2. Select **Session pooler** (recommended on IPv4 networks; Direct connection may fail on some networks).
+3. Copy the **URI** connection string.
+
+### 3. Configure `.env`
+
+```bash
+cp .env.example .env
+```
+
+Set `DATABASE_URL` in `.env`:
+
+```env
+DATABASE_URL=postgresql+psycopg2://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@[POOLER-HOST]:5432/postgres
+```
+
+Replace:
+
+- `[PROJECT-REF]` — your Supabase project reference (from the URI)
+- `[YOUR-PASSWORD]` — your database password
+- `[POOLER-HOST]` — pooler hostname from the Supabase dashboard (e.g. `aws-1-eu-central-1.pooler.supabase.com`)
+
+**Important:** add `+psycopg2` after `postgresql` (required for SQLAlchemy).
+
+### 4. Run migrations
+
+```bash
+alembic upgrade head
+```
+
+Verify in Supabase → **Database → Tables**: you should see `competitions`, `matches`, `teams`, `odds`, `predictions`, `value_bets`, and `alembic_version`.
+
+### 5. Start the API
+
+```bash
+uvicorn app.main:app --reload
+```
+
+For production hosting (Railway, Render, etc.), set `DATABASE_URL` as an environment secret in the host dashboard — not in source code.
+
+## PostgreSQL + Alembic (Docker Compose)
 
 ```bash
 docker compose up --build
 ```
 
-Or set a `DATABASE_URL` yourself in `.env`:
+Starts PostgreSQL and the API. Runs `alembic upgrade head` automatically before the server starts.
 
-```
+Or set `DATABASE_URL` in `.env` and run migrations manually:
+
+```env
 DATABASE_URL=postgresql+psycopg2://voetbalai:voetbalai@localhost:5432/voetbalai
+```
+
+```bash
+alembic upgrade head
+```
+
+## Database migrations (Alembic)
+
+```bash
+# Apply all pending migrations
+alembic upgrade head
+
+# Generate a new migration after model changes
+alembic revision --autogenerate -m "description"
+
+# Roll back one migration
+alembic downgrade -1
 ```
 
 ## Linting & formatting
@@ -51,9 +122,9 @@ In CI the integration tests run against a real PostgreSQL service via
 `DATABASE_URL`. Locally they fall back to SQLite, so `pytest` works without extra
 setup.
 
-## Structure
+## Project structure
 
-```
+```text
 app/
 ├── main.py            # FastAPI entrypoint
 ├── core/              # config + database
@@ -63,6 +134,7 @@ app/
 ├── services/          # data_ingestion, prediction, value_bets
 ├── ml/                # features, train, model.pkl
 └── scheduler/         # scheduled jobs (daily update)
+alembic/               # database migrations
 ```
 
 ## Endpoints (v1)
@@ -71,11 +143,10 @@ app/
 |--------|------|-------------|
 | GET | `/health` | Health check |
 | GET | `/dashboard` | Summary overview |
-| GET | `/matches` | Match overview |
+| GET | `/matches` | Match list |
 | GET | `/matches/{id}` | Match detail |
 | GET | `/predictions` | Predictions |
 | GET | `/value-bets` | Value bets |
 | GET | `/analytics` | Model performance & ROI |
 
-> The data ingestion, the ML model and the scheduler are set up as stubs and
-> will be filled in on Day 2-3.
+> Data ingestion, ML model, and scheduler are stubbed and will be implemented in later tickets.
