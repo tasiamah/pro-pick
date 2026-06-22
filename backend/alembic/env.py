@@ -8,7 +8,7 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-# Zorg dat `app` importeerbaar is vanuit de backend-map.
+# Ensure `app` is importable when running Alembic from the backend directory.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app import models  # noqa: F401
