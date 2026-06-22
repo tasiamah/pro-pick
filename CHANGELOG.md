@@ -34,5 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Backend startup uses Alembic migrations instead of `create_all` at runtime.
 - Docker Compose database credentials parameterized via environment variables.
 - `.env.example` uses explicit localhost CORS origins instead of a wildcard.
+- Remaining Dutch comment in `alembic/env.py` translated to English.
 
 [Unreleased]: https://github.com/tasiamah/pro-pick/commits/main
