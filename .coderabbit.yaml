@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit configuration — https://docs.coderabbit.ai/getting-started/configure-coderabbit
+language: en-US
+
+reviews:
+  # "chill" geeft minder nitpicks; zet op "assertive" voor strengere reviews.
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+
+  path_filters:
+    - "!**/.venv-ci/**"
+    - "!**/.ruff_cache/**"
+    - "!**/.pytest_cache/**"
+    - "!**/*.db"
+    - "!**/node_modules/**"
+
+  path_instructions:
+    - path: "backend/**"
+      instructions: >-
+        Python (FastAPI) backend. Verwacht code die ruff-clean is en getypeerd.
+        Let op: ontbrekende tests voor nieuwe endpoints, onveilige SQL,
+        ongevalideerde input en het lekken van secrets/credentials.
+    - path: "mobile/**"
+      instructions: >-
+        Expo / React Native (TypeScript). Let op type-safety, onnodige
+        re-renders en het hardcoden van API-keys of endpoints.
+
+  tools:
+    ruff:
+      enabled: true
+
+chat:
+  auto_reply: true
