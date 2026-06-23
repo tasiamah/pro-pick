@@ -1,18 +1,18 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import type { FavoritesStackParamList } from '../navigation/types';
+import type { HomeStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 
-type Props = NativeStackScreenProps<FavoritesStackParamList, 'Favorites'>;
+type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
-export function FavoritesScreen({ navigation }: Props) {
+export function HomeScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Favorites</Text>
+      <Text style={styles.title}>Home</Text>
       <Pressable
         style={styles.button}
-        onPress={() => navigation.navigate('MatchDetail', { matchId: 'sample-favorites' })}
+        onPress={() => navigation.navigate('MatchDetail', { matchId: 'sample-home' })}
       >
         <Text style={styles.buttonText}>Details</Text>
       </Pressable>

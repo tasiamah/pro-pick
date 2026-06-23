@@ -1,9 +1,21 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-export function MatchesScreen() {
+import type { MatchesStackParamList } from '../navigation/types';
+import { colors } from '../theme/colors';
+
+type Props = NativeStackScreenProps<MatchesStackParamList, 'Matches'>;
+
+export function MatchesScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Matches</Text>
+      <Pressable
+        style={styles.button}
+        onPress={() => navigation.navigate('MatchDetail', { matchId: 'sample-matches' })}
+      >
+        <Text style={styles.buttonText}>Details</Text>
+      </Pressable>
     </View>
   );
 }
@@ -13,9 +25,25 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.background,
+    padding: 24,
   },
   title: {
+    color: colors.text,
     fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 24,
+  },
+  button: {
+    borderColor: colors.primary,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  buttonText: {
+    color: colors.primary,
+    fontSize: 16,
     fontWeight: '600',
   },
 });
