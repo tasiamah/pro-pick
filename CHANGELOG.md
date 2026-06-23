@@ -39,4 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `.env.example` uses explicit localhost CORS origins instead of a wildcard.
 - Remaining Dutch comment in `alembic/env.py` translated to English.
 
+### Fixed
+- `mobile/LICENSE` copyright updated from Expo template text to Pro Pick.
+
 [Unreleased]: https://github.com/tasiamah/pro-pick/commits/main
