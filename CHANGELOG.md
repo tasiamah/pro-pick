@@ -40,6 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Remaining Dutch comment in `alembic/env.py` translated to English.
 
 ### Fixed
-- `mobile/LICENSE` copyright updated from Expo template text to VoetbalAI.
+- `mobile/LICENSE` copyright updated from Expo template text to Pro Pick.
 
 [Unreleased]: https://github.com/tasiamah/pro-pick/commits/main
