@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   scripts for CI.
 - Mobile navigation: Home / Matches / Favorites stacks with match detail routes,
   dark tab bar with icons aligned to the Pro Pick demo (PP-76).
+- Mobile API client with TypeScript types and TanStack Query hooks for all
+  backend endpoints (`/dashboard`, `/matches`, `/predictions`, `/value-bets`,
+  `/analytics`).
 
 ### Changed
 - Mobile tab label **Dashboard** renamed to **Home** (PP-76).

@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 
@@ -16,11 +17,15 @@ const navigationTheme = {
   },
 };
 
+const queryClient = new QueryClient();
+
 export default function App() {
   return (
-    <NavigationContainer theme={navigationTheme}>
-      <RootNavigator />
-      <StatusBar style="light" />
-    </NavigationContainer>
+    <QueryClientProvider client={queryClient}>
+      <NavigationContainer theme={navigationTheme}>
+        <RootNavigator />
+        <StatusBar style="light" />
+      </NavigationContainer>
+    </QueryClientProvider>
   );
 }
