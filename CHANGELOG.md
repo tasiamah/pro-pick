@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `tests/unit/` and `tests/integration/` with markers.
 - Changelog enforcement: PRs must update `CHANGELOG.md` (or carry the
   `skip-changelog` label).
+- Expo + React Native + TypeScript app in `mobile/` with bottom-tab navigation
+  skeleton (Dashboard, Matches, Favorites, Analytics); ESLint and typecheck
+  scripts for CI.
 
 ### Changed
 - Standardized on Python 3.11 (CI, Docker, `pyproject.toml`,
