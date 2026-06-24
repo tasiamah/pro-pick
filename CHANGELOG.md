@@ -35,8 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Mobile API client with TypeScript types and TanStack Query hooks for all
   backend endpoints (`/dashboard`, `/matches`, `/predictions`, `/value-bets`,
   `/analytics`).
+- Central mobile theme: semantic demo colors, typography, spacing, and radii
+  tokens with shared screen styles (PP-77).
 
 ### Changed
+- Mobile screens and navigation now consume shared theme tokens instead of
+  hardcoded values (PP-77).
 - Mobile tab label **Dashboard** renamed to **Home** (PP-76).
 - Standardized on Python 3.11 (CI, Docker, `pyproject.toml`,
   `.python-version`).

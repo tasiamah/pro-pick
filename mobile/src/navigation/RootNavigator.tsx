@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { ComponentProps } from 'react';
 
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
-import { colors } from '../theme/colors';
+import { colors } from '../theme';
 import { FavoritesStackNavigator } from './FavoritesStackNavigator';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { MatchesStackNavigator } from './MatchesStackNavigator';
@@ -13,8 +13,12 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 type TabIconName = ComponentProps<typeof Ionicons>['name'];
 
+const TAB_ICON_SIZE = 22;
+
 function tabIcon(name: TabIconName, focused: boolean) {
-  return <Ionicons name={name} size={22} color={focused ? colors.primary : colors.textMuted} />;
+  return (
+    <Ionicons name={name} size={TAB_ICON_SIZE} color={focused ? colors.primary : colors.textMuted} />
+  );
 }
 
 export function RootNavigator() {

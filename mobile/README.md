@@ -52,7 +52,7 @@ mobile/
 └── src/
     ├── api/                # API client + types (PP-75)
     ├── navigation/         # tab + stack navigators
-    ├── theme/              # colors (demo dark palette; full theme in PP-77)
+    ├── theme/              # colors, typography, spacing, radii (Pro Pick demo)
     ├── components/         # MatchCard, ValueBetCard, … (PP-78)
     ├── store/              # favorites / app state
     └── screens/
