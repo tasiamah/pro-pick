@@ -31,7 +31,12 @@ export function ValueBetCard({ valueBet, onPress }: ValueBetCardProps) {
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Value bet ${formatOutcome(valueBet.outcome)}`}
+        onPress={onPress}
+        style={({ pressed }) => pressed && styles.pressed}
+      >
         {content}
       </Pressable>
     );

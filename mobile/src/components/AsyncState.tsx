@@ -6,7 +6,7 @@ import { LoadingState } from './LoadingState';
 
 type AsyncStateProps = {
   isLoading: boolean;
-  error: Error | null;
+  error: unknown;
   isEmpty: boolean;
   children: ReactNode;
   loadingMessage?: string;
@@ -14,6 +14,22 @@ type AsyncStateProps = {
   errorMessage?: string;
   onRetry?: () => void;
 };
+
+function getErrorMessage(error: unknown, fallback?: string): string {
+  if (fallback) {
+    return fallback;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === 'string' && error) {
+    return error;
+  }
+
+  return 'Something went wrong';
+}
 
 export function AsyncState({
   isLoading,
@@ -29,9 +45,9 @@ export function AsyncState({
     return <LoadingState message={loadingMessage} />;
   }
 
-  if (error) {
+  if (error != null) {
     return (
-      <ErrorState message={errorMessage ?? error.message} onRetry={onRetry} />
+      <ErrorState message={getErrorMessage(error, errorMessage)} onRetry={onRetry} />
     );
   }
 

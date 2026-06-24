@@ -35,7 +35,12 @@ export function MatchCard({ match, prediction, onPress }: MatchCardProps) {
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${match.home_team.name} versus ${match.away_team.name}`}
+        onPress={onPress}
+        style={({ pressed }) => pressed && styles.pressed}
+      >
         {content}
       </Pressable>
     );

@@ -15,7 +15,11 @@ export function ErrorState({
     <View style={styles.container}>
       <Text style={styles.message}>{message}</Text>
       {onRetry ? (
-        <Pressable style={screenStyles.outlineButton} onPress={onRetry}>
+        <Pressable
+          accessibilityRole="button"
+          style={screenStyles.outlineButton}
+          onPress={onRetry}
+        >
           <Text style={screenStyles.outlineButtonText}>Try again</Text>
         </Pressable>
       ) : null}
