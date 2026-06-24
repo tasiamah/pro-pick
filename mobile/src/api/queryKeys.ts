@@ -18,6 +18,6 @@ export const queryKeys = {
   predictions: (params: PredictionListParams = {}) =>
     ['predictions', params.limit ?? null] as const,
   valueBets: (params: ValueBetListParams = {}) =>
-    ['value-bets', params.limit ?? null] as const,
+    ['value-bets', params.limit ?? null, params.match_id ?? null] as const,
   analytics: ['analytics'] as const,
 };

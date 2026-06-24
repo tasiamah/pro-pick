@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -28,10 +28,7 @@ import type {
   MatchesStackParamList,
 } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme';
-import {
-  filterValueBetsByMatchId,
-  parseMatchId,
-} from './matchDetailUtils';
+import { parseMatchId } from './matchDetailUtils';
 
 type MatchDetailProps =
   | NativeStackScreenProps<HomeStackParamList, 'MatchDetail'>
@@ -186,14 +183,9 @@ function ValueBetsSection({
 export function MatchDetailScreen({ route }: MatchDetailProps) {
   const matchId = parseMatchId(route.params.matchId);
   const matchQuery = useMatch(matchId ?? 0);
-  const valueBetsQuery = useValueBets({ limit: 200 });
-
-  const matchValueBets = useMemo(
-    () =>
-      matchId == null
-        ? []
-        : filterValueBetsByMatchId(valueBetsQuery.data ?? [], matchId),
-    [matchId, valueBetsQuery.data],
+  const valueBetsQuery = useValueBets(
+    { match_id: matchId ?? undefined },
+    { enabled: matchId != null },
   );
 
   const isRefreshing = matchQuery.isRefetching || valueBetsQuery.isRefetching;
@@ -242,8 +234,8 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
       <OddsSection odds={match.odds} />
       <ValueBetsSection
         isLoading={valueBetsQuery.isLoading && !valueBetsQuery.data}
-        error={valueBetsQuery.error}
-        valueBets={matchValueBets}
+        error={valueBetsQuery.error && !valueBetsQuery.data ? valueBetsQuery.error : null}
+        valueBets={valueBetsQuery.data ?? []}
         onRetry={() => void valueBetsQuery.refetch()}
       />
     </ScrollView>

@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - `GET /matches` now returns upcoming matches with embedded prediction and odds
   for list screens (PP-80).
+- `GET /value-bets` accepts optional `match_id` query parameter for
+  match-scoped value bet lists (PP-81).
 - Mobile screens and navigation now consume shared theme tokens instead of
   hardcoded values (PP-77).
 - Mobile tab label **Dashboard** renamed to **Home** (PP-76).
