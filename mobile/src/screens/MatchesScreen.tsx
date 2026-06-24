@@ -19,6 +19,7 @@ import {
   filterMatchesByDate,
   startOfUtcDay,
 } from '../utils/matchDates';
+import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 
 type Props = NativeStackScreenProps<MatchesStackParamList, 'Matches'>;
 
@@ -38,11 +39,11 @@ export function MatchesScreen({ navigation }: Props) {
     void matchesQuery.refetch();
   }, [matchesQuery]);
 
-  if (matchesQuery.isLoading && !matchesQuery.data) {
+  if (isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)) {
     return <LoadingState message="Loading matches…" />;
   }
 
-  if (matchesQuery.error && !matchesQuery.data) {
+  if (queryErrorForDisplay(matchesQuery.error, matchesQuery.data)) {
     return (
       <ErrorState message="Could not load matches" onRetry={onRefresh} />
     );

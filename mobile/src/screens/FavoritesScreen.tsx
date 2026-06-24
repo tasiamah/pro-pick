@@ -22,6 +22,7 @@ import {
   filterMatchesByDate,
   startOfUtcDay,
 } from '../utils/matchDates';
+import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 
 type Props = NativeStackScreenProps<FavoritesStackParamList, 'Favorites'>;
 
@@ -95,11 +96,11 @@ export function FavoritesScreen({ navigation }: Props) {
     );
   }
 
-  if (matchesQuery.isLoading && !matchesQuery.data) {
+  if (isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)) {
     return <LoadingState message="Loading favorites…" />;
   }
 
-  if (matchesQuery.error && !matchesQuery.data) {
+  if (queryErrorForDisplay(matchesQuery.error, matchesQuery.data)) {
     return <ErrorState message="Could not load favorite matches" onRetry={onRefresh} />;
   }
 

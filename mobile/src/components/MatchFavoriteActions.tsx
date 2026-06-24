@@ -7,6 +7,7 @@ import {
   useFavoritesStore,
 } from '../store';
 import { spacing } from '../theme';
+import { getTeamName } from '../utils/matchDisplay';
 import { FavoriteToggle } from './FavoriteToggle';
 
 type MatchFavoriteActionsProps = {
@@ -25,16 +26,20 @@ export function MatchFavoriteActions({ match }: MatchFavoriteActionsProps) {
 
   return (
     <View style={styles.row}>
-      <FavoriteToggle
-        label={match.home_team.name}
-        active={favoriteTeamIds.has(match.home_team.id)}
-        onToggle={() => toggleTeam(match.home_team)}
-      />
-      <FavoriteToggle
-        label={match.away_team.name}
-        active={favoriteTeamIds.has(match.away_team.id)}
-        onToggle={() => toggleTeam(match.away_team)}
-      />
+      {match.home_team?.id != null ? (
+        <FavoriteToggle
+          label={getTeamName(match.home_team, 'Home')}
+          active={favoriteTeamIds.has(match.home_team.id)}
+          onToggle={() => toggleTeam(match.home_team)}
+        />
+      ) : null}
+      {match.away_team?.id != null ? (
+        <FavoriteToggle
+          label={getTeamName(match.away_team, 'Away')}
+          active={favoriteTeamIds.has(match.away_team.id)}
+          onToggle={() => toggleTeam(match.away_team)}
+        />
+      ) : null}
       {competitionName ? (
         <FavoriteToggle
           label={competitionName}

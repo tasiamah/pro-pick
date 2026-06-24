@@ -28,6 +28,8 @@ import type {
   MatchesStackParamList,
 } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme';
+import { formatMatchTeams } from '../utils/matchDisplay';
+import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { parseMatchId } from './matchDetailUtils';
 
 type MatchDetailProps =
@@ -46,7 +48,7 @@ function MatchHeader({ match }: MatchHeaderProps) {
         <Text style={styles.competition}>{match.competition_name}</Text>
       ) : null}
       <Text style={styles.teams}>
-        {match.home_team.name} vs {match.away_team.name}
+        {formatMatchTeams(match.home_team, match.away_team)}
       </Text>
       <View style={styles.metaRow}>
         <Text style={styles.meta}>{formatKickoff(match.kickoff)}</Text>
@@ -203,11 +205,11 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
     return <ErrorState message="Invalid match" />;
   }
 
-  if (matchQuery.isLoading && !matchQuery.data) {
+  if (isInitialQueryLoad(matchQuery.isLoading, matchQuery.data)) {
     return <LoadingState message="Loading match…" />;
   }
 
-  if (matchQuery.error && !matchQuery.data) {
+  if (queryErrorForDisplay(matchQuery.error, matchQuery.data)) {
     return <ErrorState message="Could not load match" onRetry={onRetry} />;
   }
 
@@ -231,10 +233,10 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
     >
       <MatchHeader match={match} />
       <PredictionSection prediction={match.prediction} />
-      <OddsSection odds={match.odds} />
+      <OddsSection odds={match.odds ?? []} />
       <ValueBetsSection
-        isLoading={valueBetsQuery.isLoading && !valueBetsQuery.data}
-        error={valueBetsQuery.error && !valueBetsQuery.data ? valueBetsQuery.error : null}
+        isLoading={isInitialQueryLoad(valueBetsQuery.isLoading, valueBetsQuery.data)}
+        error={queryErrorForDisplay(valueBetsQuery.error, valueBetsQuery.data)}
         valueBets={valueBetsQuery.data ?? []}
         onRetry={() => void valueBetsQuery.refetch()}
       />
