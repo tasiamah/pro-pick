@@ -4,7 +4,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.database import get_db
 from app.models import Match, Odds, Prediction
@@ -68,22 +68,32 @@ def list_matches(
             joinedload(Match.home_team),
             joinedload(Match.away_team),
             joinedload(Match.competition),
-            joinedload(Match.odds),
-            joinedload(Match.predictions),
+            selectinload(Match.odds),
+            selectinload(Match.predictions),
         )
         .where(Match.kickoff >= now)
         .order_by(Match.kickoff)
         .limit(limit)
         .offset(offset)
     )
-    matches = db.execute(stmt).unique().scalars().all()
+    matches = db.execute(stmt).scalars().all()
     return [_to_match_detail(match) for match in matches]
 
 
 @router.get("/{match_id}", response_model=MatchDetailOut)
 def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchDetailOut:
     """Match detail including odds and prediction (PP: GET /matches/{id})."""
-    match = db.get(Match, match_id)
+    match = db.execute(
+        select(Match)
+        .options(
+            joinedload(Match.home_team),
+            joinedload(Match.away_team),
+            joinedload(Match.competition),
+            selectinload(Match.odds),
+            selectinload(Match.predictions),
+        )
+        .where(Match.id == match_id)
+    ).scalar_one_or_none()
     if match is None:
         raise HTTPException(status_code=404, detail="Match not found")
 
