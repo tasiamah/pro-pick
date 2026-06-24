@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Match, Odds, Prediction } from '../api/types';
 import { colors, radii, spacing, typography } from '../theme';
 import { formatKickoff, formatOdd, formatPercent } from './formatters';
+import { MatchFavoriteActions } from './MatchFavoriteActions';
 
 type MatchCardProps = {
   match: Match;
@@ -13,8 +14,8 @@ type MatchCardProps = {
 
 export function MatchCard({ match, prediction, odds, onPress }: MatchCardProps) {
   const primaryOdds = odds?.[0];
-  const content = (
-    <View style={styles.card}>
+  const mainContent = (
+    <>
       {match.competition_name ? (
         <Text style={styles.competition}>{match.competition_name}</Text>
       ) : null}
@@ -38,23 +39,26 @@ export function MatchCard({ match, prediction, odds, onPress }: MatchCardProps) 
           {formatOdd(primaryOdds.away)}
         </Text>
       ) : null}
-    </View>
+    </>
   );
 
-  if (onPress) {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${match.home_team.name} versus ${match.away_team.name}`}
-        onPress={onPress}
-        style={({ pressed }) => pressed && styles.pressed}
-      >
-        {content}
-      </Pressable>
-    );
-  }
-
-  return content;
+  return (
+    <View style={styles.card}>
+      {onPress ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${match.home_team.name} versus ${match.away_team.name}`}
+          onPress={onPress}
+          style={({ pressed }) => pressed && styles.pressed}
+        >
+          {mainContent}
+        </Pressable>
+      ) : (
+        mainContent
+      )}
+      <MatchFavoriteActions match={match} />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
