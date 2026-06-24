@@ -1,4 +1,5 @@
 export { DatePickerRow } from './DatePickerRow';
+export { DisclaimerBanner } from './DisclaimerBanner';
 export { AsyncState } from './AsyncState';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
