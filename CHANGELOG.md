@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   tokens with shared screen styles (PP-77).
 - Reusable mobile components: `MatchCard`, `ValueBetCard`, and shared
   loading/empty/error state views for upcoming screen tickets (PP-78).
+- Home tab dashboard: date picker, stat summary from `/dashboard`, filtered
+  match cards, top value bets, and pull-to-refresh (PP-79).
 
 ### Changed
 - Mobile screens and navigation now consume shared theme tokens instead of
