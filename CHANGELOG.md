@@ -48,12 +48,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Favorites tab: persist favorite teams and competitions with Zustand and
   AsyncStorage, favorite toggles on match cards, and filtered match overview
   (PP-82).
+- Analytics tab: accuracy and ROI summary cards with ROI trend chart via
+  `react-native-gifted-charts` (PP-83).
 
 ### Changed
 - `GET /matches` now returns upcoming matches with embedded prediction and odds
   for list screens (PP-80).
 - `GET /value-bets` accepts optional `match_id` query parameter for
   match-scoped value bet lists (PP-81).
+- `GET /analytics` now computes accuracy, ROI, and cumulative daily ROI trend
+  from settled value bets and finished matches (PP-83).
 - Mobile screens and navigation now consume shared theme tokens instead of
   hardcoded values (PP-77).
 - Mobile tab label **Dashboard** renamed to **Home** (PP-76).
