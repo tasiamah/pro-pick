@@ -14,6 +14,7 @@ import type { Analytics } from '../api/types';
 import { EmptyState, ErrorState, LoadingState } from '../components';
 import { formatPercent } from '../components/formatters';
 import { colors, radii, spacing, typography } from '../theme';
+import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 
 import { toRoiTrendChartData } from './analyticsUtils';
 
@@ -103,11 +104,11 @@ export function AnalyticsScreen() {
     void analyticsQuery.refetch();
   }, [analyticsQuery]);
 
-  if (analyticsQuery.isLoading && !analyticsQuery.data) {
+  if (isInitialQueryLoad(analyticsQuery.isLoading, analyticsQuery.data)) {
     return <LoadingState message="Loading analytics…" />;
   }
 
-  if (analyticsQuery.error && !analyticsQuery.data) {
+  if (queryErrorForDisplay(analyticsQuery.error, analyticsQuery.data)) {
     return (
       <ErrorState message="Could not load analytics" onRetry={onRefresh} />
     );

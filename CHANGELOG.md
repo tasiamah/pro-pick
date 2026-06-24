@@ -53,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Persistent entertainment disclaimer banner on all mobile screens (PP-84).
 
 ### Changed
+- Mobile screens use shared query-state helpers so loading, empty, and error
+  views stay consistent and keep cached data visible during refetch failures
+  (PP-85).
+
 - `GET /matches` now returns upcoming matches with embedded prediction and odds
   for list screens (PP-80).
 - `GET /value-bets` accepts optional `match_id` query parameter for

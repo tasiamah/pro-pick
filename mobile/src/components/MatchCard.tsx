@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Match, Odds, Prediction } from '../api/types';
 import { colors, radii, spacing, typography } from '../theme';
+import { formatMatchTeams } from '../utils/matchDisplay';
 import { formatKickoff, formatOdd, formatPercent } from './formatters';
 import { MatchFavoriteActions } from './MatchFavoriteActions';
 
@@ -14,14 +15,13 @@ type MatchCardProps = {
 
 export function MatchCard({ match, prediction, odds, onPress }: MatchCardProps) {
   const primaryOdds = odds?.[0];
+  const teamsLabel = formatMatchTeams(match.home_team, match.away_team);
   const mainContent = (
     <>
       {match.competition_name ? (
         <Text style={styles.competition}>{match.competition_name}</Text>
       ) : null}
-      <Text style={styles.teams}>
-        {match.home_team.name} vs {match.away_team.name}
-      </Text>
+      <Text style={styles.teams}>{teamsLabel}</Text>
       <View style={styles.metaRow}>
         <Text style={styles.meta}>{formatKickoff(match.kickoff)}</Text>
         <Text style={styles.status}>{match.status}</Text>
@@ -47,7 +47,7 @@ export function MatchCard({ match, prediction, odds, onPress }: MatchCardProps) 
       {onPress ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${match.home_team.name} versus ${match.away_team.name}`}
+          accessibilityLabel={teamsLabel}
           onPress={onPress}
           style={({ pressed }) => pressed && styles.pressed}
         >

@@ -18,7 +18,13 @@ export function formatTrendLabel(date: string): string {
   });
 }
 
-export function toRoiTrendChartData(points: RoiTrendPoint[]): LineChartPoint[] {
+export function toRoiTrendChartData(
+  points: RoiTrendPoint[] | null | undefined,
+): LineChartPoint[] {
+  if (!points?.length) {
+    return [];
+  }
+
   return points.map((point) => ({
     value: Math.round(point.roi * 100),
     label: formatTrendLabel(point.date),

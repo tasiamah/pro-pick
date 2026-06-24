@@ -15,5 +15,6 @@ describe('analyticsUtils', () => {
       { value: 10, label: 'Jun 1' },
       { value: -5, label: 'Jun 2' },
     ]);
+    expect(toRoiTrendChartData(null)).toEqual([]);
   });
 });

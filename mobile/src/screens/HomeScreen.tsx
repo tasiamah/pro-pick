@@ -29,6 +29,7 @@ import {
   filterMatchesByDate,
   startOfUtcDay,
 } from '../utils/matchDates';
+import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -82,8 +83,8 @@ export function HomeScreen({ navigation }: Props) {
   );
 
   const isInitialLoading =
-    (dashboardQuery.isLoading && !dashboardQuery.data) ||
-    (matchesQuery.isLoading && !matchesQuery.data);
+    isInitialQueryLoad(dashboardQuery.isLoading, dashboardQuery.data) ||
+    isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data);
 
   const isRefreshing = dashboardQuery.isRefetching || matchesQuery.isRefetching;
 
@@ -100,7 +101,7 @@ export function HomeScreen({ navigation }: Props) {
     return <LoadingState message="Loading dashboard…" />;
   }
 
-  if (dashboardQuery.error && !dashboardQuery.data) {
+  if (queryErrorForDisplay(dashboardQuery.error, dashboardQuery.data)) {
     return <ErrorState message="Could not load dashboard" onRetry={onRetry} />;
   }
 
@@ -133,8 +134,8 @@ export function HomeScreen({ navigation }: Props) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Matches</Text>
         <AsyncState
-          isLoading={matchesQuery.isLoading && !matchesQuery.data}
-          error={matchesQuery.error}
+          isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
+          error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
           isEmpty={filteredMatches.length === 0}
           emptyMessage="No matches on this day"
           errorMessage="Could not load matches"
@@ -161,11 +162,11 @@ export function HomeScreen({ navigation }: Props) {
         <AsyncState
           isLoading={false}
           error={null}
-          isEmpty={dashboard.top_value_bets.length === 0}
+          isEmpty={(dashboard.top_value_bets ?? []).length === 0}
           emptyMessage="No value bets yet"
         >
           <View style={styles.cardList}>
-            {dashboard.top_value_bets.map((valueBet) => (
+            {(dashboard.top_value_bets ?? []).map((valueBet) => (
               <ValueBetCard
                 key={valueBet.id}
                 valueBet={valueBet}

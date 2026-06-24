@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { getErrorMessage } from '../utils/queryState';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
 import { LoadingState } from './LoadingState';
@@ -14,22 +15,6 @@ type AsyncStateProps = {
   errorMessage?: string;
   onRetry?: () => void;
 };
-
-function getErrorMessage(error: unknown, fallback?: string): string {
-  if (fallback) {
-    return fallback;
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  if (typeof error === 'string' && error) {
-    return error;
-  }
-
-  return 'Something went wrong';
-}
 
 export function AsyncState({
   isLoading,
@@ -47,7 +32,10 @@ export function AsyncState({
 
   if (error != null) {
     return (
-      <ErrorState message={getErrorMessage(error, errorMessage)} onRetry={onRetry} />
+      <ErrorState
+        message={getErrorMessage(error, errorMessage ?? 'Something went wrong')}
+        onRetry={onRetry}
+      />
     );
   }
 
