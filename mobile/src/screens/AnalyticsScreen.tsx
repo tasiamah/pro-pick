@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { colors, spacing, typography } from '../theme';
 
 export function AnalyticsScreen() {
   return (
@@ -16,11 +16,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
-    padding: 24,
+    padding: spacing.xl,
   },
   title: {
+    ...typography.title,
     color: colors.text,
-    fontSize: 20,
-    fontWeight: '600',
   },
 });

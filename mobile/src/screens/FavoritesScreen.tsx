@@ -1,49 +1,21 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { FavoritesStackParamList } from '../navigation/types';
-import { colors } from '../theme/colors';
+import { screenStyles } from '../theme';
 
 type Props = NativeStackScreenProps<FavoritesStackParamList, 'Favorites'>;
 
 export function FavoritesScreen({ navigation }: Props) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Favorites</Text>
+    <View style={screenStyles.centeredContainer}>
+      <Text style={screenStyles.screenTitle}>Favorites</Text>
       <Pressable
-        style={styles.button}
+        style={screenStyles.outlineButton}
         onPress={() => navigation.navigate('MatchDetail', { matchId: 'sample-favorites' })}
       >
-        <Text style={styles.buttonText}>Details</Text>
+        <Text style={screenStyles.outlineButtonText}>Details</Text>
       </Pressable>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-    padding: 24,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 24,
-  },
-  button: {
-    borderColor: colors.primary,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  buttonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
