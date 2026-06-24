@@ -29,8 +29,9 @@ Then:
 | **iPhone** | Scan the QR code with Expo Go |
 | **Simulator** | Press `i` in the terminal, or run `npm run ios` (requires Xcode) |
 
-You should see four bottom tabs: **Dashboard**, **Matches**, **Favorites**,
-**Analytics** (placeholder screens for now).
+You should see four bottom tabs: **Home**, **Matches**, **Favorites**,
+**Analytics**. Home, Matches, and Favorites each open a **Match detail** screen
+when you tap **Details**.
 
 ## Scripts
 
@@ -50,13 +51,14 @@ mobile/
 ├── tsconfig.json           # strict: true
 └── src/
     ├── api/                # API client + types (PP-75)
-    ├── navigation/         # RootNavigator (bottom tabs)
-    ├── theme/              # colors, fonts, spacing (PP-77)
+    ├── navigation/         # tab + stack navigators
+    ├── theme/              # colors (demo dark palette; full theme in PP-77)
     ├── components/         # MatchCard, ValueBetCard, … (PP-78)
     ├── store/              # favorites / app state
     └── screens/
-        ├── DashboardScreen.tsx
+        ├── HomeScreen.tsx
         ├── MatchesScreen.tsx
+        ├── MatchDetailScreen.tsx
         ├── FavoritesScreen.tsx
         └── AnalyticsScreen.tsx
 ```

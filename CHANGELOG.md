@@ -30,8 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Expo + React Native + TypeScript app in `mobile/` with bottom-tab navigation
   skeleton (Dashboard, Matches, Favorites, Analytics); ESLint and typecheck
   scripts for CI.
+- Mobile navigation: Home / Matches / Favorites stacks with match detail routes,
+  dark tab bar with icons aligned to the Pro Pick demo (PP-76).
 
 ### Changed
+- Mobile tab label **Dashboard** renamed to **Home** (PP-76).
 - Standardized on Python 3.11 (CI, Docker, `pyproject.toml`,
   `.python-version`).
 - Backend startup uses Alembic migrations instead of `create_all` at runtime.
