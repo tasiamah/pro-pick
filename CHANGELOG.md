@@ -41,8 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   loading/empty/error state views for upcoming screen tickets (PP-78).
 - Home tab dashboard: date picker, stat summary from `/dashboard`, filtered
   match cards, top value bets, and pull-to-refresh (PP-79).
+- Matches tab overview: upcoming matches with 1X2 prediction and odds,
+  shared date picker, and pull-to-refresh (PP-80).
 
 ### Changed
+- `GET /matches` now returns upcoming matches with embedded prediction and odds
+  for list screens (PP-80).
 - Mobile screens and navigation now consume shared theme tokens instead of
   hardcoded values (PP-77).
 - Mobile tab label **Dashboard** renamed to **Home** (PP-76).

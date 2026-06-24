@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
-from app.models import Match
+from app.models import Match, Prediction
 from app.schemas.common import (
     MatchDetailOut,
     MatchOut,
@@ -28,16 +30,50 @@ def _to_match_out(match: Match) -> MatchOut:
     )
 
 
-@router.get("", response_model=list[MatchOut])
+def _latest_prediction(match: Match) -> Prediction | None:
+    if not match.predictions:
+        return None
+    return max(match.predictions, key=lambda prediction: prediction.created_at)
+
+
+def _to_match_detail(match: Match) -> MatchDetailOut:
+    latest_prediction = _latest_prediction(match)
+    base = _to_match_out(match)
+    return MatchDetailOut(
+        **base.model_dump(),
+        odds=[OddsOut.model_validate(odds) for odds in match.odds],
+        prediction=(
+            PredictionOut.model_validate(latest_prediction)
+            if latest_prediction
+            else None
+        ),
+    )
+
+
+@router.get("", response_model=list[MatchDetailOut])
 def list_matches(
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-) -> list[MatchOut]:
-    """Upcoming matches with basic information (PP: GET /matches)."""
-    stmt = select(Match).order_by(Match.kickoff).limit(limit).offset(offset)
-    matches = db.execute(stmt).scalars().all()
-    return [_to_match_out(m) for m in matches]
+) -> list[MatchDetailOut]:
+    """Upcoming matches with prediction and odds (PP: GET /matches)."""
+    now = datetime.utcnow()
+    stmt = (
+        select(Match)
+        .options(
+            joinedload(Match.home_team),
+            joinedload(Match.away_team),
+            joinedload(Match.competition),
+            joinedload(Match.odds),
+            joinedload(Match.predictions),
+        )
+        .where(Match.kickoff >= now)
+        .order_by(Match.kickoff)
+        .limit(limit)
+        .offset(offset)
+    )
+    matches = db.execute(stmt).unique().scalars().all()
+    return [_to_match_detail(match) for match in matches]
 
 
 @router.get("/{match_id}", response_model=MatchDetailOut)
@@ -47,15 +83,4 @@ def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchDetailOut:
     if match is None:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    latest_prediction = match.predictions[-1] if match.predictions else None
-
-    base = _to_match_out(match)
-    return MatchDetailOut(
-        **base.model_dump(),
-        odds=[OddsOut.model_validate(o) for o in match.odds],
-        prediction=(
-            PredictionOut.model_validate(latest_prediction)
-            if latest_prediction
-            else None
-        ),
-    )
+    return _to_match_detail(match)
