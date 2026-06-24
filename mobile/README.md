@@ -65,7 +65,12 @@ mobile/
 
 ## Backend API
 
-The app will call the FastAPI backend (see `backend/README.md`). During local
-development the API defaults to `http://localhost:8000` once the API client is
-added (PP-75). A physical phone cannot reach `localhost` on your Mac until
-backend hosting is set up (PP-42).
+The app calls the FastAPI backend (see `backend/README.md`). Set
+`EXPO_PUBLIC_API_URL` in `mobile/.env` (copy from `.env.example`):
+
+```bash
+EXPO_PUBLIC_API_URL=http://localhost:8000
+```
+
+A physical phone cannot reach `localhost` on your Mac until backend hosting is
+set up (PP-42).

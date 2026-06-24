@@ -1,0 +1,17 @@
+import type {
+  MatchListParams,
+  PredictionListParams,
+  ValueBetListParams,
+} from './types';
+
+export const queryKeys = {
+  dashboard: ['dashboard'] as const,
+  matches: (params: MatchListParams = {}) =>
+    ['matches', params.limit ?? null, params.offset ?? null] as const,
+  match: (matchId: number) => ['matches', matchId] as const,
+  predictions: (params: PredictionListParams = {}) =>
+    ['predictions', params.limit ?? null] as const,
+  valueBets: (params: ValueBetListParams = {}) =>
+    ['value-bets', params.limit ?? null] as const,
+  analytics: ['analytics'] as const,
+};
