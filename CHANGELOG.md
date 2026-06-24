@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `/analytics`).
 - Central mobile theme: semantic demo colors, typography, spacing, and radii
   tokens with shared screen styles (PP-77).
+- Reusable mobile components: `MatchCard`, `ValueBetCard`, and shared
+  loading/empty/error state views for upcoming screen tickets (PP-78).
 
 ### Changed
 - Mobile screens and navigation now consume shared theme tokens instead of
