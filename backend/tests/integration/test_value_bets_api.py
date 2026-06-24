@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import NamedTuple
 
 import pytest
@@ -32,13 +32,13 @@ def value_bets_api() -> ValueBetFixture:
         match_one = Match(
             home_team_id=home.id,
             away_team_id=away.id,
-            kickoff=datetime(2026, 6, 24, 15, 0, tzinfo=timezone.utc),
+            kickoff=datetime(2026, 6, 24, 15, 0, tzinfo=UTC),
             status="scheduled",
         )
         match_two = Match(
             home_team_id=home.id,
             away_team_id=away.id,
-            kickoff=datetime(2026, 6, 25, 15, 0, tzinfo=timezone.utc),
+            kickoff=datetime(2026, 6, 25, 15, 0, tzinfo=UTC),
             status="scheduled",
         )
         db.add_all([match_one, match_two])
