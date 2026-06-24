@@ -37,10 +37,14 @@ export function usePredictions(params?: PredictionListParams) {
   });
 }
 
-export function useValueBets(params?: ValueBetListParams) {
+export function useValueBets(
+  params?: ValueBetListParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: queryKeys.valueBets(params),
     queryFn: () => api.getValueBets(params),
+    enabled: options?.enabled ?? true,
   });
 }
 

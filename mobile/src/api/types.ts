@@ -74,4 +74,5 @@ export type PredictionListParams = {
 
 export type ValueBetListParams = {
   limit?: number;
+  match_id?: number;
 };

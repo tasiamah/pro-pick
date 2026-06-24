@@ -15,8 +15,12 @@ router = APIRouter()
 def list_value_bets(
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
+    match_id: int | None = Query(None, ge=1),
 ) -> list[ValueBetOut]:
     """Value bets, sorted by edge (PP: GET /value-bets)."""
-    stmt = select(ValueBet).order_by(ValueBet.edge.desc()).limit(limit)
+    stmt = select(ValueBet).order_by(ValueBet.edge.desc())
+    if match_id is not None:
+        stmt = stmt.where(ValueBet.match_id == match_id)
+    stmt = stmt.limit(limit)
     value_bets = db.execute(stmt).scalars().all()
     return [ValueBetOut.model_validate(v) for v in value_bets]
