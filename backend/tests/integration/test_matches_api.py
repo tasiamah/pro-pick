@@ -88,3 +88,50 @@ def test_list_matches_returns_upcoming_with_prediction_and_odds(
     assert upcoming_entries[0]["prediction"]["prob_home"] == 0.5
     assert upcoming_entries[0]["odds"][0]["home"] == 1.9
     assert all(item["id"] != past_match.id for item in payload)
+
+
+def test_list_matches_returns_odds_in_stable_bookmaker_order(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    competition = Competition(name="La Liga", country="Spain")
+    home_team = Team(name="Barcelona", logo_url=None)
+    away_team = Team(name="Madrid", logo_url=None)
+    db_session.add_all([competition, home_team, away_team])
+    db_session.flush()
+
+    match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=2),
+        status="scheduled",
+    )
+    db_session.add(match)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            Odds(
+                match_id=match.id,
+                bookmaker="Zeta",
+                home=2.1,
+                draw=3.1,
+                away=3.9,
+            ),
+            Odds(
+                match_id=match.id,
+                bookmaker="Alpha",
+                home=2.0,
+                draw=3.0,
+                away=4.0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get("/matches")
+
+    assert response.status_code == 200
+    match_payload = next(item for item in response.json() if item["id"] == match.id)
+    assert [odds["bookmaker"] for odds in match_payload["odds"]] == ["Alpha", "Zeta"]

@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
-from app.models import Match, Prediction
+from app.models import Match, Odds, Prediction
 from app.schemas.common import (
     MatchDetailOut,
     MatchOut,
@@ -36,12 +36,16 @@ def _latest_prediction(match: Match) -> Prediction | None:
     return max(match.predictions, key=lambda prediction: prediction.created_at)
 
 
+def _sorted_odds(match: Match) -> list[Odds]:
+    return sorted(match.odds, key=lambda odds: (odds.bookmaker.lower(), odds.id))
+
+
 def _to_match_detail(match: Match) -> MatchDetailOut:
     latest_prediction = _latest_prediction(match)
     base = _to_match_out(match)
     return MatchDetailOut(
         **base.model_dump(),
-        odds=[OddsOut.model_validate(odds) for odds in match.odds],
+        odds=[OddsOut.model_validate(odds) for odds in _sorted_odds(match)],
         prediction=(
             PredictionOut.model_validate(latest_prediction)
             if latest_prediction
