@@ -2,7 +2,6 @@ import { getApiBaseUrl } from './config';
 import type {
   Analytics,
   Dashboard,
-  Match,
   MatchDetail,
   MatchListParams,
   Prediction,
@@ -79,8 +78,8 @@ export const api = {
     return request<Dashboard>('/dashboard');
   },
 
-  getMatches(params: MatchListParams = {}): Promise<Match[]> {
-    return request<Match[]>(`/matches${buildQueryString(params)}`);
+  getMatches(params: MatchListParams = {}): Promise<MatchDetail[]> {
+    return request<MatchDetail[]>(`/matches${buildQueryString(params)}`);
   },
 
   getMatch(matchId: number): Promise<MatchDetail> {

@@ -7,7 +7,13 @@ import type {
 export const queryKeys = {
   dashboard: ['dashboard'] as const,
   matches: (params: MatchListParams = {}) =>
-    ['matches', params.limit ?? null, params.offset ?? null] as const,
+    [
+      'matches',
+      params.limit ?? null,
+      params.offset ?? null,
+      params.kickoff_from ?? null,
+      params.kickoff_to ?? null,
+    ] as const,
   match: (matchId: number) => ['matches', matchId] as const,
   predictions: (params: PredictionListParams = {}) =>
     ['predictions', params.limit ?? null] as const,

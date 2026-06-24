@@ -1,16 +1,18 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { Match, Prediction } from '../api/types';
+import type { Match, Odds, Prediction } from '../api/types';
 import { colors, radii, spacing, typography } from '../theme';
-import { formatKickoff, formatPercent } from './formatters';
+import { formatKickoff, formatOdd, formatPercent } from './formatters';
 
 type MatchCardProps = {
   match: Match;
   prediction?: Prediction | null;
+  odds?: Odds[] | null;
   onPress?: () => void;
 };
 
-export function MatchCard({ match, prediction, onPress }: MatchCardProps) {
+export function MatchCard({ match, prediction, odds, onPress }: MatchCardProps) {
+  const primaryOdds = odds?.[0];
   const content = (
     <View style={styles.card}>
       {match.competition_name ? (
@@ -28,6 +30,12 @@ export function MatchCard({ match, prediction, onPress }: MatchCardProps) {
           1X2: {formatPercent(prediction.prob_home)} /{' '}
           {formatPercent(prediction.prob_draw)} /{' '}
           {formatPercent(prediction.prob_away)}
+        </Text>
+      ) : null}
+      {primaryOdds ? (
+        <Text style={styles.odds}>
+          Odds: {formatOdd(primaryOdds.home)} / {formatOdd(primaryOdds.draw)} /{' '}
+          {formatOdd(primaryOdds.away)}
         </Text>
       ) : null}
     </View>
@@ -87,5 +95,10 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     marginTop: spacing.md,
+  },
+  odds: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
   },
 });

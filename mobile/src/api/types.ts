@@ -64,6 +64,8 @@ export type Dashboard = {
 export type MatchListParams = {
   limit?: number;
   offset?: number;
+  kickoff_from?: string;
+  kickoff_to?: string;
 };
 
 export type PredictionListParams = {
