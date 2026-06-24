@@ -44,13 +44,18 @@ export type ValueBet = {
   confidence: number;
 };
 
+export type RoiTrendPoint = {
+  date: string;
+  roi: number;
+};
+
 export type Analytics = {
   accuracy: number | null;
   log_loss: number | null;
   roi: number | null;
   total_value_bets: number;
   settled_value_bets: number;
-  roi_trend: Record<string, unknown>[];
+  roi_trend: RoiTrendPoint[];
 };
 
 export type Dashboard = {

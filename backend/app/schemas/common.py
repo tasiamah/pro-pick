@@ -61,13 +61,18 @@ class ValueBetOut(BaseModel):
     confidence: float
 
 
+class RoiTrendPointOut(BaseModel):
+    date: str
+    roi: float
+
+
 class AnalyticsOut(BaseModel):
     accuracy: float | None = None
     log_loss: float | None = None
     roi: float | None = None
     total_value_bets: int = 0
     settled_value_bets: int = 0
-    roi_trend: list[dict] = []
+    roi_trend: list[RoiTrendPointOut] = []
 
 
 class DashboardOut(BaseModel):
