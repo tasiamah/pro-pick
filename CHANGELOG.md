@@ -45,6 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   shared date picker, and pull-to-refresh (PP-80).
 - Match detail screen: prediction probabilities, odds by bookmaker, and
   value bets for a selected match via `/matches/{id}` (PP-81).
+- Favorites tab: persist favorite teams and competitions with Zustand and
+  AsyncStorage, favorite toggles on match cards, and filtered match overview
+  (PP-82).
 
 ### Changed
 - `GET /matches` now returns upcoming matches with embedded prediction and odds

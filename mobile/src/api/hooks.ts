@@ -15,10 +15,14 @@ export function useDashboard() {
   });
 }
 
-export function useMatches(params?: MatchListParams) {
+export function useMatches(
+  params?: MatchListParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: queryKeys.matches(params),
     queryFn: () => api.getMatches(params),
+    enabled: options?.enabled ?? true,
   });
 }
 

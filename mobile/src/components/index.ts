@@ -2,6 +2,8 @@ export { DatePickerRow } from './DatePickerRow';
 export { AsyncState } from './AsyncState';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
+export { FavoriteToggle } from './FavoriteToggle';
 export { LoadingState } from './LoadingState';
 export { MatchCard } from './MatchCard';
+export { MatchFavoriteActions } from './MatchFavoriteActions';
 export { ValueBetCard } from './ValueBetCard';
