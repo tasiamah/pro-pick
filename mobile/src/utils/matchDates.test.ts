@@ -1,5 +1,6 @@
 import {
   buildDateRange,
+  buildDateWindowParams,
   filterMatchesByDate,
   startOfUtcDay,
   toUtcDateKey,
@@ -23,6 +24,15 @@ describe('matchDates', () => {
     const range = buildDateRange(start, 3);
 
     expect(range.map(toUtcDateKey)).toEqual(['2026-06-24', '2026-06-25', '2026-06-26']);
+  });
+
+  it('builds API params for the visible date window', () => {
+    const start = startOfUtcDay(new Date('2026-06-24T15:00:00Z'));
+    const params = buildDateWindowParams(start);
+
+    expect(params.kickoff_from).toBe('2026-06-24T00:00:00.000Z');
+    expect(params.kickoff_to).toBe('2026-07-01T00:00:00.000Z');
+    expect(params.limit).toBe(200);
   });
 
   it('filters and sorts matches for the selected day', () => {

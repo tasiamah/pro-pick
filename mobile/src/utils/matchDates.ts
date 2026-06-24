@@ -30,6 +30,18 @@ export function buildDateRange(start: Date, count: number): Date[] {
   return Array.from({ length: count }, (_, index) => addUtcDays(start, index));
 }
 
+export function buildDateWindowParams(start = startOfUtcDay()): {
+  kickoff_from: string;
+  kickoff_to: string;
+  limit: number;
+} {
+  return {
+    kickoff_from: start.toISOString(),
+    kickoff_to: addUtcDays(start, DATE_RANGE_DAYS).toISOString(),
+    limit: 200,
+  };
+}
+
 export function filterMatchesByDate<T extends Match>(
   matches: T[],
   selectedDate: Date,

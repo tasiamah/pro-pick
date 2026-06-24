@@ -24,6 +24,7 @@ import type { HomeStackParamList } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme';
 import {
   buildDateRange,
+  buildDateWindowParams,
   DATE_RANGE_DAYS,
   filterMatchesByDate,
   startOfUtcDay,
@@ -70,7 +71,8 @@ function StatsRow({ dashboard }: StatsRowProps) {
 export function HomeScreen({ navigation }: Props) {
   const [selectedDate, setSelectedDate] = useState(() => startOfUtcDay());
   const dashboardQuery = useDashboard();
-  const matchesQuery = useMatches({ limit: 50 });
+  const matchListParams = useMemo(() => buildDateWindowParams(), []);
+  const matchesQuery = useMatches(matchListParams);
 
   const dateRange = useMemo(() => buildDateRange(startOfUtcDay(), DATE_RANGE_DAYS), []);
 

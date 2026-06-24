@@ -59,6 +59,8 @@ def list_matches(
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    kickoff_from: datetime | None = Query(None),
+    kickoff_to: datetime | None = Query(None),
 ) -> list[MatchDetailOut]:
     """Upcoming matches with prediction and odds (PP: GET /matches)."""
     now = datetime.utcnow()
@@ -71,11 +73,19 @@ def list_matches(
             selectinload(Match.odds),
             selectinload(Match.predictions),
         )
-        .where(Match.kickoff >= now)
         .order_by(Match.kickoff)
         .limit(limit)
         .offset(offset)
     )
+
+    if kickoff_from is not None:
+        stmt = stmt.where(Match.kickoff >= kickoff_from)
+    else:
+        stmt = stmt.where(Match.kickoff >= now)
+
+    if kickoff_to is not None:
+        stmt = stmt.where(Match.kickoff < kickoff_to)
+
     matches = db.execute(stmt).scalars().all()
     return [_to_match_detail(match) for match in matches]
 

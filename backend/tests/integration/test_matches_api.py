@@ -135,3 +135,46 @@ def test_list_matches_returns_odds_in_stable_bookmaker_order(
     assert response.status_code == 200
     match_payload = next(item for item in response.json() if item["id"] == match.id)
     assert [odds["bookmaker"] for odds in match_payload["odds"]] == ["Alpha", "Zeta"]
+
+
+def test_list_matches_filters_by_kickoff_window(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    competition = Competition(name="Bundesliga", country="Germany")
+    home_team = Team(name="Bayern", logo_url=None)
+    away_team = Team(name="Dortmund", logo_url=None)
+    db_session.add_all([competition, home_team, away_team])
+    db_session.flush()
+
+    window_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    in_window_match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=window_start + timedelta(days=3),
+        status="scheduled",
+    )
+    out_of_window_match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=window_start + timedelta(days=10),
+        status="scheduled",
+    )
+    db_session.add_all([in_window_match, out_of_window_match])
+    db_session.commit()
+
+    response = client.get(
+        "/matches",
+        params={
+            "kickoff_from": window_start.isoformat(),
+            "kickoff_to": (window_start + timedelta(days=7)).isoformat(),
+            "limit": 200,
+        },
+    )
+
+    assert response.status_code == 200
+    match_ids = {item["id"] for item in response.json()}
+    assert in_window_match.id in match_ids
+    assert out_of_window_match.id not in match_ids
