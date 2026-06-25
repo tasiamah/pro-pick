@@ -65,7 +65,37 @@ Verify in Supabase → **Database → Tables**: you should see `competitions`, `
 uvicorn app.main:app --reload
 ```
 
-For production hosting (Railway, Render, etc.), set `DATABASE_URL` as an environment secret in the host dashboard — not in source code.
+Set production secrets in the host environment dashboard — not in source code.
+See [Configuration & secrets](#configuration--secrets).
+
+## Configuration & secrets
+
+API keys and database credentials are loaded from environment variables. Never commit
+them to git. Local development uses `backend/.env` (gitignored). Production uses the
+host environment (for example Render or Railway).
+
+### Secret variables
+
+| Variable | Local | Production | Notes |
+|----------|-------|------------|-------|
+| `DATABASE_URL` | Optional (defaults to SQLite) | Required | Supabase PostgreSQL URI with `+psycopg2` |
+| `FOOTBALL_API_KEY` | Optional | Required | Football / odds provider API key |
+
+Copy the template and fill in values locally:
+
+```bash
+cp .env.example .env
+```
+
+Other settings (`APP_NAME`, `ENVIRONMENT`, `CORS_ORIGINS`, value-bet thresholds) are
+documented in `.env.example`. Only `DATABASE_URL` and `FOOTBALL_API_KEY` are treated
+as secrets.
+
+When `ENVIRONMENT=production`, the API validates on startup and refuses to boot if
+`DATABASE_URL` uses SQLite or `FOOTBALL_API_KEY` is missing.
+
+If a password or API key was exposed, rotate it in Supabase or your provider dashboard,
+then update `.env` or the host environment.
 
 ## PostgreSQL + Alembic (Docker Compose)
 

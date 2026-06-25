@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Production secret validation for `DATABASE_URL` and `FOOTBALL_API_KEY` on API
+  startup; configuration and secrets guide in `backend/README.md` (PP-45).
 - Monorepo structure (`backend/` + `mobile/`).
 - FastAPI skeleton with health, dashboard, matches, predictions, value-bets
   and analytics endpoints.

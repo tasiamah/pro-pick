@@ -26,10 +26,34 @@ class Settings(BaseSettings):
     cors_origins: str = "*"
 
     @property
+    def is_production(self) -> bool:
+        return self.environment.strip().lower() in {"production", "prod"}
+
+    @property
     def cors_origin_list(self) -> list[str]:
         if self.cors_origins.strip() == "*":
             return ["*"]
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        return [
+            origin.strip() for origin in self.cors_origins.split(",") if origin.strip()
+        ]
+
+    def validate_for_runtime(self) -> None:
+        if not self.is_production:
+            return
+
+        errors: list[str] = []
+
+        if self.database_url.startswith("sqlite"):
+            errors.append(
+                "DATABASE_URL must use PostgreSQL in production (not SQLite)."
+            )
+
+        if not self.football_api_key.strip():
+            errors.append("FOOTBALL_API_KEY is required in production.")
+
+        if errors:
+            detail = "\n".join(f"- {message}" for message in errors)
+            raise ValueError(f"Invalid production configuration:\n{detail}")
 
 
 @lru_cache
