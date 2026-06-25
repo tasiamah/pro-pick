@@ -12,6 +12,7 @@ from app.core.config import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Database schema is managed via Alembic migrations (see backend/README.md).
+    settings.validate_for_runtime()
     yield
 
 
