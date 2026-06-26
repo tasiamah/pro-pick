@@ -49,3 +49,16 @@ def test_backtest_model_produces_out_of_sample_metrics() -> None:
     assert 0.0 <= metrics.accuracy <= 1.0
     assert metrics.log_loss > 0.0
     assert 0.0 <= metrics.brier <= 2.0
+
+
+@pytest.mark.parametrize(("min_train_size", "step"), [(0, None), (None, 0), (None, -1)])
+def test_backtest_model_rejects_non_positive_schedule(
+    min_train_size: int | None, step: int | None
+) -> None:
+    with pytest.raises(ValueError):
+        backtest_model(
+            _separable_dataset(),
+            train_fn=train_baseline_model,
+            min_train_size=min_train_size,
+            step=step,
+        )

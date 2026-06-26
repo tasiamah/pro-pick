@@ -50,6 +50,10 @@ def walk_forward_windows(
 def _resolve_schedule(
     sample_size: int, min_train_size: int | None, step: int | None
 ) -> tuple[int, int]:
+    if min_train_size is not None and min_train_size < 1:
+        raise ValueError("min_train_size must be a positive integer")
+    if step is not None and step < 1:
+        raise ValueError("step must be a positive integer")
     resolved_min = min_train_size or max(2, sample_size // 2)
     resolved_step = step or max(1, (sample_size - resolved_min) // 4)
     return resolved_min, resolved_step
