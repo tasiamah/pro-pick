@@ -99,6 +99,13 @@ API URL in the Jira ticket comment when signing off.
 - The in-app disclaimer banner includes a **Privacy Policy** link that opens
   the same URL.
 
+## App icons, splash, and store assets (PP-91)
+
+- App Store listing copy: [`docs/APP_STORE_LISTING.md`](../docs/APP_STORE_LISTING.md)
+- Screenshot capture guide: [`docs/store-assets/README.md`](../docs/store-assets/README.md)
+- Icons and splash are wired in `app.json` → `assets/` (dark splash `#0a0e14`).
+  Drop final brand PNGs into `assets/` when custom artwork is ready.
+
 ## Scripts
 
 ```bash

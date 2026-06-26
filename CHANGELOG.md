@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- App Store listing copy and screenshot capture guide for icons, splash, and
+  store submission assets (PP-91).
 - Privacy policy and App Store Connect App Privacy guide, plus an in-app Privacy
   Policy link on the disclaimer banner (PP-96).
 - Physical device E2E test checklist for iPhone sign-off before TestFlight, plus
