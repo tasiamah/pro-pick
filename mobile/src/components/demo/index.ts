@@ -1,4 +1,5 @@
 export { AiPickLabel } from './AiPickLabel';
+export { AiPredictionsHero } from './AiPredictionsHero';
 export { AlertBanner } from './AlertBanner';
 export { ConfidenceBadge } from './ConfidenceBadge';
 export { ConfidenceRing } from './ConfidenceRing';
@@ -7,6 +8,7 @@ export { DemoComponentsScreen } from './DemoComponentsScreen';
 export { EdgeBar } from './EdgeBar';
 export { FilterChipRow } from './FilterChipRow';
 export { FormIndicator } from './FormIndicator';
+export { HeroStat } from './HeroStat';
 export { InsightBullet } from './InsightBullet';
 export { OddsMarketCard } from './OddsMarketCard';
 export { OddsTierBadge } from './OddsTierBadge';
