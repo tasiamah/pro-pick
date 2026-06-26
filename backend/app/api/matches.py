@@ -110,11 +110,11 @@ def list_matches(
     )
 
     if status is not None:
-        stmt = stmt.where(Match.status.in_(STATUS_FILTER_MAP[status]))
+        stmt = stmt.where(Match.status.in_(tuple(STATUS_FILTER_MAP[status])))
 
     matches = db.execute(stmt).scalars().all()
 
-    enriched: list[MatchDetailOut] = []
+    filtered: list[Match] = []
     for match in matches:
         if not matches_search_filter(match, q):
             continue
@@ -126,9 +126,10 @@ def list_matches(
         ):
             continue
 
-        enriched.append(_to_match_detail(db, match))
+        filtered.append(match)
 
-    return enriched[offset : offset + limit]
+    page = filtered[offset : offset + limit]
+    return [_to_match_detail(db, match) for match in page]
 
 
 @router.get("/{match_id}", response_model=MatchDetailOut)

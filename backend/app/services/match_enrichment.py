@@ -63,12 +63,14 @@ def derive_odds_movement(
 
 
 def recommended_outcome(prediction: Prediction) -> RecommendedOutcome:
-    probabilities = {
-        "home": prediction.prob_home,
-        "draw": prediction.prob_draw,
-        "away": prediction.prob_away,
-    }
-    return max(probabilities, key=probabilities.get)
+    if (
+        prediction.prob_home >= prediction.prob_draw
+        and prediction.prob_home >= prediction.prob_away
+    ):
+        return "home"
+    if prediction.prob_draw >= prediction.prob_away:
+        return "draw"
+    return "away"
 
 
 def prediction_confidence(prediction: Prediction) -> float:
