@@ -402,10 +402,15 @@ def test_list_matches_filters_by_search_query(
     client: TestClient,
     db_session: Session,
 ) -> None:
-    competition = Competition(name="Ligue 1", country="France")
+    competition = Competition(name="Premier League", country="England")
+    other_competition = Competition(name="Bundesliga", country="Germany")
     home_team = Team(name="Paris", logo_url=None)
     away_team = Team(name="Lyon", logo_url=None)
-    db_session.add_all([competition, home_team, away_team])
+    other_home = Team(name="Marseille", logo_url=None)
+    other_away = Team(name="Nice", logo_url=None)
+    db_session.add_all(
+        [competition, other_competition, home_team, away_team, other_home, other_away]
+    )
     db_session.flush()
 
     target_match = Match(
@@ -416,9 +421,9 @@ def test_list_matches_filters_by_search_query(
         status="scheduled",
     )
     other_match = Match(
-        competition_id=competition.id,
-        home_team_id=away_team.id,
-        away_team_id=home_team.id,
+        competition_id=other_competition.id,
+        home_team_id=other_home.id,
+        away_team_id=other_away.id,
         kickoff=datetime.utcnow() + timedelta(days=2),
         status="scheduled",
     )
