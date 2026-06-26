@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Pro Pick",
-    "slug": "pro-pick",
+    "name": "ProPick",
+    "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,8 @@
       "backgroundColor": "#0a0e14"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.propick.app"
     },
     "android": {
       "adaptiveIcon": {

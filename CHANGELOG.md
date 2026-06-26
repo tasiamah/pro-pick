@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   recommended outcome, insights, odds movement fields, and list filters for
   `status`, `odds_tier`, and `q` on `GET /matches` and `GET /matches/{id}`
   (PP-107).
+- TestFlight release readiness for the mobile app: a stable iOS identity in
+  `app.json` (display name "ProPick", `bundleIdentifier` `com.propick.app`) and
+  a documented EAS build, submit, and beta-test/feedback runbook
+  (`mobile/README.md`, PP-94).
 - Value-bet settlement for ROI tracking: once a match finishes, open value bets
   are scored against the result and their realized profit (fractional-Kelly
   stake) is recorded, so `/analytics` reports ROI and its trend over time
