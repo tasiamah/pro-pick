@@ -12,6 +12,7 @@ from app.services.analytics import (
     SettledBetSnapshot,
     build_roi_trend,
     compute_accuracy,
+    compute_log_loss,
     compute_roi,
 )
 
@@ -75,7 +76,7 @@ def get_analytics(db: Session = Depends(get_db)) -> AnalyticsOut:
 
     return AnalyticsOut(
         accuracy=compute_accuracy(prediction_snapshots),
-        log_loss=None,
+        log_loss=compute_log_loss(prediction_snapshots),
         roi=compute_roi(settled_snapshots),
         total_value_bets=len(value_bets),
         settled_value_bets=len(settled_snapshots),

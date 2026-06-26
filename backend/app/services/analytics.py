@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime
+
+LOG_LOSS_EPSILON = 1e-15
 
 
 @dataclass(frozen=True)
@@ -59,6 +62,22 @@ def compute_accuracy(predictions: list[PredictionSnapshot]) -> float | None:
     return correct / len(predictions)
 
 
+def compute_log_loss(predictions: list[PredictionSnapshot]) -> float | None:
+    if not predictions:
+        return None
+
+    total = 0.0
+    for prediction in predictions:
+        probabilities = {
+            "home": prediction.prob_home,
+            "draw": prediction.prob_draw,
+            "away": prediction.prob_away,
+        }
+        outcome = _actual_outcome(prediction.home_goals, prediction.away_goals)
+        total += -math.log(_actual_probability(probabilities, outcome))
+    return total / len(predictions)
+
+
 def build_roi_trend(settled_bets: list[SettledBetSnapshot]) -> list[RoiTrendPoint]:
     if not settled_bets:
         return []
@@ -91,6 +110,12 @@ def _actual_outcome(home_goals: int, away_goals: int) -> str:
     if home_goals < away_goals:
         return "away"
     return "draw"
+
+
+def _actual_probability(probabilities: dict[str, float], outcome: str) -> float:
+    total = sum(max(value, 0.0) for value in probabilities.values())
+    probability = max(probabilities[outcome], 0.0) / total if total > 0 else 0.0
+    return min(max(probability, LOG_LOSS_EPSILON), 1.0)
 
 
 def _predicted_outcome(prob_home: float, prob_draw: float, prob_away: float) -> str:
