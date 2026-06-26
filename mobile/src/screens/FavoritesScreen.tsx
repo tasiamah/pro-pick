@@ -10,7 +10,7 @@ import {
   ErrorState,
   FavoriteToggle,
   LoadingState,
-  MatchCard,
+  MatchCardV2,
 } from '../components';
 import type { FavoritesStackParamList } from '../navigation/types';
 import { filterMatchesByFavorites, useFavoritesStore } from '../store';
@@ -133,12 +133,12 @@ export function FavoritesScreen({ navigation }: Props) {
       >
         <View style={styles.cardList}>
           {filteredMatches.map((match) => (
-            <MatchCard
+            <MatchCardV2
               key={match.id}
               match={match}
-              prediction={match.prediction}
               odds={match.odds}
-              onPress={() =>
+              prediction={match.prediction}
+              onDetailsPress={() =>
                 navigation.navigate('MatchDetail', { matchId: String(match.id) })
               }
             />
