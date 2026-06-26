@@ -68,6 +68,11 @@ def test_evaluate_outcome_rejects_non_value():
     assert result.is_value is False
 
 
+def test_evaluate_outcome_without_probs_uses_model_prob_as_confidence():
+    result = evaluate_outcome("home", 0.55, 2.10)
+    assert result.confidence == 0.55
+
+
 def test_value_status_gates_on_edge_not_expected_value():
     # P=0.55, odd=1.95: EV=+0.0725 clears 5% but edge=+0.0372 does not.
     result = evaluate_outcome("home", 0.55, 1.95, edge_threshold=0.05)

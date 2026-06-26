@@ -53,7 +53,8 @@ def confidence_score(probs: Mapping[str, float], outcome: str) -> float:
 
     The margin between the chosen outcome's probability and the next most likely
     outcome, clamped to [0, 1]. A wider margin means the model is more certain
-    about this pick; an outcome the model does not favor scores near zero.
+    about this pick; an outcome the model does not favor scores near zero. When
+    no rival outcomes are supplied, the margin is the chosen probability itself.
     """
     chosen = probs.get(outcome, 0.0)
     rivals = [prob for key, prob in probs.items() if key != outcome]
@@ -78,7 +79,8 @@ def evaluate_outcome(
     ev = expected_value(model_prob, odd)
     edge = model_prob - implied_probability(odd)
     stake = round(recommended_stake(model_prob, odd, k_mult), 4)
-    confidence = confidence_score(probs, outcome) if probs is not None else model_prob
+    distribution = probs if probs is not None else {outcome: model_prob}
+    confidence = confidence_score(distribution, outcome)
 
     return ValueBetResult(
         outcome=outcome,
