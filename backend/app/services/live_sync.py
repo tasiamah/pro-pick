@@ -11,7 +11,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
-from app.models import Match
+from app.models import Match, ValueBet
+from app.services.analytics import actual_outcome
 from app.services.data_ingestion import FootballApiClient, FootballApiError
 from app.services.historical_import import (
     UPCOMING_MATCH_STATUSES,
@@ -20,7 +21,7 @@ from app.services.historical_import import (
 )
 from app.services.ingestion_alerts import IngestionPipelineError
 from app.services.prediction import generate_prediction
-from app.services.value_bets import generate_value_bets
+from app.services.value_bets import generate_value_bets, settlement_profit
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ class LiveSyncSummary:
     import_summary: ImportSummary | None = None
     predictions: int = 0
     value_bets: int = 0
+    settled_value_bets: int = 0
 
     def merge_import(self, summary: ImportSummary) -> None:
         self.import_summary = summary
@@ -156,6 +158,35 @@ def sync_value_bets_for_upcoming(
     return created
 
 
+def settle_value_bets(db: Session) -> int:
+    """Settle open value bets on finished matches, recording realized profit.
+
+    Compares each unsettled bet to the final result, computes profit with the
+    stake actually used for ROI (fractional Kelly, falling back to one unit), and
+    marks it settled so analytics can track ROI over time.
+    """
+    open_bets = db.execute(
+        select(ValueBet, Match)
+        .join(Match, ValueBet.match_id == Match.id)
+        .where(
+            ValueBet.settled.is_(False),
+            Match.home_goals.is_not(None),
+            Match.away_goals.is_not(None),
+        )
+    ).all()
+
+    for value_bet, match in open_bets:
+        stake = value_bet.recommended_stake if value_bet.recommended_stake > 0 else 1.0
+        won = value_bet.outcome == actual_outcome(match.home_goals, match.away_goals)
+        value_bet.profit = round(settlement_profit(won, value_bet.odd, stake), 4)
+        value_bet.settled = True
+
+    if open_bets:
+        db.commit()
+
+    return len(open_bets)
+
+
 def run_live_sync(
     db: Session,
     *,
@@ -203,15 +234,17 @@ def run_live_sync(
 
     summary.predictions = sync_predictions_for_upcoming(db, now=resolved_now)
     summary.value_bets = sync_value_bets_for_upcoming(db, now=resolved_now)
+    summary.settled_value_bets = settle_value_bets(db)
 
     logger.info(
         "Live sync complete: %s fixtures, %s new matches, %s odds rows, "
-        "%s predictions, %s value bets",
+        "%s predictions, %s value bets, %s settled bets",
         summary.fixtures_fetched,
         import_summary.matches,
         import_summary.odds,
         summary.predictions,
         summary.value_bets,
+        summary.settled_value_bets,
     )
 
     return summary

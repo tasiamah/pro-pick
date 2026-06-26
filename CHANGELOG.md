@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Value-bet settlement for ROI tracking: once a match finishes, open value bets
+  are scored against the result and their realized profit (fractional-Kelly
+  stake) is recorded, so `/analytics` reports ROI and its trend over time
+  (PP-64).
 - Value-bet confidence score derived from model certainty: the margin between
   the chosen outcome's probability and the next most likely outcome, surfaced
   per value bet (PP-62).

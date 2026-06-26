@@ -8,6 +8,7 @@ from app.services.value_bets import (
     full_kelly_fraction,
     implied_probability,
     recommended_stake,
+    settlement_profit,
 )
 
 pytestmark = pytest.mark.unit
@@ -49,6 +50,14 @@ def test_recommended_stake_scales_with_multiplier():
 def test_recommended_stake_clamps_out_of_range_multiplier():
     assert recommended_stake(0.55, 2.10, -1.0) == 0.0
     assert recommended_stake(0.99, 2.10, 100.0) == 1.0
+
+
+def test_settlement_profit_pays_out_net_winnings_on_a_win():
+    assert settlement_profit(True, 2.10, 10.0) == pytest.approx(11.0)
+
+
+def test_settlement_profit_loses_the_stake_on_a_loss():
+    assert settlement_profit(False, 2.10, 10.0) == pytest.approx(-10.0)
 
 
 def test_edge_is_model_prob_minus_implied_probability():

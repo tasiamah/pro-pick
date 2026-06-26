@@ -52,6 +52,11 @@ def recommended_stake(prob: float, odd: float, kelly_multiplier: float) -> float
     return max(0.0, min(1.0, stake))
 
 
+def settlement_profit(won: bool, odd: float, stake: float) -> float:
+    """Realized profit for a settled bet: stake * (odd - 1) on a win, else -stake."""
+    return stake * (odd - 1.0) if won else -stake
+
+
 def confidence_score(probs: Mapping[str, float], outcome: str) -> float:
     """Reliability indicator based on model certainty.
 
