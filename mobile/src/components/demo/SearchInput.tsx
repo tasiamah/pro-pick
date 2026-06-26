@@ -18,7 +18,7 @@ export function SearchInput({
     <View style={styles.container}>
       <Ionicons name="search-outline" size={18} color={colors.textMuted} />
       <TextInput
-        accessibilityLabel="Search teams or leagues"
+        accessibilityLabel={placeholder}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={colors.textMuted}

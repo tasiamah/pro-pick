@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, spacing, typography } from '../../theme';
 import { formatPercent } from '../formatters';
+import { clampUnitInterval } from './demoUtils';
 
 type ProbabilityBarChartProps = {
   home: number;
@@ -18,7 +19,8 @@ type BarProps = {
 };
 
 function ProbabilityBar({ color, label, value }: BarProps) {
-  const height = Math.max(value * BAR_HEIGHT, spacing.xs);
+  const clamped = clampUnitInterval(value);
+  const height = clamped > 0 ? Math.max(clamped * BAR_HEIGHT, spacing.xs) : 0;
 
   return (
     <View style={styles.barColumn}>
@@ -26,7 +28,7 @@ function ProbabilityBar({ color, label, value }: BarProps) {
         <View style={[styles.barFill, { backgroundColor: color, height }]} />
       </View>
       <Text style={styles.barLabel}>{label}</Text>
-      <Text style={styles.barValue}>{formatPercent(value)}</Text>
+      <Text style={styles.barValue}>{formatPercent(clamped)}</Text>
     </View>
   );
 }

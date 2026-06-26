@@ -18,6 +18,7 @@ export { ValueStatusBadge } from './ValueStatusBadge';
 export {
   classifyOddsTier,
   clampPercentage,
+  clampUnitInterval,
   formatOddsTierLabel,
   formatValueStatusLabel,
   type FormResult,

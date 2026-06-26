@@ -1,6 +1,7 @@
 import {
   classifyOddsTier,
   clampPercentage,
+  clampUnitInterval,
   formatOddsTierLabel,
   formatValueStatusLabel,
 } from './demoUtils';
@@ -28,6 +29,13 @@ describe('demoUtils', () => {
   it('labels value statuses for badges', () => {
     expect(formatValueStatusLabel('value')).toBe('Value Bet Detected');
     expect(formatValueStatusLabel('overpriced')).toBe('Overpriced');
+  });
+
+  it('clamps unit interval values to 0 through 1', () => {
+    expect(clampUnitInterval(-0.2)).toBe(0);
+    expect(clampUnitInterval(1.5)).toBe(1);
+    expect(clampUnitInterval(0.58)).toBe(0.58);
+    expect(clampUnitInterval(Number.NaN)).toBe(0);
   });
 
   it('clamps percentage values to 0 through 100', () => {
