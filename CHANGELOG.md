@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Free-tier live sync for Premier League and La Liga using date-based fixture
   imports, stub predictions, value bets, scheduler, and
   `python -m app.scripts.sync_live_fixtures` (PP-51).
+- Baseline 1X2 model: a multinomial logistic-regression pipeline trained on the
+  historical feature dataset that outputs home/draw/away probabilities
+  (`app/ml/baseline.py`, PP-54).
 - Reproducible, point-in-time feature engineering for the 1X2 model: recent
   form, home/away form, goals for/against, head-to-head, league standing, and
   rest days, plus a training-dataset builder over finished matches
