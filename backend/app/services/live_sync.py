@@ -7,11 +7,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import httpx
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
-from app.models import Match, Odds, ValueBet
+from app.models import Match
 from app.services.data_ingestion import FootballApiClient, FootballApiError
 from app.services.historical_import import (
     UPCOMING_MATCH_STATUSES,
@@ -20,7 +20,7 @@ from app.services.historical_import import (
 )
 from app.services.ingestion_alerts import IngestionPipelineError
 from app.services.prediction import generate_prediction
-from app.services.value_bets import evaluate_match
+from app.services.value_bets import generate_value_bets
 
 logger = logging.getLogger(__name__)
 
@@ -147,56 +147,13 @@ def sync_value_bets_for_upcoming(
         if not match.predictions or not match.odds:
             continue
 
-        latest_prediction = max(match.predictions, key=lambda item: item.created_at)
-        primary_odds = _primary_odds(match.odds)
-        if primary_odds is None:
-            continue
-
-        probabilities = {
-            "home": latest_prediction.prob_home,
-            "draw": latest_prediction.prob_draw,
-            "away": latest_prediction.prob_away,
-        }
-        odds_values = {
-            "home": primary_odds.home,
-            "draw": primary_odds.draw,
-            "away": primary_odds.away,
-        }
-        value_results = evaluate_match(probabilities, odds_values)
-
-        db.execute(
-            delete(ValueBet).where(
-                ValueBet.match_id == match.id,
-                ValueBet.settled.is_(False),
-            )
-        )
+        created += len(generate_value_bets(db, match))
         dirty = True
-
-        for result in value_results:
-            db.add(
-                ValueBet(
-                    match_id=match.id,
-                    outcome=result.outcome,
-                    model_prob=result.model_prob,
-                    odd=result.odd,
-                    expected_value=result.expected_value,
-                    edge=result.edge,
-                    recommended_stake=result.recommended_stake,
-                    confidence=result.confidence,
-                )
-            )
-            created += 1
 
     if dirty:
         db.commit()
 
     return created
-
-
-def _primary_odds(odds_rows: list[Odds]) -> Odds | None:
-    if not odds_rows:
-        return None
-    return sorted(odds_rows, key=lambda item: (item.bookmaker.lower(), item.id))[0]
 
 
 def run_live_sync(

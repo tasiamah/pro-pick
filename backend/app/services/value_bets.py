@@ -3,7 +3,11 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from sqlalchemy import delete
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
+from app.models import Match, Odds, ValueBet
 
 
 @dataclass
@@ -107,3 +111,57 @@ def evaluate_match(
             if result.is_value:
                 results.append(result)
     return results
+
+
+def primary_odds(odds_rows: list[Odds]) -> Odds | None:
+    """Deterministically pick one odds row per match (by bookmaker, then id)."""
+    if not odds_rows:
+        return None
+    return sorted(odds_rows, key=lambda item: (item.bookmaker.lower(), item.id))[0]
+
+
+def generate_value_bets(db: Session, match: Match) -> list[ValueBet]:
+    """Persist value bets (EV, edge, stake, confidence) for a match.
+
+    Uses the latest prediction and the primary odds, replacing any unsettled
+    bets for the match. Requires ``match.predictions`` and ``match.odds`` to be
+    loaded; returns the persisted rows.
+    """
+    if not match.predictions or not match.odds:
+        return []
+
+    odds = primary_odds(match.odds)
+    if odds is None:
+        return []
+
+    prediction = max(match.predictions, key=lambda item: item.created_at)
+    probabilities = {
+        "home": prediction.prob_home,
+        "draw": prediction.prob_draw,
+        "away": prediction.prob_away,
+    }
+    odds_values = {"home": odds.home, "draw": odds.draw, "away": odds.away}
+
+    db.execute(
+        delete(ValueBet).where(
+            ValueBet.match_id == match.id,
+            ValueBet.settled.is_(False),
+        )
+    )
+
+    created = [
+        ValueBet(
+            match_id=match.id,
+            outcome=result.outcome,
+            model_prob=result.model_prob,
+            odd=result.odd,
+            expected_value=result.expected_value,
+            edge=result.edge,
+            recommended_stake=result.recommended_stake,
+            confidence=result.confidence,
+        )
+        for result in evaluate_match(probabilities, odds_values)
+    ]
+    db.add_all(created)
+    db.flush()
+    return created
