@@ -80,6 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   match-scoped value bet lists (PP-81).
 - `GET /predictions` now includes `match_id` per prediction and accepts an
   optional `match_id` filter for match-scoped prediction lists (PP-69).
+- `/health` and `/` now return typed Pydantic responses (`HealthOut`,
+  `ServiceInfoOut`) so every endpoint is fully described in the auto-generated
+  OpenAPI schema (PP-66).
 - `GET /analytics` now computes accuracy, ROI, and cumulative daily ROI trend
   from settled value bets and finished matches (PP-83).
 - Mobile screens and navigation now consume shared theme tokens instead of
