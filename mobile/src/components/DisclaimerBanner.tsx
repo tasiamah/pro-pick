@@ -1,51 +1,45 @@
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DISCLAIMER_TEXT } from '../constants/disclaimer';
-import { PRIVACY_POLICY_URL } from '../constants/legal';
-import { colors, spacing, typography } from '../theme';
+import { DISCLAIMER_SHORT } from '../constants/disclaimer';
+import { openAbout } from '../navigation/navigationRef';
+import { colors, spacing } from '../theme';
 
 export function DisclaimerBanner() {
   const insets = useSafeAreaInsets();
 
-  const openPrivacyPolicy = () => {
-    void Linking.openURL(PRIVACY_POLICY_URL);
-  };
-
   return (
-    <View style={[styles.banner, { paddingTop: insets.top + spacing.xs }]}>
-      <Text accessibilityRole="text" style={styles.text}>
-        {DISCLAIMER_TEXT}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityHint="Opens about and legal information"
+      onPress={openAbout}
+      style={({ pressed }) => [
+        styles.banner,
+        { paddingTop: insets.top + spacing.xs },
+        pressed && styles.pressed,
+      ]}
+    >
+      <Text numberOfLines={1} style={styles.text}>
+        {DISCLAIMER_SHORT}
       </Text>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel="Privacy Policy"
-        onPress={openPrivacyPolicy}
-      >
-        <Text style={styles.link}>Privacy Policy</Text>
-      </Pressable>
-    </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: colors.card,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    gap: spacing.xs,
-    paddingBottom: spacing.sm,
+    backgroundColor: colors.background,
+    paddingBottom: spacing.xs,
     paddingHorizontal: spacing.lg,
   },
-  text: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textAlign: 'center',
+  pressed: {
+    opacity: 0.6,
   },
-  link: {
-    ...typography.caption,
-    color: colors.primary,
+  text: {
+    color: colors.textMuted,
+    fontSize: 10,
+    letterSpacing: 0.3,
+    lineHeight: 13,
     textAlign: 'center',
-    textDecorationLine: 'underline',
   },
 });

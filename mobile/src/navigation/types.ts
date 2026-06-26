@@ -22,5 +22,9 @@ export type RootTabParamList = {
   MatchesTab: undefined;
   FavoritesTab: undefined;
   AnalyticsTab: undefined;
-  AboutTab: undefined;
+};
+
+export type RootStackParamList = {
+  Tabs: undefined;
+  About: undefined;
 };
