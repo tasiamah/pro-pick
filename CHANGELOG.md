@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- API-Football client for fixtures and odds with retries, rate limiting, and
+  mocked unit tests in `data_ingestion.py` (PP-48).
+- Data provider decision document comparing API-Football, Sportmonks, and Opta
+  with cost plan for MVP (`docs/DATA_PROVIDER.md`, PP-34).
 - Production secret validation for `DATABASE_URL` and `FOOTBALL_API_KEY` on API
   startup; configuration and secrets guide in `backend/README.md` (PP-45).
 - Monorepo structure (`backend/` + `mobile/`).

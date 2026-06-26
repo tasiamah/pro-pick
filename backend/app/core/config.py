@@ -19,6 +19,9 @@ class Settings(BaseSettings):
 
     football_api_base_url: str = "https://v3.football.api-sports.io"
     football_api_key: str = ""
+    football_api_timeout_seconds: float = 20.0
+    football_api_max_retries: int = 3
+    football_api_min_request_interval_seconds: float = 0.6
 
     value_bet_edge_threshold: float = 0.05
     kelly_fraction: float = 0.25
