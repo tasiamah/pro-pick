@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   are scored against the result and their realized profit (fractional-Kelly
   stake) is recorded, so `/analytics` reports ROI and its trend over time
   (PP-64).
+- Value bets recomputed after each scheduled retraining run: once the
+  `retrain_model` job refreshes upcoming predictions it now recomputes their
+  value bets, keeping them in sync with the active model
+  (`app/scheduler/jobs.py`, PP-65).
 - Value-bet confidence score derived from model certainty: the margin between
   the chosen outcome's probability and the next most likely outcome, surfaced
   per value bet (PP-62).

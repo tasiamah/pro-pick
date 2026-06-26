@@ -133,17 +133,19 @@ def test_daily_update_alerts_when_live_sync_fails(
     mock_db.close.assert_called_once()
 
 
+@patch("app.scheduler.jobs.sync_value_bets_for_upcoming")
 @patch("app.scheduler.jobs.reset_model_cache")
 @patch("app.scheduler.jobs.refresh_predictions_for_upcoming")
 @patch("app.scheduler.jobs.train_model")
 @patch("app.scheduler.jobs.settings")
 @patch("app.scheduler.jobs.SessionLocal")
-def test_retrain_model_trains_and_refreshes_predictions(
+def test_retrain_model_trains_refreshes_predictions_and_value_bets(
     mock_session_local: MagicMock,
     mock_settings: MagicMock,
     mock_train_model: MagicMock,
     mock_refresh: MagicMock,
     mock_reset_cache: MagicMock,
+    mock_sync_value_bets: MagicMock,
 ) -> None:
     mock_settings.database_url = "sqlite:///./test.db"
     mock_settings.model_algorithm = "logistic"
@@ -156,6 +158,7 @@ def test_retrain_model_trains_and_refreshes_predictions(
     mock_train_model.assert_called_once()
     mock_reset_cache.assert_called_once_with()
     mock_refresh.assert_called_once_with(mock_db)
+    mock_sync_value_bets.assert_called_once_with(mock_db)
     mock_db.close.assert_called_once()
 
 
