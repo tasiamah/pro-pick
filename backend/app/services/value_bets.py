@@ -27,14 +27,19 @@ def implied_probability(odd: float) -> float:
     return 1.0 / odd if odd > 0 else 0.0
 
 
-def kelly_fraction(prob: float, odd: float) -> float:
-    """Full Kelly fraction; bounded to [0, 1]."""
+def full_kelly_fraction(prob: float, odd: float) -> float:
+    """Full Kelly stake fraction for a decimal odd; bounded to [0, 1]."""
     b = odd - 1.0
     if b <= 0:
         return 0.0
     q = 1.0 - prob
     f = (b * prob - q) / b
     return max(0.0, min(1.0, f))
+
+
+def recommended_stake(prob: float, odd: float, kelly_multiplier: float) -> float:
+    """Fractional-Kelly stake: full Kelly scaled by the configured fraction."""
+    return full_kelly_fraction(prob, odd) * kelly_multiplier
 
 
 def evaluate_outcome(
@@ -52,7 +57,7 @@ def evaluate_outcome(
 
     ev = expected_value(model_prob, odd)
     edge = model_prob - implied_probability(odd)
-    stake = round(kelly_fraction(model_prob, odd) * k_mult, 4)
+    stake = round(recommended_stake(model_prob, odd, k_mult), 4)
 
     return ValueBetResult(
         outcome=outcome,
@@ -62,7 +67,7 @@ def evaluate_outcome(
         edge=round(edge, 4),
         recommended_stake=stake,
         confidence=round(model_prob, 4),
-        is_value=ev >= threshold,
+        is_value=edge >= threshold,
     )
 
 
