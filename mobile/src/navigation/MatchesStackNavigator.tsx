@@ -2,7 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { MatchesScreen } from '../screens/MatchesScreen';
-import { screenTitles } from './screenTitles';
+import { screenSubtitles, screenTitles } from './screenTitles';
 import { StackHeaderTitle } from './StackHeaderTitle';
 import { stackScreenOptions } from './stackScreenOptions';
 import type { MatchesStackParamList } from './types';
@@ -17,7 +17,10 @@ export function MatchesStackNavigator() {
         component={MatchesScreen}
         options={{
           headerTitle: () => (
-            <StackHeaderTitle title={screenTitles.matches} reserveSubtitle />
+            <StackHeaderTitle
+              subtitle={screenSubtitles.matches}
+              title={screenTitles.matches}
+            />
           ),
         }}
       />
