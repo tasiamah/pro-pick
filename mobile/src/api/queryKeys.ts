@@ -16,7 +16,7 @@ export const queryKeys = {
     ] as const,
   match: (matchId: number) => ['matches', matchId] as const,
   predictions: (params: PredictionListParams = {}) =>
-    ['predictions', params.limit ?? null] as const,
+    ['predictions', params.limit ?? null, params.match_id ?? null] as const,
   valueBets: (params: ValueBetListParams = {}) =>
     ['value-bets', params.limit ?? null, params.match_id ?? null] as const,
   analytics: ['analytics'] as const,

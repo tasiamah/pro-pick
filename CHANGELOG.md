@@ -78,6 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   for list screens (PP-80).
 - `GET /value-bets` accepts optional `match_id` query parameter for
   match-scoped value bet lists (PP-81).
+- `GET /predictions` now includes `match_id` per prediction and accepts an
+  optional `match_id` filter for match-scoped prediction lists (PP-69).
 - `GET /analytics` now computes accuracy, ROI, and cumulative daily ROI trend
   from settled value bets and finished matches (PP-83).
 - Mobile screens and navigation now consume shared theme tokens instead of
