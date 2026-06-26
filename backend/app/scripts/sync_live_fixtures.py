@@ -6,6 +6,10 @@ import argparse
 import sys
 
 from app.core.database import SessionLocal
+from app.services.ingestion_alerts import (
+    IngestionPipelineError,
+    alert_ingestion_failure,
+)
 from app.services.live_sync import run_live_sync
 
 
@@ -32,6 +36,22 @@ def main(argv: list[str] | None = None) -> int:
             f"{summary.predictions} predictions, "
             f"{summary.value_bets} value bets."
         )
+    except IngestionPipelineError as exc:
+        alert_ingestion_failure(
+            source="cli.sync_live_fixtures",
+            message=str(exc),
+            exc_info=exc,
+        )
+        print(f"Live sync failed: {exc}", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        alert_ingestion_failure(
+            source="cli.sync_live_fixtures",
+            message="Live sync failed",
+            exc_info=exc,
+        )
+        print(f"Live sync failed: {exc}", file=sys.stderr)
+        return 1
     finally:
         db.close()
 

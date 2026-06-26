@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Ingestion failure alerting for the live sync pipeline via structured
+  `pro_pick.ingestion` error logs in the scheduler and
+  `sync_live_fixtures` CLI (PP-52).
 - Demo parity theme tokens for elevated surfaces, glow accents, chart palette,
   alert colors, and typography variants (`hero`, `statValue`, `badge`,
   `sectionSubtitle`) in `mobile/src/theme/` (PP-99).

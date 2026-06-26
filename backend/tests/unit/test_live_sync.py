@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.database import Base
 from app.models import Match, Odds, Prediction, Team, ValueBet
 from app.services.data_ingestion import FootballApiClient
+from app.services.ingestion_alerts import IngestionPipelineError
 from app.services.live_sync import (
     fetch_fixtures_for_window,
     run_live_sync,
@@ -97,7 +98,7 @@ def test_fetch_fixtures_for_window_filters_leagues_and_dates() -> None:
     )
     now = datetime(2026, 6, 26, 12, 0, tzinfo=UTC)
 
-    fixtures = fetch_fixtures_for_window(
+    result = fetch_fixtures_for_window(
         client,
         league_ids=(39, 140),
         date_offsets=(0, 1),
@@ -105,8 +106,30 @@ def test_fetch_fixtures_for_window_filters_leagues_and_dates() -> None:
     )
 
     assert calls == ["2026-06-26", "2026-06-27"]
-    assert len(fixtures) == 2
-    assert {item["fixture"]["id"] for item in fixtures} == {1, 3}
+    assert len(result.fixtures) == 2
+    assert {item["fixture"]["id"] for item in result.fixtures} == {1, 3}
+    assert result.dates_attempted == 2
+    assert result.dates_failed == 0
+
+
+def test_run_live_sync_raises_when_all_fixture_dates_fail(
+    db_session: Session,
+) -> None:
+    class FailingClient:
+        def get_fixtures_by_date(self, _match_date: date) -> list[dict]:
+            raise httpx.TransportError("network down")
+
+    with pytest.raises(
+        IngestionPipelineError,
+        match="All 1 fixture date fetches failed",
+    ):
+        run_live_sync(
+            db_session,
+            league_ids=(39,),
+            date_offsets=(0,),
+            client=FailingClient(),
+            now=datetime(2026, 6, 26, 12, 0, tzinfo=UTC),
+        )
 
 
 def test_run_live_sync_persists_upcoming_match_prediction_and_value_bet(
