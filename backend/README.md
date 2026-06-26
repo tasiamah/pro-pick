@@ -97,6 +97,15 @@ When `ENVIRONMENT=production`, the API validates on startup and refuses to boot 
 If a password or API key was exposed, rotate it in Supabase or your provider dashboard,
 then update `.env` or the host environment.
 
+## Data provider
+
+Pro Pick uses **API-Football (API-Sports)** for fixtures and pre-match odds.
+See [docs/DATA_PROVIDER.md](../docs/DATA_PROVIDER.md) for the PP-34 comparison
+of API-Football, Sportmonks, and Opta, plus cost estimates.
+
+Configure `FOOTBALL_API_BASE_URL` and `FOOTBALL_API_KEY` in `.env` (see
+`.env.example`). The HTTP client lives in `app/services/data_ingestion.py`.
+
 ## PostgreSQL + Alembic (Docker Compose)
 
 ```bash
