@@ -21,10 +21,27 @@ describe('theme', () => {
     expect(spacing.xs).toBe(4);
     expect(spacing.xxl).toBe(32);
     expect(typography.title.fontSize).toBe(20);
-    expect(typography.hero.fontSize).toBe(28);
-    expect(typography.statValue.fontSize).toBe(24);
-    expect(typography.badge.fontSize).toBe(11);
-    expect(typography.sectionSubtitle.fontSize).toBe(14);
+    expect(typography.hero).toMatchObject({
+      fontSize: 28,
+      fontWeight: '700',
+      lineHeight: 34,
+    });
+    expect(typography.statValue).toMatchObject({
+      fontSize: 24,
+      fontWeight: '700',
+      lineHeight: 30,
+    });
+    expect(typography.badge).toMatchObject({
+      fontSize: 11,
+      fontWeight: '600',
+      lineHeight: 14,
+      letterSpacing: 0.6,
+    });
+    expect(typography.sectionSubtitle).toMatchObject({
+      fontSize: 14,
+      fontWeight: '400',
+      lineHeight: 20,
+    });
     expect(radii.md).toBe(12);
   });
 });
