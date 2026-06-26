@@ -8,26 +8,19 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.database import get_db
 from app.models import Match, Odds, Prediction
-from app.schemas.common import (
-    MatchDetailOut,
-    MatchOut,
-    OddsOut,
-    PredictionOut,
-    TeamOut,
+from app.schemas.common import MatchDetailOut
+from app.services.match_enrichment import (
+    STATUS_FILTER_MAP,
+    MatchStatusFilter,
+    OddsTierFilter,
+    matches_odds_tier_filter,
+    matches_search_filter,
+    to_odds_out,
+    to_prediction_out,
+    to_team_out,
 )
 
 router = APIRouter()
-
-
-def _to_match_out(match: Match) -> MatchOut:
-    return MatchOut(
-        id=match.id,
-        kickoff=match.kickoff,
-        status=match.status,
-        home_team=TeamOut.model_validate(match.home_team),
-        away_team=TeamOut.model_validate(match.away_team),
-        competition_name=match.competition.name if match.competition else None,
-    )
 
 
 def _latest_prediction(match: Match) -> Prediction | None:
@@ -40,18 +33,48 @@ def _sorted_odds(match: Match) -> list[Odds]:
     return sorted(match.odds, key=lambda odds: (odds.bookmaker.lower(), odds.id))
 
 
-def _to_match_detail(match: Match) -> MatchDetailOut:
+def _primary_odds(match: Match) -> Odds | None:
+    odds_rows = _sorted_odds(match)
+    if not odds_rows:
+        return None
+    return odds_rows[0]
+
+
+def _to_match_detail(db: Session, match: Match) -> MatchDetailOut:
     latest_prediction = _latest_prediction(match)
-    base = _to_match_out(match)
     return MatchDetailOut(
-        **base.model_dump(),
-        odds=[OddsOut.model_validate(odds) for odds in _sorted_odds(match)],
+        id=match.id,
+        kickoff=match.kickoff,
+        status=match.status,
+        home_team=to_team_out(db, match.home_team, match.kickoff),
+        away_team=to_team_out(db, match.away_team, match.kickoff),
+        competition_name=match.competition.name if match.competition else None,
+        odds=[to_odds_out(odds) for odds in _sorted_odds(match)],
         prediction=(
-            PredictionOut.model_validate(latest_prediction)
+            to_prediction_out(db, match, latest_prediction)
             if latest_prediction
             else None
         ),
     )
+
+
+def _apply_kickoff_window(
+    stmt,
+    *,
+    now: datetime,
+    kickoff_from: datetime | None,
+    kickoff_to: datetime | None,
+    status: MatchStatusFilter | None,
+):
+    if kickoff_from is not None:
+        stmt = stmt.where(Match.kickoff >= kickoff_from)
+    elif status is None or status == "upcoming":
+        stmt = stmt.where(Match.kickoff >= now)
+
+    if kickoff_to is not None:
+        stmt = stmt.where(Match.kickoff < kickoff_to)
+
+    return stmt
 
 
 @router.get("", response_model=list[MatchDetailOut])
@@ -61,8 +84,11 @@ def list_matches(
     offset: int = Query(0, ge=0),
     kickoff_from: datetime | None = Query(None),
     kickoff_to: datetime | None = Query(None),
+    status: MatchStatusFilter | None = Query(None),
+    odds_tier: OddsTierFilter | None = Query(None),
+    q: str | None = Query(None, min_length=1, max_length=100),
 ) -> list[MatchDetailOut]:
-    """Upcoming matches with prediction and odds (PP: GET /matches)."""
+    """Upcoming matches with enriched prediction, odds, and filters (PP-107)."""
     now = datetime.utcnow()
     stmt = (
         select(Match)
@@ -74,25 +100,40 @@ def list_matches(
             selectinload(Match.predictions),
         )
         .order_by(Match.kickoff)
-        .limit(limit)
-        .offset(offset)
+    )
+    stmt = _apply_kickoff_window(
+        stmt,
+        now=now,
+        kickoff_from=kickoff_from,
+        kickoff_to=kickoff_to,
+        status=status,
     )
 
-    if kickoff_from is not None:
-        stmt = stmt.where(Match.kickoff >= kickoff_from)
-    else:
-        stmt = stmt.where(Match.kickoff >= now)
-
-    if kickoff_to is not None:
-        stmt = stmt.where(Match.kickoff < kickoff_to)
+    if status is not None:
+        stmt = stmt.where(Match.status.in_(STATUS_FILTER_MAP[status]))
 
     matches = db.execute(stmt).scalars().all()
-    return [_to_match_detail(match) for match in matches]
+
+    enriched: list[MatchDetailOut] = []
+    for match in matches:
+        if not matches_search_filter(match, q):
+            continue
+
+        latest_prediction = _latest_prediction(match)
+        primary_odds = _primary_odds(match)
+        if not matches_odds_tier_filter(
+            match, odds_tier, latest_prediction, primary_odds
+        ):
+            continue
+
+        enriched.append(_to_match_detail(db, match))
+
+    return enriched[offset : offset + limit]
 
 
 @router.get("/{match_id}", response_model=MatchDetailOut)
 def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchDetailOut:
-    """Match detail including odds and prediction (PP: GET /matches/{id})."""
+    """Match detail including enriched odds and prediction (PP-107)."""
     match = db.execute(
         select(Match)
         .options(
@@ -107,4 +148,4 @@ def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchDetailOut:
     if match is None:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    return _to_match_detail(match)
+    return _to_match_detail(db, match)

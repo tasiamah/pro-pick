@@ -290,3 +290,261 @@ def test_list_matches_applies_limit_and_offset(
     assert second_page.status_code == 200
     assert [item["id"] for item in first_page.json()] == ordered_ids[:2]
     assert [item["id"] for item in second_page.json()] == ordered_ids[2:]
+
+
+def test_list_matches_returns_enriched_prediction_and_odds_fields(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    competition = Competition(name="Premier League", country="England")
+    home_team = Team(name="Form Home", logo_url=None)
+    away_team = Team(name="Form Away", logo_url=None)
+    db_session.add_all([competition, home_team, away_team])
+    db_session.flush()
+
+    form_kickoff = datetime.utcnow() - timedelta(days=10)
+    db_session.add(
+        Match(
+            competition_id=competition.id,
+            home_team_id=home_team.id,
+            away_team_id=away_team.id,
+            kickoff=form_kickoff,
+            status="finished",
+            home_goals=2,
+            away_goals=1,
+        )
+    )
+
+    upcoming_kickoff = datetime.utcnow() + timedelta(days=1)
+    upcoming_match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=upcoming_kickoff,
+        status="scheduled",
+    )
+    db_session.add(upcoming_match)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            Prediction(
+                match_id=upcoming_match.id,
+                prob_home=0.6,
+                prob_draw=0.25,
+                prob_away=0.15,
+            ),
+            Odds(
+                match_id=upcoming_match.id,
+                bookmaker="Demo",
+                home=2.1,
+                draw=3.4,
+                away=4.2,
+                previous_home=2.0,
+                previous_draw=3.5,
+                previous_away=4.0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get("/matches")
+
+    assert response.status_code == 200
+    payload = next(item for item in response.json() if item["id"] == upcoming_match.id)
+    assert payload["home_team"]["form"] == ["W"]
+    assert payload["prediction"]["recommended_outcome"] == "home"
+    assert payload["prediction"]["confidence"] == 0.6
+    assert payload["prediction"]["insights"]
+    assert payload["odds"][0]["home_movement"] == "up"
+    assert payload["odds"][0]["draw_movement"] == "down"
+    assert payload["odds"][0]["previous_home"] == 2.0
+
+
+def test_list_matches_filters_by_status_completed(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    competition = Competition(name="Eredivisie", country="Netherlands")
+    home_team = Team(name="Ajax", logo_url=None)
+    away_team = Team(name="PSV", logo_url=None)
+    db_session.add_all([competition, home_team, away_team])
+    db_session.flush()
+
+    completed_match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() - timedelta(days=2),
+        status="finished",
+        home_goals=1,
+        away_goals=0,
+    )
+    upcoming_match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=1),
+        status="scheduled",
+    )
+    db_session.add_all([completed_match, upcoming_match])
+    db_session.commit()
+
+    response = client.get("/matches", params={"status": "completed", "limit": 200})
+
+    assert response.status_code == 200
+    match_ids = {item["id"] for item in response.json()}
+    assert completed_match.id in match_ids
+    assert upcoming_match.id not in match_ids
+
+
+def test_list_matches_filters_by_search_query(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    competition = Competition(name="Ligue 1", country="France")
+    home_team = Team(name="Paris", logo_url=None)
+    away_team = Team(name="Lyon", logo_url=None)
+    db_session.add_all([competition, home_team, away_team])
+    db_session.flush()
+
+    target_match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=1),
+        status="scheduled",
+    )
+    other_match = Match(
+        competition_id=competition.id,
+        home_team_id=away_team.id,
+        away_team_id=home_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=2),
+        status="scheduled",
+    )
+    db_session.add_all([target_match, other_match])
+    db_session.commit()
+
+    response = client.get("/matches", params={"q": "paris", "limit": 200})
+
+    assert response.status_code == 200
+    match_ids = {item["id"] for item in response.json()}
+    assert target_match.id in match_ids
+    assert other_match.id not in match_ids
+
+
+def test_list_matches_filters_by_odds_tier(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    competition = Competition(name="MLS", country="USA")
+    home_team = Team(name="Low Odds Home", logo_url=None)
+    away_team = Team(name="Low Odds Away", logo_url=None)
+    db_session.add_all([competition, home_team, away_team])
+    db_session.flush()
+
+    low_odds_match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=1),
+        status="scheduled",
+    )
+    high_odds_match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=2),
+        status="scheduled",
+    )
+    db_session.add_all([low_odds_match, high_odds_match])
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            Prediction(
+                match_id=low_odds_match.id,
+                prob_home=0.7,
+                prob_draw=0.2,
+                prob_away=0.1,
+            ),
+            Odds(
+                match_id=low_odds_match.id,
+                bookmaker="Demo",
+                home=1.8,
+                draw=3.4,
+                away=5.0,
+            ),
+            Prediction(
+                match_id=high_odds_match.id,
+                prob_home=0.7,
+                prob_draw=0.2,
+                prob_away=0.1,
+            ),
+            Odds(
+                match_id=high_odds_match.id,
+                bookmaker="Demo",
+                home=4.0,
+                draw=3.4,
+                away=5.0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get("/matches", params={"odds_tier": "low", "limit": 200})
+
+    assert response.status_code == 200
+    match_ids = {item["id"] for item in response.json()}
+    assert low_odds_match.id in match_ids
+    assert high_odds_match.id not in match_ids
+
+
+def test_get_match_returns_enriched_fields(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    competition = Competition(name="Primeira Liga", country="Portugal")
+    home_team = Team(name="Porto", logo_url=None)
+    away_team = Team(name="Benfica", logo_url=None)
+    db_session.add_all([competition, home_team, away_team])
+    db_session.flush()
+
+    match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=1),
+        status="scheduled",
+    )
+    db_session.add(match)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            Prediction(
+                match_id=match.id,
+                prob_home=0.45,
+                prob_draw=0.30,
+                prob_away=0.25,
+            ),
+            Odds(
+                match_id=match.id,
+                bookmaker="Demo",
+                home=2.0,
+                draw=3.2,
+                away=3.8,
+                previous_home=2.2,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get(f"/matches/{match.id}")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["prediction"]["recommended_outcome"] == "home"
+    assert payload["prediction"]["confidence"] == 0.45
+    assert payload["odds"][0]["home_movement"] == "down"
+    assert payload["odds"][0]["previous_home"] == 2.2
