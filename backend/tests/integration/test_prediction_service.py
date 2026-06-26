@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -18,6 +20,7 @@ from app.services.prediction import (
     FALLBACK_VERSION,
     generate_prediction,
     predict_match,
+    refresh_predictions_for_upcoming,
     reset_model_cache,
 )
 
@@ -114,6 +117,34 @@ def test_generate_prediction_persists_row(db_session: Session) -> None:
     assert stored.match_id == upcoming.id
     assert stored.model_version == "test-v1"
     assert round(stored.prob_home + stored.prob_draw + stored.prob_away, 6) == 1.0
+
+
+def test_refresh_predictions_for_upcoming_is_version_aware(db_session: Session) -> None:
+    upcoming = _seed(db_session)
+    bundle = _trained_bundle(db_session)
+
+    created = refresh_predictions_for_upcoming(
+        db_session, now=BASE, model_bundle=bundle
+    )
+    assert created == 1
+
+    unchanged = refresh_predictions_for_upcoming(
+        db_session, now=BASE, model_bundle=bundle
+    )
+    assert unchanged == 0
+
+    retrained = replace(bundle, metadata=replace(bundle.metadata, version="test-v2"))
+    refreshed = refresh_predictions_for_upcoming(
+        db_session, now=BASE, model_bundle=retrained
+    )
+    assert refreshed == 1
+
+    versions = set(
+        db_session.scalars(
+            select(Prediction.model_version).where(Prediction.match_id == upcoming.id)
+        )
+    )
+    assert versions == {"test-v1", "test-v2"}
 
 
 def test_predict_match_falls_back_without_model(

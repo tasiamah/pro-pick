@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Shared demo UI component library for Epic 9: search, filters, form dots,
   badges, charts, odds cards, alert banner, edge bar, and dev preview screen
   (`mobile/src/components/demo/`, PP-101).
+- Scheduled periodic model retraining: a lock-guarded `retrain_model` scheduler
+  job that retrains the configured algorithm on an interval and refreshes
+  upcoming predictions, gated by `MODEL_RETRAINING_ENABLED` /
+  `MODEL_RETRAINING_INTERVAL_DAYS` (`app/scheduler/jobs.py`, PP-59).
+- Model-version-aware prediction refresh
+  (`refresh_predictions_for_upcoming`) that regenerates upcoming-match
+  predictions whenever a newly trained model version becomes active
+  (`app/services/prediction.py`, PP-58).
 - Demo-style MatchCard v2 with AI pick, confidence, odds tier badge, form dots,
   and Details CTA for Epic 9 demo parity (`MatchCardV2`, PP-102).
 - Ingestion failure alerting for the live sync pipeline via structured

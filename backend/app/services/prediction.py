@@ -9,14 +9,17 @@ tagged with a fallback version so callers keep working before training runs.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
 from app.ml.baseline import predict_outcome_probabilities
 from app.ml.features import build_features
 from app.ml.storage import ModelBundle, load_model, resolve_model_path
 from app.models import Match, Prediction
+from app.services.historical_import import UPCOMING_MATCH_STATUSES
 
 NEUTRAL_PROBABILITIES = {"home": 0.40, "draw": 0.28, "away": 0.32}
 FALLBACK_VERSION = "fallback"
@@ -86,3 +89,46 @@ def generate_prediction(
     db.add(prediction)
     db.flush()
     return prediction
+
+
+def refresh_predictions_for_upcoming(
+    db: Session, *, now: datetime | None = None, model_bundle: ModelBundle | None = None
+) -> int:
+    """Generate predictions for upcoming matches that lack the active version."""
+    bundle = model_bundle if model_bundle is not None else load_active_model()
+    if bundle is None:
+        return 0
+
+    matches = db.scalars(
+        select(Match)
+        .options(selectinload(Match.predictions))
+        .where(
+            Match.status.in_(UPCOMING_MATCH_STATUSES),
+            Match.kickoff >= _naive_utc_now(now),
+        )
+    ).all()
+
+    created = 0
+    for match in matches:
+        if _has_prediction_for_version(match, bundle.metadata.version):
+            continue
+        generate_prediction(db, match, model_bundle=bundle)
+        created += 1
+
+    if created:
+        db.commit()
+    return created
+
+
+def _has_prediction_for_version(match: Match, version: str) -> bool:
+    if not match.predictions:
+        return False
+    latest = max(match.predictions, key=lambda prediction: prediction.created_at)
+    return latest.model_version == version
+
+
+def _naive_utc_now(now: datetime | None) -> datetime:
+    resolved = now or datetime.now(UTC)
+    if resolved.tzinfo is not None:
+        return resolved.astimezone(UTC).replace(tzinfo=None)
+    return resolved

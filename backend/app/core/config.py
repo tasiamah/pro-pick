@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     model_path: str = ""
     model_algorithm: str = "logistic"
     model_calibrate: bool = True
+    model_retraining_enabled: bool = False
+    model_retraining_interval_days: int = Field(default=7, ge=1)
 
     cors_origins: str = "*"
 
