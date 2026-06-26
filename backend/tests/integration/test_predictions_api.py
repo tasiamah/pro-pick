@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from datetime import UTC, datetime
 from typing import NamedTuple
 
@@ -39,9 +38,7 @@ def db_session() -> Session:
 
 
 @pytest.fixture
-def predictions_api(
-    client: TestClient, db_session: Session
-) -> Iterator[PredictionFixture]:
+def predictions_api(client: TestClient, db_session: Session) -> PredictionFixture:
     home = Team(name="Prediction Home", logo_url=None)
     away = Team(name="Prediction Away", logo_url=None)
     db_session.add_all([home, away])
@@ -62,40 +59,32 @@ def predictions_api(
     db_session.add_all([match_one, match_two])
     db_session.flush()
 
-    predictions = [
-        Prediction(
-            match_id=match_one.id,
-            prob_home=0.5,
-            prob_draw=0.25,
-            prob_away=0.25,
-        ),
-        Prediction(
-            match_id=match_one.id,
-            model_version="v2",
-            prob_home=0.6,
-            prob_draw=0.2,
-            prob_away=0.2,
-        ),
-        Prediction(
-            match_id=match_two.id,
-            prob_home=0.5,
-            prob_draw=0.3,
-            prob_away=0.2,
-        ),
-    ]
-    db_session.add_all(predictions)
+    db_session.add_all(
+        [
+            Prediction(
+                match_id=match_one.id,
+                prob_home=0.5,
+                prob_draw=0.25,
+                prob_away=0.25,
+            ),
+            Prediction(
+                match_id=match_one.id,
+                model_version="v2",
+                prob_home=0.6,
+                prob_draw=0.2,
+                prob_away=0.2,
+            ),
+            Prediction(
+                match_id=match_two.id,
+                prob_home=0.5,
+                prob_draw=0.3,
+                prob_away=0.2,
+            ),
+        ]
+    )
     db_session.commit()
 
-    try:
-        yield PredictionFixture(client, match_one.id, match_two.id)
-    finally:
-        for prediction in predictions:
-            db_session.delete(prediction)
-        db_session.delete(match_one)
-        db_session.delete(match_two)
-        db_session.delete(home)
-        db_session.delete(away)
-        db_session.commit()
+    return PredictionFixture(client, match_one.id, match_two.id)
 
 
 def test_list_predictions_returns_match_id_and_probabilities(
