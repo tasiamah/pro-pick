@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Historical data import service and CLI to load 2–3 seasons of fixtures,
+  final scores, and 1X2 odds for the top five European leagues into the
+  database (`historical_import.py`, `python -m app.scripts.import_historical`,
+  PP-49).
 - API-Football client for fixtures and odds with retries, rate limiting, and
   mocked unit tests in `data_ingestion.py` (PP-48).
 - Data provider decision document comparing API-Football, Sportmonks, and Opta
