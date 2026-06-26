@@ -6,5 +6,6 @@ export const stackScreenOptions: NativeStackNavigationOptions = {
   headerStyle: { backgroundColor: colors.surface },
   headerTintColor: colors.text,
   headerTitleStyle: typography.title,
+  headerShadowVisible: false,
   contentStyle: { backgroundColor: colors.background },
 };
