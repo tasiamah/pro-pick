@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Value-bet confidence score derived from model certainty: the margin between
   the chosen outcome's probability and the next most likely outcome, surfaced
   per value bet (PP-62).
+- Value-bet persistence: a reusable `generate_value_bets` service that stores
+  expected value, edge, recommended stake, and confidence per upcoming match,
+  replacing unsettled bets while preserving settled ones; the live sync now
+  delegates to it (`app/services/value_bets.py`, PP-63).
 - Mobile production API wiring: `mobile/eas.json` build profiles
   (development/preview/production) that inject `EXPO_PUBLIC_API_URL`, plus a
   `.env.example` default pointing the app at the deployed backend
