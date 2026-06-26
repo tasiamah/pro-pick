@@ -95,7 +95,7 @@ set up (PP-42).
 ## Release — TestFlight build & beta test
 
 The app ships to beta testers through Apple TestFlight, built with EAS Build.
-Its release identity lives in `app.json` (`name` "Pro Pick", iOS
+Its release identity lives in `app.json` (`name` "ProPick", iOS
 `bundleIdentifier` `com.propick.app`) and the build profiles live in `eas.json`.
 The marketing `version` comes from `app.json`; the iOS build number is managed
 remotely and auto-incremented per production build (`appVersionSource: remote`
