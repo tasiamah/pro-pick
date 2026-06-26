@@ -79,6 +79,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
+- Mobile app shell polish: darker tab bar with green active indicator, consistent
+  stack headers, and Match Predictions title with subtitle space on Matches
+  (PP-100).
 - Daily scheduler now runs date-based live sync for configured leagues instead
   of season-based imports (PP-51 supersedes PP-50).
 - Mobile Home and Matches screens show a forward seven-day window when upcoming
