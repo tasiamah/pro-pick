@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from contextlib import closing
+from collections.abc import Iterator
+from contextlib import closing, contextmanager
 from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -12,8 +13,11 @@ from sqlalchemy.engine import Connection
 
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
+from app.ml.storage import resolve_model_path
+from app.ml.train import train_model
 from app.services.ingestion_alerts import alert_ingestion_failure
 from app.services.live_sync import run_live_sync
+from app.services.prediction import refresh_predictions_for_upcoming, reset_model_cache
 
 logger = logging.getLogger(__name__)
 
@@ -37,34 +41,49 @@ def _release_scheduler_lock(connection: Connection) -> None:
     )
 
 
+@contextmanager
+def _scheduler_lock() -> Iterator[bool]:
+    """Yield whether this worker may run the job (single-flight across workers)."""
+    if settings.database_url.startswith("sqlite"):
+        yield True
+        return
+
+    lock_connection = engine.connect()
+    try:
+        if not _try_acquire_scheduler_lock(lock_connection):
+            yield False
+            return
+        yield True
+    finally:
+        with closing(lock_connection):
+            _release_scheduler_lock(lock_connection)
+
+
 def daily_update() -> None:
     logger.info("Starting daily live sync")
-    lock_connection: Connection | None = None
-
     try:
-        if not settings.database_url.startswith("sqlite"):
-            lock_connection = engine.connect()
-            if not _try_acquire_scheduler_lock(lock_connection):
+        with _scheduler_lock() as acquired:
+            if not acquired:
                 logger.info(
                     "Another worker holds the scheduler lock; skipping daily live sync"
                 )
                 return
 
-        db = SessionLocal()
-        try:
-            summary = run_live_sync(db)
-            import_summary = summary.import_summary
-            logger.info(
-                "Daily live sync complete: %s fixtures, %s new matches, %s odds rows, "
-                "%s predictions, %s value bets",
-                summary.fixtures_fetched,
-                import_summary.matches if import_summary else 0,
-                import_summary.odds if import_summary else 0,
-                summary.predictions,
-                summary.value_bets,
-            )
-        finally:
-            db.close()
+            db = SessionLocal()
+            try:
+                summary = run_live_sync(db)
+                import_summary = summary.import_summary
+                logger.info(
+                    "Daily live sync complete: %s fixtures, %s new matches, "
+                    "%s odds rows, %s predictions, %s value bets",
+                    summary.fixtures_fetched,
+                    import_summary.matches if import_summary else 0,
+                    import_summary.odds if import_summary else 0,
+                    summary.predictions,
+                    summary.value_bets,
+                )
+            finally:
+                db.close()
     except Exception as exc:
         alert_ingestion_failure(
             source="scheduler.daily_update",
@@ -72,10 +91,43 @@ def daily_update() -> None:
             exc_info=exc,
         )
         logger.exception("Daily live sync failed")
-    finally:
-        if lock_connection is not None:
-            with closing(lock_connection):
-                _release_scheduler_lock(lock_connection)
+
+
+def retrain_model() -> None:
+    logger.info("Starting model retraining")
+    try:
+        with _scheduler_lock() as acquired:
+            if not acquired:
+                logger.info(
+                    "Another worker holds the scheduler lock; skipping model retraining"
+                )
+                return
+
+            db = SessionLocal()
+            try:
+                bundle = train_model(
+                    db,
+                    algorithm=settings.model_algorithm,
+                    path=resolve_model_path(settings.model_path),
+                )
+                reset_model_cache()
+                refreshed = refresh_predictions_for_upcoming(db)
+                logger.info(
+                    "Model retraining complete: version %s on %s matches; "
+                    "%s predictions refreshed",
+                    bundle.metadata.version,
+                    bundle.metadata.n_samples,
+                    refreshed,
+                )
+            finally:
+                db.close()
+    except Exception as exc:
+        alert_ingestion_failure(
+            source="scheduler.retrain_model",
+            message="Model retraining failed",
+            exc_info=exc,
+        )
+        logger.exception("Model retraining failed")
 
 
 def start_scheduler() -> None:
@@ -95,11 +147,28 @@ def start_scheduler() -> None:
         max_instances=1,
         coalesce=True,
     )
+
+    if settings.model_retraining_enabled:
+        scheduler.add_job(
+            retrain_model,
+            "interval",
+            days=settings.model_retraining_interval_days,
+            id="retrain_model",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
     scheduler.start()
     logger.info(
         "Scheduler started; daily live sync scheduled at %02d:00 UTC",
         settings.scheduler_daily_hour,
     )
+    if settings.model_retraining_enabled:
+        logger.info(
+            "Model retraining scheduled every %s day(s)",
+            settings.model_retraining_interval_days,
+        )
 
 
 def stop_scheduler() -> None:
