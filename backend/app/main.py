@@ -13,8 +13,8 @@ from app.schemas.common import ServiceInfoOut
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Database schema is managed via Alembic migrations (see backend/README.md).
     settings.validate_for_runtime()
+    # Scheduler runs in-process; PostgreSQL advisory lock ensures one worker syncs.
     start_scheduler()
     try:
         yield

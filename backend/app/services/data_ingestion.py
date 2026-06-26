@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from datetime import date
 from typing import Any
 
 import httpx
@@ -117,6 +118,16 @@ class FootballApiClient:
 
         response.raise_for_status()
         return payload
+
+    def get_fixtures_by_date(self, match_date: date) -> list[dict[str, Any]]:
+        payload = self._request(
+            "fixtures",
+            {"date": match_date.isoformat()},
+        )
+        response = payload.get("response", [])
+        if not isinstance(response, list):
+            raise FootballApiError("Unexpected fixtures response shape")
+        return response
 
     def get_fixtures(self, league: int, season: int) -> list[dict[str, Any]]:
         payload = self._request(

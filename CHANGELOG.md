@@ -13,9 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- Daily scheduler that syncs the current season for the top five European
-  leagues via APScheduler, with logging, per-league error handling, and env
-  toggles (`scheduler/jobs.py`, `daily_import.py`, PP-50).
+- Free-tier live sync for Premier League and La Liga using date-based fixture
+  imports, stub predictions, value bets, scheduler, and
+  `python -m app.scripts.sync_live_fixtures` (PP-51).
 - Reproducible, point-in-time feature engineering for the 1X2 model: recent
   form, home/away form, goals for/against, head-to-head, league standing, and
   rest days, plus a training-dataset builder over finished matches
@@ -76,6 +76,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
+- Daily scheduler now runs date-based live sync for configured leagues instead
+  of season-based imports (PP-51 supersedes PP-50).
+- Mobile Home and Matches screens show a forward seven-day window when upcoming
+  fixtures exist (PP-51).
 - Mobile Home and Matches screens anchor the date picker on the latest imported
   kickoff when no upcoming fixtures exist, so historical data is visible
   (PP-49).

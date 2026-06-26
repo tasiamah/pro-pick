@@ -51,3 +51,22 @@ def test_production_rejects_missing_secrets(
 
     with pytest.raises(ValueError, match=match):
         settings.validate_for_runtime()
+
+
+def test_validate_for_runtime_rejects_invalid_sync_league_ids() -> None:
+    settings = Settings(sync_league_ids="39,abc")
+
+    with pytest.raises(ValueError, match="SYNC_LEAGUE_IDS"):
+        settings.validate_for_runtime()
+
+
+def test_validate_for_runtime_rejects_empty_sync_date_offsets() -> None:
+    settings = Settings(sync_date_offsets="")
+
+    with pytest.raises(ValueError, match="SYNC_DATE_OFFSETS"):
+        settings.validate_for_runtime()
+
+
+def test_validate_for_runtime_rejects_invalid_scheduler_hour() -> None:
+    with pytest.raises(ValueError):
+        Settings(scheduler_daily_hour=24)

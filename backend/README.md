@@ -131,24 +131,36 @@ requests/day). Use `--skip-odds` for fixture-only runs during development, or
 upgrade to a paid plan for a full import. See
 [docs/DATA_PROVIDER.md](../docs/DATA_PROVIDER.md).
 
-## Daily scheduler (PP-50)
+## Live fixture sync — free tier (PP-51)
 
-When the API starts, an optional APScheduler job can sync the current season
-for the top five European leagues. It reuses the historical import service to
-upsert fixtures and 1X2 odds, logs per-league progress, and continues when a
-single league fails.
+Sync fixtures for **Premier League (39)** and **La Liga (140)** using the
+API-Football date endpoint. On the free plan this covers roughly **yesterday
+through tomorrow** (three days). The daily scheduler and manual CLI also write
+stub predictions and value bets for upcoming matches.
 
-The scheduler is **disabled by default** in local development. Enable it in
-`.env`:
+Manual run:
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m app.scripts.sync_live_fixtures
+```
+
+Configure in `.env`:
 
 ```env
+SYNC_LEAGUE_IDS=39,140
+SYNC_DATE_OFFSETS=-1,0,1
 SCHEDULER_ENABLED=true
 SCHEDULER_DAILY_HOUR=6
 SCHEDULER_IMPORT_ODDS=true
 ```
 
+On Render, set the same variables in the service environment and redeploy.
+Run `sync_live_fixtures` once after deploy if you need data immediately.
 Set `SCHEDULER_IMPORT_ODDS=false` to sync fixtures only and reduce API usage.
 The job runs at the configured UTC hour while the API process is running.
+Only one worker runs the job in production thanks to a PostgreSQL advisory lock.
 
 ## PostgreSQL + Alembic (Docker Compose)
 
@@ -214,8 +226,8 @@ app/
 ├── api/               # endpoints (health, matches, predictions, value_bets, analytics, dashboard)
 ├── models/            # SQLAlchemy models
 ├── schemas/           # Pydantic request/response models
-├── services/          # data_ingestion, historical_import, daily_import, prediction, value_bets
-├── scripts/           # CLI tools (historical import)
+├── services/          # data_ingestion, historical_import, live_sync, prediction, value_bets
+├── scripts/           # CLI tools (historical import, live sync)
 ├── ml/                # features, train, model.pkl
 └── scheduler/         # scheduled jobs (daily update)
 alembic/               # database migrations
@@ -233,4 +245,4 @@ alembic/               # database migrations
 | GET | `/value-bets` | Value bets |
 | GET | `/analytics` | Model performance & ROI |
 
-> ML model training is stubbed and will be implemented in later tickets.
+> ML model training is stubbed; live sync and scheduler are implemented in PP-51.
