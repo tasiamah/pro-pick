@@ -9,7 +9,7 @@ type DetailsLinkProps = {
 export function DetailsLink({ onPress }: DetailsLinkProps) {
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole="link"
       accessibilityLabel="Details"
       onPress={onPress}
       style={({ pressed }) => [styles.link, pressed && styles.pressed]}

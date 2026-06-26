@@ -85,6 +85,10 @@ export function MatchCardV2({
   const awayName = getTeamName(match.away_team, 'Away');
 
   const detailsHandler = onDetailsPress ?? onPress;
+  const oddsTier =
+    prediction && primaryOdds
+      ? classifyOddsTier(getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)))
+      : null;
 
   return (
     <View style={styles.card}>
@@ -106,7 +110,7 @@ export function MatchCardV2({
         <TeamRow team={match.away_team} fallbackName="Away" />
       </View>
 
-      {showAiBlock ? (
+      {showAiBlock && prediction && primaryOdds ? (
         <View style={styles.aiBlock}>
           <View style={styles.aiHeaderRow}>
             <View style={styles.aiPickGroup}>
@@ -121,11 +125,7 @@ export function MatchCardV2({
             </View>
             <View style={styles.badgeRow}>
               <ConfidenceBadge confidence={getConfidence(prediction)} />
-              <OddsTierBadge
-                tier={classifyOddsTier(
-                  getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)),
-                )}
-              />
+              {oddsTier ? <OddsTierBadge tier={oddsTier} /> : null}
             </View>
           </View>
           <InsightBullet text={getMatchInsight(prediction)} />

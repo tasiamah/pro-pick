@@ -12,6 +12,13 @@ describe('demoUtils', () => {
     expect(classifyOddsTier(4)).toBe('high');
   });
 
+  it('returns null for invalid odds tier inputs', () => {
+    expect(classifyOddsTier(Number.NaN)).toBeNull();
+    expect(classifyOddsTier(Number.POSITIVE_INFINITY)).toBeNull();
+    expect(classifyOddsTier(0)).toBeNull();
+    expect(classifyOddsTier(-1)).toBeNull();
+  });
+
   it('labels odds tiers for badges', () => {
     expect(formatOddsTierLabel('low')).toBe('LOW ODDS');
     expect(formatOddsTierLabel('medium')).toBe('MEDIUM ODDS');
@@ -27,5 +34,7 @@ describe('demoUtils', () => {
     expect(clampPercentage(-5)).toBe(0);
     expect(clampPercentage(120)).toBe(100);
     expect(clampPercentage(81)).toBe(81);
+    expect(clampPercentage(Number.NaN)).toBe(0);
+    expect(clampPercentage(Number.POSITIVE_INFINITY)).toBe(0);
   });
 });

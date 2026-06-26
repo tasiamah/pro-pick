@@ -6,7 +6,11 @@ export type OddsMovement = 'up' | 'down' | 'flat';
 
 export type ValueStatus = 'overpriced' | 'weak' | 'fair' | 'value';
 
-export function classifyOddsTier(decimalOdd: number): OddsTier {
+export function classifyOddsTier(decimalOdd: number): OddsTier | null {
+  if (!Number.isFinite(decimalOdd) || decimalOdd <= 0) {
+    return null;
+  }
+
   if (decimalOdd < 2) {
     return 'low';
   }
@@ -47,5 +51,9 @@ export function formatValueStatusLabel(status: ValueStatus): string {
 }
 
 export function clampPercentage(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
   return Math.min(100, Math.max(0, value));
 }
