@@ -4,6 +4,10 @@ Serializes a trained estimator together with its metadata (version,
 algorithm, training timestamp, sample size, feature columns, and metrics)
 as a single bundle so the prediction service can load a known, reproducible
 model and report its version.
+
+``load_model`` deserializes with joblib (pickle), which can execute code, so it
+must only be pointed at trusted, app-produced artifacts; it also rejects files
+that do not contain a ``ModelBundle``.
 """
 
 from __future__ import annotations
@@ -41,6 +45,10 @@ def make_version(algorithm: str, *, now: datetime | None = None) -> str:
     return f"{algorithm}-{moment.strftime('%Y%m%dT%H%M%S')}"
 
 
+def resolve_model_path(model_path: str = "") -> Path:
+    return Path(model_path) if model_path else DEFAULT_MODEL_PATH
+
+
 def save_model(bundle: ModelBundle, path: Path = DEFAULT_MODEL_PATH) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(bundle, path)
@@ -50,4 +58,7 @@ def save_model(bundle: ModelBundle, path: Path = DEFAULT_MODEL_PATH) -> Path:
 def load_model(path: Path = DEFAULT_MODEL_PATH) -> ModelBundle | None:
     if not Path(path).exists():
         return None
-    return joblib.load(path)
+    bundle = joblib.load(path)
+    if not isinstance(bundle, ModelBundle):
+        raise TypeError(f"{path} does not contain a ModelBundle artifact")
+    return bundle

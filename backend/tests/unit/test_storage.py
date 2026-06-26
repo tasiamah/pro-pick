@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+import joblib
 import pytest
 
 from app.ml.storage import (
@@ -48,3 +49,11 @@ def test_save_and_load_round_trip(tmp_path: Path) -> None:
 
 def test_load_model_returns_none_when_missing(tmp_path: Path) -> None:
     assert load_model(tmp_path / "absent.pkl") is None
+
+
+def test_load_model_rejects_non_bundle_artifact(tmp_path: Path) -> None:
+    path = tmp_path / "untrusted.pkl"
+    joblib.dump({"not": "a bundle"}, path)
+
+    with pytest.raises(TypeError):
+        load_model(path)

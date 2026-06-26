@@ -143,5 +143,7 @@ def _implied_probabilities_by_match(db: Session) -> dict[int, dict[str, float]]:
         if not match.odds:
             continue
         odds = match.odds[0]
+        if odds.home <= 0 or odds.draw <= 0 or odds.away <= 0:
+            continue
         implied[match.id] = implied_probabilities(odds.home, odds.draw, odds.away)
     return implied

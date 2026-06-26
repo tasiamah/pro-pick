@@ -88,7 +88,7 @@ def tune_xgboost_model(
     grid = param_grid or DEFAULT_PARAM_GRID
     sample_size = len(dataset.features)
     split = int(sample_size * (1.0 - validation_fraction))
-    if split < 1 or split >= sample_size or len(set(dataset.labels)) < 2:
+    if split < 1 or split >= sample_size or len(set(dataset.labels[:split])) < 2:
         return train_xgboost_model(dataset)
 
     train_split = TrainingDataset(

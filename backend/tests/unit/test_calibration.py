@@ -34,9 +34,7 @@ def _separable_dataset(blocks: int = 4) -> TrainingDataset:
 
 
 def test_train_calibrated_model_returns_calibrated_classifier() -> None:
-    model = train_calibrated_model(
-        _separable_dataset(), train_fn=train_baseline_model
-    )
+    model = train_calibrated_model(_separable_dataset(), train_fn=train_baseline_model)
 
     assert isinstance(model, CalibratedClassifier)
     probabilities = predict_outcome_probabilities(

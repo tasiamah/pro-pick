@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
 from sqlalchemy.orm import Session
@@ -116,7 +117,7 @@ def test_generate_prediction_persists_row(db_session: Session) -> None:
 
 
 def test_predict_match_falls_back_without_model(
-    db_session: Session, tmp_path, monkeypatch
+    db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     upcoming = _seed(db_session)
     monkeypatch.setattr(settings, "model_path", str(tmp_path / "absent.pkl"))

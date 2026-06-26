@@ -9,19 +9,19 @@ tagged with a fallback version so callers keep working before training runs.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import lru_cache
-from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.ml.baseline import predict_outcome_probabilities
 from app.ml.features import build_features
-from app.ml.storage import DEFAULT_MODEL_PATH, ModelBundle, load_model
+from app.ml.storage import ModelBundle, load_model, resolve_model_path
 from app.models import Match, Prediction
 
 NEUTRAL_PROBABILITIES = {"home": 0.40, "draw": 0.28, "away": 0.32}
 FALLBACK_VERSION = "fallback"
+
+_model_cache: tuple[float, ModelBundle | None] | None = None
 
 
 @dataclass(frozen=True)
@@ -32,14 +32,21 @@ class MatchPrediction:
     model_version: str
 
 
-@lru_cache(maxsize=1)
 def load_active_model() -> ModelBundle | None:
-    path = Path(settings.model_path) if settings.model_path else DEFAULT_MODEL_PATH
-    return load_model(path)
+    global _model_cache
+    path = resolve_model_path(settings.model_path)
+    try:
+        modified_at = path.stat().st_mtime
+    except OSError:
+        return None
+    if _model_cache is None or _model_cache[0] != modified_at:
+        _model_cache = (modified_at, load_model(path))
+    return _model_cache[1]
 
 
 def reset_model_cache() -> None:
-    load_active_model.cache_clear()
+    global _model_cache
+    _model_cache = None
 
 
 def predict_match(

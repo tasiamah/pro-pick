@@ -27,6 +27,7 @@ from app.ml.storage import (
     ModelBundle,
     ModelMetadata,
     make_version,
+    resolve_model_path,
     save_model,
 )
 from app.ml.xgboost_model import tune_xgboost_model
@@ -100,7 +101,11 @@ def _evaluate(
 def main() -> None:
     db = SessionLocal()
     try:
-        bundle = train_model(db, algorithm=settings.model_algorithm)
+        bundle = train_model(
+            db,
+            algorithm=settings.model_algorithm,
+            path=resolve_model_path(settings.model_path),
+        )
     finally:
         db.close()
     print(
