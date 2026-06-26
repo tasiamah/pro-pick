@@ -131,6 +131,25 @@ requests/day). Use `--skip-odds` for fixture-only runs during development, or
 upgrade to a paid plan for a full import. See
 [docs/DATA_PROVIDER.md](../docs/DATA_PROVIDER.md).
 
+## Daily scheduler (PP-50)
+
+When the API starts, an optional APScheduler job can sync the current season
+for the top five European leagues. It reuses the historical import service to
+upsert fixtures and 1X2 odds, logs per-league progress, and continues when a
+single league fails.
+
+The scheduler is **disabled by default** in local development. Enable it in
+`.env`:
+
+```env
+SCHEDULER_ENABLED=true
+SCHEDULER_DAILY_HOUR=6
+SCHEDULER_IMPORT_ODDS=true
+```
+
+Set `SCHEDULER_IMPORT_ODDS=false` to sync fixtures only and reduce API usage.
+The job runs at the configured UTC hour while the API process is running.
+
 ## PostgreSQL + Alembic (Docker Compose)
 
 ```bash
@@ -195,7 +214,7 @@ app/
 ├── api/               # endpoints (health, matches, predictions, value_bets, analytics, dashboard)
 ├── models/            # SQLAlchemy models
 ├── schemas/           # Pydantic request/response models
-├── services/          # data_ingestion, historical_import, prediction, value_bets
+├── services/          # data_ingestion, historical_import, daily_import, prediction, value_bets
 ├── scripts/           # CLI tools (historical import)
 ├── ml/                # features, train, model.pkl
 └── scheduler/         # scheduled jobs (daily update)
@@ -214,4 +233,4 @@ alembic/               # database migrations
 | GET | `/value-bets` | Value bets |
 | GET | `/analytics` | Model performance & ROI |
 
-> ML model and scheduler are stubbed and will be implemented in later tickets.
+> ML model training is stubbed and will be implemented in later tickets.
