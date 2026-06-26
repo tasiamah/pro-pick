@@ -235,3 +235,58 @@ def test_get_match_returns_404_for_unknown_id(client: TestClient) -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Match not found"
+
+
+def test_get_match_rejects_non_integer_id(client: TestClient) -> None:
+    response = client.get("/matches/not-a-number")
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"limit": 0},
+        {"limit": 201},
+        {"offset": -1},
+    ],
+)
+def test_list_matches_rejects_invalid_pagination(
+    client: TestClient,
+    params: dict[str, int],
+) -> None:
+    response = client.get("/matches", params=params)
+
+    assert response.status_code == 422
+
+
+def test_list_matches_applies_limit_and_offset(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    home_team = Team(name="Pagination Home", logo_url=None)
+    away_team = Team(name="Pagination Away", logo_url=None)
+    db_session.add_all([home_team, away_team])
+    db_session.flush()
+
+    base = datetime.utcnow() + timedelta(days=1)
+    matches = [
+        Match(
+            home_team_id=home_team.id,
+            away_team_id=away_team.id,
+            kickoff=base + timedelta(days=offset),
+            status="scheduled",
+        )
+        for offset in range(3)
+    ]
+    db_session.add_all(matches)
+    db_session.commit()
+    ordered_ids = [match.id for match in matches]
+
+    first_page = client.get("/matches", params={"limit": 2})
+    second_page = client.get("/matches", params={"limit": 2, "offset": 2})
+
+    assert first_page.status_code == 200
+    assert second_page.status_code == 200
+    assert [item["id"] for item in first_page.json()] == ordered_ids[:2]
+    assert [item["id"] for item in second_page.json()] == ordered_ids[2:]

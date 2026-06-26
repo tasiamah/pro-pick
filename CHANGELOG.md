@@ -66,8 +66,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Persistent entertainment disclaimer banner on all mobile screens (PP-84).
 - Integration tests for `GET /matches/{id}` covering the detail response
   (prediction and odds) and the not-found case (PP-68).
+- API integration tests covering request validation (invalid pagination and
+  query parameters), pagination limits, and empty-state responses across the
+  matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
+- Daily scheduler now runs date-based live sync for configured leagues instead
+  of season-based imports (PP-51 supersedes PP-50).
 - Mobile Home and Matches screens show a forward seven-day window when upcoming
   fixtures exist (PP-51).
 - Mobile Home and Matches screens anchor the date picker on the latest imported
@@ -92,6 +97,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   from settled value bets and finished matches (PP-83).
 - `GET /analytics` now reports model `log_loss` over finished matches with
   predictions (PP-71).
+- `GET /dashboard` now scopes `top_value_bets` to matches kicking off today and
+  reports `model_accuracy` and `roi` from the shared analytics computation
+  (PP-72).
 - Mobile screens and navigation now consume shared theme tokens instead of
   hardcoded values (PP-77).
 - Mobile tab label **Dashboard** renamed to **Home** (PP-76).

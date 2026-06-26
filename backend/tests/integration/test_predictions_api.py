@@ -135,3 +135,29 @@ def test_list_predictions_filters_by_match_id(
     other_match_payload = other_match_response.json()
     assert len(other_match_payload) == 1
     assert other_match_payload[0]["match_id"] == predictions_api.match_two_id
+
+
+def test_list_predictions_respects_limit(
+    predictions_api: PredictionFixture,
+) -> None:
+    response = predictions_api.client.get("/predictions", params={"limit": 1})
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"limit": 0},
+        {"limit": 201},
+        {"match_id": 0},
+    ],
+)
+def test_list_predictions_rejects_invalid_query_params(
+    client: TestClient,
+    params: dict[str, int],
+) -> None:
+    response = client.get("/predictions", params=params)
+
+    assert response.status_code == 422

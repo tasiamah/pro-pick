@@ -133,10 +133,10 @@ upgrade to a paid plan for a full import. See
 
 ## Live fixture sync — free tier (PP-51)
 
-Sync current-season fixtures for **Premier League (39)** and **La Liga (140)**
-using the API-Football date endpoint. On the free plan this covers roughly
-**yesterday through tomorrow** (three days). The job also writes stub
-predictions and value bets for upcoming matches.
+Sync fixtures for **Premier League (39)** and **La Liga (140)** using the
+API-Football date endpoint. On the free plan this covers roughly **yesterday
+through tomorrow** (three days). The daily scheduler and manual CLI also write
+stub predictions and value bets for upcoming matches.
 
 Manual run:
 
@@ -158,6 +158,9 @@ SCHEDULER_IMPORT_ODDS=true
 
 On Render, set the same variables in the service environment and redeploy.
 Run `sync_live_fixtures` once after deploy if you need data immediately.
+Set `SCHEDULER_IMPORT_ODDS=false` to sync fixtures only and reduce API usage.
+The job runs at the configured UTC hour while the API process is running.
+Only one worker runs the job in production thanks to a PostgreSQL advisory lock.
 
 ## PostgreSQL + Alembic (Docker Compose)
 
