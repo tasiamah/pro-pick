@@ -112,6 +112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
+- Matches screen rebuilt with search, status and odds-tier filters, MatchCard v2
+  list, and header subtitle; date picker removed from Matches (PP-103).
 - MatchCard v2 now consumes shared demo UI components instead of local card
   parts (PP-101).
 - Mobile app shell polish: darker tab bar with green active indicator, consistent

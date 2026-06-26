@@ -5,3 +5,7 @@ export const screenTitles = {
   analytics: 'Pro Pick',
   matchDetail: 'Pro Pick',
 } as const;
+
+export const screenSubtitles = {
+  matches: 'AI-powered insights with live odds',
+} as const;

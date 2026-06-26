@@ -1,48 +1,68 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { useMatches } from '../api/hooks';
 import {
   AsyncState,
-  DatePickerRow,
   ErrorState,
+  FilterChipRow,
   LoadingState,
-  MatchCard,
+  MatchCardV2,
+  SearchInput,
+  SegmentedControl,
 } from '../components';
-import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, spacing } from '../theme';
-import { filterMatchesByDate } from '../utils/matchDates';
+import { addUtcDays, buildDateWindowParams, startOfUtcDay } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
+import {
+  filterMatchesForBrowse,
+  getMatchesEmptyMessage,
+  type MatchOddsTierFilter,
+  type MatchStatusFilter,
+} from './matchesFilterUtils';
 
 type Props = NativeStackScreenProps<MatchesStackParamList, 'Matches'>;
 
-export function MatchesScreen({ navigation }: Props) {
-  const {
-    dateRange,
-    matchListParams,
-    selectedDate,
-    setSelectedDate,
-    dashboardQuery,
-  } = useMatchDateAnchor();
-  const matchesQuery = useMatches(matchListParams, {
-    enabled: !dashboardQuery.isLoading,
-  });
+const SEARCH_DEBOUNCE_MS = 300;
+const BROWSE_WINDOW_DAYS = 30;
 
+export function MatchesScreen({ navigation }: Props) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('upcoming');
+  const [oddsTierFilter, setOddsTierFilter] = useState<MatchOddsTierFilter>('all');
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
+
+  const matchListParams = useMemo(() => {
+    const start = addUtcDays(startOfUtcDay(), -BROWSE_WINDOW_DAYS);
+    const end = addUtcDays(startOfUtcDay(), BROWSE_WINDOW_DAYS);
+    return buildDateWindowParams(start, end);
+  }, []);
+
+  const matchesQuery = useMatches(matchListParams);
   const filteredMatches = useMemo(
-    () => filterMatchesByDate(matchesQuery.data ?? [], selectedDate),
-    [matchesQuery.data, selectedDate],
+    () =>
+      filterMatchesForBrowse(
+        matchesQuery.data ?? [],
+        statusFilter,
+        oddsTierFilter,
+        debouncedSearchQuery,
+      ),
+    [debouncedSearchQuery, matchesQuery.data, oddsTierFilter, statusFilter],
+  );
+
+  const emptyMessage = useMemo(
+    () => getMatchesEmptyMessage(statusFilter, oddsTierFilter, debouncedSearchQuery),
+    [debouncedSearchQuery, oddsTierFilter, statusFilter],
   );
 
   const onRefresh = useCallback(() => {
     void matchesQuery.refetch();
   }, [matchesQuery]);
 
-  if (
-    isInitialQueryLoad(dashboardQuery.isLoading, dashboardQuery.data) ||
-    isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)
-  ) {
+  if (isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)) {
     return <LoadingState message="Loading matches…" />;
   }
 
@@ -65,26 +85,43 @@ export function MatchesScreen({ navigation }: Props) {
         />
       }
     >
-      <DatePickerRow
-        dates={dateRange}
-        selectedDate={selectedDate}
-        onSelectDate={setSelectedDate}
-      />
+      <View style={styles.filters}>
+        <SearchInput onChangeText={setSearchQuery} value={searchQuery} />
+        <SegmentedControl
+          onChange={setStatusFilter}
+          options={[
+            { value: 'upcoming', label: 'Upcoming' },
+            { value: 'live', label: 'Live' },
+            { value: 'completed', label: 'Completed' },
+          ]}
+          value={statusFilter}
+        />
+        <FilterChipRow
+          onChange={setOddsTierFilter}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'low', label: 'Low' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'high', label: 'High' },
+          ]}
+          value={oddsTierFilter}
+        />
+      </View>
 
       <AsyncState
         isLoading={false}
         error={null}
         isEmpty={filteredMatches.length === 0}
-        emptyMessage="No matches on this day"
+        emptyMessage={emptyMessage}
       >
         <View style={styles.cardList}>
           {filteredMatches.map((match) => (
-            <MatchCard
+            <MatchCardV2
               key={match.id}
               match={match}
-              prediction={match.prediction}
               odds={match.odds}
-              onPress={() =>
+              prediction={match.prediction}
+              onDetailsPress={() =>
                 navigation.navigate('MatchDetail', { matchId: String(match.id) })
               }
             />
@@ -104,6 +141,9 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
+  },
+  filters: {
+    gap: spacing.md,
   },
   cardList: {
     gap: spacing.md,
