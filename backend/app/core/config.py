@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     football_api_max_retries: int = 3
     football_api_min_request_interval_seconds: float = 0.6
 
+    sync_league_ids: str = "39,140"
+    sync_date_offsets: str = "-1,0,1"
+    scheduler_enabled: bool = False
+    scheduler_daily_hour: int = 6
+    scheduler_import_odds: bool = True
+
     value_bet_edge_threshold: float = 0.05
     kelly_fraction: float = 0.25
 
@@ -39,6 +45,22 @@ class Settings(BaseSettings):
         return [
             origin.strip() for origin in self.cors_origins.split(",") if origin.strip()
         ]
+
+    @property
+    def sync_league_id_list(self) -> tuple[int, ...]:
+        return tuple(
+            int(value.strip())
+            for value in self.sync_league_ids.split(",")
+            if value.strip()
+        )
+
+    @property
+    def sync_date_offset_list(self) -> tuple[int, ...]:
+        return tuple(
+            int(value.strip())
+            for value in self.sync_date_offsets.split(",")
+            if value.strip()
+        )
 
     def validate_for_runtime(self) -> None:
         if not self.is_production:

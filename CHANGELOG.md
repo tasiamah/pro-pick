@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Free-tier live sync for Premier League and La Liga using date-based fixture
+  imports, stub predictions, value bets, scheduler, and
+  `python -m app.scripts.sync_live_fixtures` (PP-51).
 - Historical data import service and CLI to load 2–3 seasons of fixtures,
   final scores, and 1X2 odds for the top five European leagues into the
   database (`historical_import.py`, `python -m app.scripts.import_historical`,
@@ -65,6 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (prediction and odds) and the not-found case (PP-68).
 
 ### Changed
+- Mobile Home and Matches screens show a forward seven-day window when upcoming
+  fixtures exist (PP-51).
 - Mobile Home and Matches screens anchor the date picker on the latest imported
   kickoff when no upcoming fixtures exist, so historical data is visible
   (PP-49).

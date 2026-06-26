@@ -131,6 +131,34 @@ requests/day). Use `--skip-odds` for fixture-only runs during development, or
 upgrade to a paid plan for a full import. See
 [docs/DATA_PROVIDER.md](../docs/DATA_PROVIDER.md).
 
+## Live fixture sync — free tier (PP-51)
+
+Sync current-season fixtures for **Premier League (39)** and **La Liga (140)**
+using the API-Football date endpoint. On the free plan this covers roughly
+**yesterday through tomorrow** (three days). The job also writes stub
+predictions and value bets for upcoming matches.
+
+Manual run:
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m app.scripts.sync_live_fixtures
+```
+
+Configure in `.env`:
+
+```env
+SYNC_LEAGUE_IDS=39,140
+SYNC_DATE_OFFSETS=-1,0,1
+SCHEDULER_ENABLED=true
+SCHEDULER_DAILY_HOUR=6
+SCHEDULER_IMPORT_ODDS=true
+```
+
+On Render, set the same variables in the service environment and redeploy.
+Run `sync_live_fixtures` once after deploy if you need data immediately.
+
 ## PostgreSQL + Alembic (Docker Compose)
 
 ```bash
@@ -195,8 +223,8 @@ app/
 ├── api/               # endpoints (health, matches, predictions, value_bets, analytics, dashboard)
 ├── models/            # SQLAlchemy models
 ├── schemas/           # Pydantic request/response models
-├── services/          # data_ingestion, historical_import, prediction, value_bets
-├── scripts/           # CLI tools (historical import)
+├── services/          # data_ingestion, historical_import, live_sync, prediction, value_bets
+├── scripts/           # CLI tools (historical import, live sync)
 ├── ml/                # features, train, model.pkl
 └── scheduler/         # scheduled jobs (daily update)
 alembic/               # database migrations
@@ -214,4 +242,4 @@ alembic/               # database migrations
 | GET | `/value-bets` | Value bets |
 | GET | `/analytics` | Model performance & ROI |
 
-> ML model and scheduler are stubbed and will be implemented in later tickets.
+> ML model training is stubbed; live sync and scheduler are implemented in PP-51.

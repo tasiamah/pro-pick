@@ -7,14 +7,18 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
 from app.core.config import settings
+from app.scheduler.jobs import start_scheduler, stop_scheduler
 from app.schemas.common import ServiceInfoOut
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Database schema is managed via Alembic migrations (see backend/README.md).
     settings.validate_for_runtime()
-    yield
+    start_scheduler()
+    try:
+        yield
+    finally:
+        stop_scheduler()
 
 
 app = FastAPI(

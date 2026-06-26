@@ -16,7 +16,9 @@ LIVE_STATUS_CODES = frozenset({"1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT"}
 MATCH_WINNER_BET_NAMES = frozenset({"Match Winner", "1X2", "Home/Draw/Away"})
 
 DEFAULT_LEAGUE_IDS = (39, 140, 135, 78, 61)
+FREE_TIER_SYNC_LEAGUE_IDS = (39, 140)
 DEFAULT_SEASONS = (2022, 2023, 2024)
+UPCOMING_MATCH_STATUSES = frozenset({"scheduled", "live"})
 
 
 @dataclass
@@ -85,10 +87,12 @@ class HistoricalDataImporter:
         db: Session,
         client: FootballApiClient | None = None,
         import_odds: bool = True,
+        upcoming_odds_only: bool = False,
     ) -> None:
         self.db = db
         self.client = client or FootballApiClient()
         self.import_odds = import_odds
+        self.upcoming_odds_only = upcoming_odds_only
 
     def import_all(
         self,
@@ -104,12 +108,25 @@ class HistoricalDataImporter:
 
     def import_league_season(self, league_id: int, season: int) -> ImportSummary:
         fixtures = self.client.get_fixtures(league=league_id, season=season)
+        return self.import_fixture_items(fixtures, default_season=season)
+
+    def import_fixture_items(
+        self,
+        fixture_items: list[dict],
+        default_season: int | None = None,
+    ) -> ImportSummary:
         summary = ImportSummary()
 
-        for fixture_item in fixtures:
+        for fixture_item in fixture_items:
+            league = fixture_item["league"]
+            season = league.get("season") or default_season
+            if season is None:
+                kickoff = parse_kickoff(fixture_item["fixture"].get("date"))
+                season = kickoff.year if kickoff is not None else datetime.now(UTC).year
+
             competition, competition_created = self._upsert_competition(
                 fixture_item,
-                season,
+                int(season),
             )
             if competition_created:
                 summary.competitions += 1
@@ -136,11 +153,18 @@ class HistoricalDataImporter:
             if match_created:
                 summary.matches += 1
 
-            if self.import_odds and match.external_id is not None:
+            if self._should_import_odds(match):
                 summary.odds += self._import_odds_for_match(match)
 
         self.db.commit()
         return summary
+
+    def _should_import_odds(self, match: Match) -> bool:
+        if not self.import_odds or match.external_id is None:
+            return False
+        if not self.upcoming_odds_only:
+            return True
+        return match.status in UPCOMING_MATCH_STATUSES
 
     def _upsert_competition(
         self,
