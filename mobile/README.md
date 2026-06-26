@@ -91,3 +91,56 @@ EXPO_PUBLIC_API_URL=http://localhost:8000
 
 A physical phone cannot reach `localhost` on your Mac until backend hosting is
 set up (PP-42).
+
+## Release — TestFlight build & beta test
+
+The app ships to beta testers through Apple TestFlight, built with EAS Build.
+Its release identity lives in `app.json` (`name` "ProPick", iOS
+`bundleIdentifier` `com.propick.app`) and the build profiles live in `eas.json`.
+The marketing `version` comes from `app.json`; the iOS build number is managed
+remotely and auto-incremented per production build (`appVersionSource: remote`
+plus `autoIncrement` on the `production` profile), so each upload gets a unique
+build number without manual edits.
+
+### One-time setup
+
+- An Apple Developer Program membership and access to App Store Connect.
+- An [Expo](https://expo.dev) account and the EAS CLI: `npm install -g eas-cli`.
+- Link the project once so `app.json` gets an `extra.eas.projectId`:
+
+```bash
+cd mobile
+eas login
+eas init
+```
+
+### Build for TestFlight
+
+```bash
+eas build --platform ios --profile production
+```
+
+This produces a store-distribution `.ipa` signed for App Store / TestFlight.
+EAS manages the signing credentials (let it generate them on first run).
+
+### Upload to TestFlight
+
+```bash
+eas submit --platform ios --profile production
+```
+
+The `submit.production` profile in `eas.json` is intentionally minimal for now,
+so `eas submit` prompts for the App Store Connect target interactively. Once the
+app record exists, fill in `ascAppId` and `appleTeamId` there to make submission
+non-interactive.
+
+### Beta test & processing feedback
+
+1. In App Store Connect → **TestFlight**, add the build to an internal (team) or
+   external tester group; external groups require a short Beta App Review.
+2. Testers install the build through the **TestFlight** app and can send
+   feedback and screenshots from there.
+3. Triage incoming feedback into Jira under **EPIC-6 (Polish, Testing & App
+   Store)**, fix on a feature branch, then cut a new build with the same
+   `eas build` command — the build number auto-increments and the updated build
+   goes to the same tester group.
