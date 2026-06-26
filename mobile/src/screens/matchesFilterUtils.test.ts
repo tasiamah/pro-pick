@@ -54,6 +54,28 @@ describe('matchesFilterUtils', () => {
     );
   });
 
+  it('sorts undated matches after dated ones', () => {
+    const undatedMatch: MatchDetail = {
+      ...baseMatch,
+      id: 3,
+      kickoff: null,
+    };
+    const laterMatch: MatchDetail = {
+      ...baseMatch,
+      id: 2,
+      kickoff: '2026-06-29T15:00:00Z',
+    };
+
+    const filtered = filterMatchesForBrowse(
+      [undatedMatch, laterMatch, baseMatch],
+      'upcoming',
+      'all',
+      '',
+    );
+
+    expect(filtered.map((match) => match.id)).toEqual([1, 2, 3]);
+  });
+
   it('combines filters and sorts by kickoff', () => {
     const laterMatch: MatchDetail = {
       ...baseMatch,
