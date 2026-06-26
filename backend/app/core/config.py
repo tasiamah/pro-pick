@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     value_bet_edge_threshold: float = 0.05
     kelly_fraction: float = 0.25
 
+    model_path: str = ""
+    model_algorithm: str = "logistic"
+    model_calibrate: bool = True
+
     cors_origins: str = "*"
 
     @property

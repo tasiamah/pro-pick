@@ -11,7 +11,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
-from app.models import Match, Odds, Prediction, ValueBet
+from app.models import Match, Odds, ValueBet
 from app.services.data_ingestion import FootballApiClient, FootballApiError
 from app.services.historical_import import (
     UPCOMING_MATCH_STATUSES,
@@ -19,12 +19,10 @@ from app.services.historical_import import (
     ImportSummary,
 )
 from app.services.ingestion_alerts import IngestionPipelineError
-from app.services.prediction import predict_match
+from app.services.prediction import generate_prediction
 from app.services.value_bets import evaluate_match
 
 logger = logging.getLogger(__name__)
-
-PREDICTION_MODEL_VERSION = "stub-v1"
 
 
 @dataclass
@@ -115,16 +113,7 @@ def sync_predictions_for_upcoming(
         if match.predictions:
             continue
 
-        probabilities = predict_match()
-        db.add(
-            Prediction(
-                match_id=match.id,
-                model_version=PREDICTION_MODEL_VERSION,
-                prob_home=probabilities["home"],
-                prob_draw=probabilities["draw"],
-                prob_away=probabilities["away"],
-            )
-        )
+        generate_prediction(db, match)
         created += 1
 
     if created:

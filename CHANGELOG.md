@@ -24,6 +24,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Free-tier live sync for Premier League and La Liga using date-based fixture
   imports, stub predictions, value bets, scheduler, and
   `python -m app.scripts.sync_live_fixtures` (PP-51).
+- Baseline 1X2 model: a multinomial logistic-regression pipeline trained on the
+  historical feature dataset that outputs home/draw/away probabilities
+  (`app/ml/baseline.py`, PP-54).
+- XGBoost 1X2 model with light chronological-hold-out tuning over the same
+  feature vector as the baseline (`app/ml/xgboost_model.py`, PP-55).
+- Out-of-sample model evaluation: walk-forward backtesting that scores the model
+  and the margin-removed bookmaker probabilities on held-out matches with
+  accuracy, multiclass log loss, and the (calibration-sensitive) Brier score,
+  plus one-vs-rest isotonic probability calibration (`app/ml/evaluation.py`,
+  `app/ml/backtest.py`, `app/ml/calibration.py`, PP-56).
+- Model persistence and versioning: a training pipeline that builds the
+  point-in-time dataset, fits and optionally calibrates the selected algorithm,
+  records walk-forward metrics, and writes a versioned model bundle
+  (`app/ml/storage.py`, `app/ml/train.py`, PP-57).
+- Model-backed prediction service that loads the persisted model to produce
+  versioned 1X2 probabilities, falling back to a neutral distribution before a
+  model is trained (`app/services/prediction.py`, PP-58).
 - Reproducible, point-in-time feature engineering for the 1X2 model: recent
   form, home/away form, goals for/against, head-to-head, league standing, and
   rest days, plus a training-dataset builder over finished matches

@@ -16,7 +16,7 @@ venv/
 !.env.example
 
 # ML artifacts
-backend/app/ml/model.pkl
+backend/app/ml/*.pkl
 
 # Node / Expo
 node_modules/
