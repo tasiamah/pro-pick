@@ -16,7 +16,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
-  MatchCard,
+  MatchCardV2,
   SectionHeader,
   ValueBetCard,
 } from '../components';
@@ -122,12 +122,12 @@ export function HomeScreen({ navigation }: Props) {
         >
           <View style={styles.cardList}>
             {filteredMatches.map((match) => (
-              <MatchCard
+              <MatchCardV2
                 key={match.id}
                 match={match}
-                prediction={match.prediction}
                 odds={match.odds}
-                onPress={() =>
+                prediction={match.prediction}
+                onDetailsPress={() =>
                   navigation.navigate('MatchDetail', { matchId: String(match.id) })
                 }
               />

@@ -10,15 +10,14 @@ import {
   ErrorState,
   FavoriteToggle,
   LoadingState,
-  MatchCard,
+  MatchCardV2,
 } from '../components';
 import type { FavoritesStackParamList } from '../navigation/types';
 import { filterMatchesByFavorites, useFavoritesStore } from '../store';
 import { colors, spacing, typography } from '../theme';
 import {
-  buildDateRange,
-  buildDateWindowParams,
-  DATE_RANGE_DAYS,
+  buildCurrentWeekDateRange,
+  buildCurrentWeekWindowParams,
   filterMatchesByDate,
   startOfUtcDay,
 } from '../utils/matchDates';
@@ -70,10 +69,14 @@ export function FavoritesScreen({ navigation }: Props) {
   const teams = useFavoritesStore((state) => state.teams);
   const competitions = useFavoritesStore((state) => state.competitions);
   const hasFavorites = teams.length > 0 || competitions.length > 0;
-  const matchListParams = useMemo(() => buildDateWindowParams(), []);
+  const today = useMemo(() => startOfUtcDay(), []);
+  const matchListParams = useMemo(
+    () => buildCurrentWeekWindowParams(today),
+    [today],
+  );
   const matchesQuery = useMatches(matchListParams, { enabled: hasFavorites });
 
-  const dateRange = useMemo(() => buildDateRange(startOfUtcDay(), DATE_RANGE_DAYS), []);
+  const dateRange = useMemo(() => buildCurrentWeekDateRange(today), [today]);
 
   const filteredMatches = useMemo(() => {
     const favoriteMatches = filterMatchesByFavorites(
@@ -133,12 +136,12 @@ export function FavoritesScreen({ navigation }: Props) {
       >
         <View style={styles.cardList}>
           {filteredMatches.map((match) => (
-            <MatchCard
+            <MatchCardV2
               key={match.id}
               match={match}
-              prediction={match.prediction}
               odds={match.odds}
-              onPress={() =>
+              prediction={match.prediction}
+              onDetailsPress={() =>
                 navigation.navigate('MatchDetail', { matchId: String(match.id) })
               }
             />
