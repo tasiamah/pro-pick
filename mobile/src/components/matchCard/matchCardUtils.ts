@@ -1,10 +1,10 @@
 import type { Odds, Prediction } from '../../api/types';
 
-export type FormResult = 'W' | 'D' | 'L';
+import { classifyOddsTier, type OddsTier } from '../demo/demoUtils';
 
 export type RecommendedOutcome = 'home' | 'draw' | 'away';
 
-export type OddsTier = 'low' | 'medium' | 'high';
+export { classifyOddsTier, type OddsTier };
 
 export function getRecommendedOutcome(prediction: Prediction): RecommendedOutcome {
   const { prob_home, prob_draw, prob_away } = prediction;
@@ -36,18 +36,6 @@ export function getOddForOutcome(odds: Odds, outcome: RecommendedOutcome): numbe
   return odds.away;
 }
 
-export function classifyOddsTier(decimalOdd: number): OddsTier {
-  if (decimalOdd < 2) {
-    return 'low';
-  }
-
-  if (decimalOdd < 3.5) {
-    return 'medium';
-  }
-
-  return 'high';
-}
-
 export function formatPredictedOutcomeLabel(
   outcome: RecommendedOutcome,
   homeTeamName: string,
@@ -69,16 +57,4 @@ export function getMatchInsight(prediction: Prediction): string {
     ?.map((entry) => entry.trim())
     .find((entry) => entry.length > 0);
   return insight || 'AI model highlights this fixture based on current form and market odds.';
-}
-
-export function formatOddsTierLabel(tier: OddsTier): string {
-  if (tier === 'low') {
-    return 'LOW ODDS';
-  }
-
-  if (tier === 'medium') {
-    return 'MEDIUM ODDS';
-  }
-
-  return 'HIGH ODDS';
 }

@@ -2,10 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Match, Odds, Prediction, Team } from '../../api/types';
-import { buildFavoriteTeamIds, useFavoritesStore } from '../../store';
-import { colors, radii, spacing, typography } from '../../theme';
-import { getTeamName } from '../../utils/matchDisplay';
-import { formatKickoff } from '../formatters';
 import {
   AiPickLabel,
   ConfidenceBadge,
@@ -13,7 +9,11 @@ import {
   FormIndicator,
   InsightBullet,
   OddsTierBadge,
-} from './matchCardParts';
+} from '../demo';
+import { buildFavoriteTeamIds, useFavoritesStore } from '../../store';
+import { colors, radii, spacing, typography } from '../../theme';
+import { getTeamName } from '../../utils/matchDisplay';
+import { formatKickoff } from '../formatters';
 import {
   classifyOddsTier,
   formatPredictedOutcomeLabel,
@@ -132,7 +132,11 @@ export function MatchCardV2({
         </View>
       ) : null}
 
-      {detailsHandler ? <DetailsLink onPress={detailsHandler} /> : null}
+      {detailsHandler ? (
+        <View style={styles.detailsLinkWrap}>
+          <DetailsLink onPress={detailsHandler} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -198,6 +202,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  detailsLinkWrap: {
+    marginTop: spacing.md,
   },
   pressed: {
     opacity: 0.85,
