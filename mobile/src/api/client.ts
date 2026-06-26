@@ -35,9 +35,11 @@ function buildQueryString(
   return query ? `?${query}` : '';
 }
 
+export const REQUEST_TIMEOUT_MS = 45000;
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
     const response = await fetch(`${getApiBaseUrl()}${path}`, {
