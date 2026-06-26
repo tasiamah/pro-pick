@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Mobile production API wiring: `mobile/eas.json` build profiles
+  (development/preview/production) that inject `EXPO_PUBLIC_API_URL`, plus a
+  `.env.example` default pointing the app at the deployed backend
+  (`https://pro-pick.onrender.com`).
 - API hardening: consistent JSON error responses, `Cache-Control` headers on the
   heavy `/analytics` and `/dashboard` endpoints, and per-client rate limiting
   with configurable limits (PP-73).
