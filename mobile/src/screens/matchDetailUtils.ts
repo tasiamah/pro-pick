@@ -8,7 +8,7 @@ import {
 } from '../components/matchCard/matchCardUtils';
 
 const MOVEMENT_EPSILON = 0.001;
-const VALUE_EDGE_THRESHOLD = 0.03;
+const VALUE_EDGE_THRESHOLD = 0.05;
 
 export type MarketMovements = {
   home: OddsMovement | null;
@@ -131,6 +131,7 @@ export function buildMarketAnalysis(
         : prediction.prob_away;
   const odd = valueBet?.odd ?? getOddForOutcome(odds, outcome);
   const edge = valueBet?.edge ?? computeEdge(modelProb, odd);
+  const status = valueBet ? 'value' : classifyValueStatus(edge);
 
   return {
     outcome,
@@ -138,7 +139,7 @@ export function buildMarketAnalysis(
     odd,
     edge,
     recommendedStake: valueBet?.recommended_stake ?? null,
-    status: classifyValueStatus(edge),
+    status,
   };
 }
 

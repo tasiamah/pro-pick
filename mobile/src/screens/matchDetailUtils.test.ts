@@ -103,8 +103,9 @@ describe('matchDetailUtils', () => {
       odd: 1.85,
       edge: 0.01,
       recommendedStake: 0.03,
-      status: 'fair',
+      status: 'value',
     });
+    expect(buildMarketAnalysis(basePrediction, baseOdds, null).status).toBe('fair');
   });
 
   it('returns all non-empty insights with fallback', () => {

@@ -216,9 +216,7 @@ function MarketAnalysisSection({
         </View>
         <EdgeBar edge={analysis.edge} />
         <Text style={styles.stakeReturn}>
-          {analysis.recommendedStake != null
-            ? formatStakeReturnLabel(analysis.recommendedStake, analysis.odd)
-            : 'Stake return unavailable'}
+          {formatStakeReturnLabel(analysis.recommendedStake ?? 0, analysis.odd)}
         </Text>
       </View>
     </View>
