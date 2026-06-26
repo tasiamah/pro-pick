@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import SessionLocal
@@ -12,24 +14,56 @@ from app.services.live_sync import run_live_sync
 
 logger = logging.getLogger(__name__)
 
+SCHEDULER_LOCK_ID = 514901
+
 scheduler = BackgroundScheduler()
+
+
+def _try_acquire_scheduler_lock(db: Session) -> bool:
+    if settings.database_url.startswith("sqlite"):
+        return True
+
+    acquired = db.execute(
+        text("SELECT pg_try_advisory_lock(:lock_id)"),
+        {"lock_id": SCHEDULER_LOCK_ID},
+    ).scalar_one()
+    return bool(acquired)
+
+
+def _release_scheduler_lock(db: Session) -> None:
+    if settings.database_url.startswith("sqlite"):
+        return
+
+    db.execute(
+        text("SELECT pg_advisory_unlock(:lock_id)"),
+        {"lock_id": SCHEDULER_LOCK_ID},
+    )
 
 
 def daily_update() -> None:
     logger.info("Starting daily live sync")
     db = SessionLocal()
     try:
-        summary = run_live_sync(db)
-        import_summary = summary.import_summary
-        logger.info(
-            "Daily live sync complete: %s fixtures, %s new matches, %s odds rows, "
-            "%s predictions, %s value bets",
-            summary.fixtures_fetched,
-            import_summary.matches if import_summary else 0,
-            import_summary.odds if import_summary else 0,
-            summary.predictions,
-            summary.value_bets,
-        )
+        if not _try_acquire_scheduler_lock(db):
+            logger.info(
+                "Another worker holds the scheduler lock; skipping daily live sync"
+            )
+            return
+
+        try:
+            summary = run_live_sync(db)
+            import_summary = summary.import_summary
+            logger.info(
+                "Daily live sync complete: %s fixtures, %s new matches, %s odds rows, "
+                "%s predictions, %s value bets",
+                summary.fixtures_fetched,
+                import_summary.matches if import_summary else 0,
+                import_summary.odds if import_summary else 0,
+                summary.predictions,
+                summary.value_bets,
+            )
+        finally:
+            _release_scheduler_lock(db)
     except Exception:
         logger.exception("Daily live sync failed")
     finally:
@@ -50,6 +84,8 @@ def start_scheduler() -> None:
         hour=settings.scheduler_daily_hour,
         id="daily_update",
         replace_existing=True,
+        max_instances=1,
+        coalesce=True,
     )
     scheduler.start()
     logger.info(
