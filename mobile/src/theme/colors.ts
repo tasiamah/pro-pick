@@ -1,10 +1,12 @@
 export const colors = {
   background: '#0a0e14',
   surface: '#111827',
+  surfaceElevated: '#1a2332',
   card: '#161b22',
   cardElevated: '#0d1117',
   border: '#1f2937',
   primary: '#00ff88',
+  primaryGlow: 'rgba(0, 255, 136, 0.35)',
   text: '#ffffff',
   textMuted: '#9ca3af',
   win: '#22c55e',
@@ -13,6 +15,11 @@ export const colors = {
   oddsLow: '#00ff88',
   oddsMedium: '#eab308',
   oddsHigh: '#f97316',
+  alertWarning: '#f59e0b',
+  chartHome: '#00ff88',
+  chartDraw: '#6b7280',
+  chartAway: '#3b82f6',
+  marketBlue: '#60a5fa',
   buttonBackground: '#1f2937',
 } as const;
 

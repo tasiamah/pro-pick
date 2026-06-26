@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Demo parity theme tokens for elevated surfaces, glow accents, chart palette,
+  alert colors, and typography variants (`hero`, `statValue`, `badge`,
+  `sectionSubtitle`) in `mobile/src/theme/` (PP-99).
 - Daily scheduler that syncs the current season for the top five European
   leagues via APScheduler, with logging, per-league error handling, and env
   toggles (`scheduler/jobs.py`, `daily_import.py`, PP-50).
