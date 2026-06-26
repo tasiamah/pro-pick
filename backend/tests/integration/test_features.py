@@ -109,3 +109,10 @@ def test_build_training_dataset_is_labeled_and_reproducible(
     assert again.match_ids == dataset.match_ids
     assert again.features == dataset.features
     assert again.labels == dataset.labels
+
+
+def test_build_features_requires_a_kickoff(db_session: Session) -> None:
+    match = Match(home_team_id=1, away_team_id=2, kickoff=None)
+
+    with pytest.raises(ValueError):
+        build_features(db_session, match)

@@ -107,6 +107,9 @@ def compute_features(
     form_window: int = FORM_WINDOW,
 ) -> dict[str, float]:
     """Reproducible features for ``target`` from matches before its kickoff."""
+    if form_window < 1:
+        raise ValueError("form_window must be a positive integer")
+
     past = sorted(
         (record for record in history if record.kickoff < target.kickoff),
         key=lambda record: (record.kickoff, record.match_id),
@@ -171,6 +174,8 @@ def load_match_history(
 def build_features(
     db: Session, match: Match, *, form_window: int = FORM_WINDOW
 ) -> dict[str, float]:
+    if match.kickoff is None:
+        raise ValueError("match must have a kickoff to build features")
     history = load_match_history(db, before=match.kickoff)
     return compute_features(_to_context(match), history, form_window=form_window)
 
@@ -278,6 +283,9 @@ def _head_to_head(
 def _table_points(
     past: Sequence[MatchRecord], target: MatchContext
 ) -> tuple[float, float]:
+    if target.competition_id is None or target.season is None:
+        return 0.0, 0.0
+
     home_points = 0
     away_points = 0
     for record in past:

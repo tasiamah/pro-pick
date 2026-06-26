@@ -184,3 +184,35 @@ def test_match_outcome_classifies_result() -> None:
     assert match_outcome(2, 1) == "home"
     assert match_outcome(1, 1) == "draw"
     assert match_outcome(0, 2) == "away"
+
+
+def test_compute_features_rejects_non_positive_window() -> None:
+    with pytest.raises(ValueError):
+        compute_features(_context(days=10), [], form_window=0)
+
+
+def test_table_points_require_competition_and_season() -> None:
+    history = [
+        MatchRecord(
+            match_id=1,
+            competition_id=None,
+            season=None,
+            home_team_id=1,
+            away_team_id=7,
+            kickoff=BASE + timedelta(days=1),
+            home_goals=2,
+            away_goals=0,
+        )
+    ]
+    target = MatchContext(
+        competition_id=None,
+        season=None,
+        home_team_id=1,
+        away_team_id=2,
+        kickoff=BASE + timedelta(days=10),
+    )
+
+    features = compute_features(target, history)
+
+    assert features["home_table_points"] == 0.0
+    assert features["away_table_points"] == 0.0
