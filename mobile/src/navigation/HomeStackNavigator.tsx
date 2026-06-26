@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { HomeScreen } from '../screens/HomeScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { BrandHeaderTitle } from './BrandHeaderTitle';
 import { screenTitles } from './screenTitles';
 import { stackScreenOptions } from './stackScreenOptions';
 import type { HomeStackParamList } from './types';
@@ -14,7 +15,10 @@ export function HomeStackNavigator() {
       <Stack.Screen
         name="Home"
         component={HomeScreen}
-        options={{ title: screenTitles.home }}
+        options={{
+          headerTitleAlign: 'left',
+          headerTitle: () => <BrandHeaderTitle />,
+        }}
       />
       <Stack.Screen
         name="MatchDetail"

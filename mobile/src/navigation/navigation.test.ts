@@ -25,9 +25,9 @@ describe('navigation options', () => {
   });
 
   it('uses demo screen titles', () => {
-    expect(screenTitles.home).toBe('Pro Pick');
+    expect(screenTitles.home).toBe('ProPick');
     expect(screenTitles.matches).toBe('Match Predictions');
     expect(screenTitles.favorites).toBe('Favorites');
-    expect(screenTitles.analytics).toBe('Pro Pick');
+    expect(screenTitles.analytics).toBe('ProPick');
   });
 });
