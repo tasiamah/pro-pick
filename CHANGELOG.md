@@ -63,6 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Persistent entertainment disclaimer banner on all mobile screens (PP-84).
 - Integration tests for `GET /matches/{id}` covering the detail response
   (prediction and odds) and the not-found case (PP-68).
+- API integration tests covering request validation (invalid pagination and
+  query parameters), pagination limits, and empty-state responses across the
+  matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
 - Mobile Home and Matches screens anchor the date picker on the latest imported

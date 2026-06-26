@@ -182,3 +182,16 @@ def test_get_dashboard_top_value_bets_scoped_to_today_ordered_by_edge(
         strong_today_match.id,
         weak_today_match.id,
     ]
+
+
+def test_get_dashboard_returns_empty_state_without_data(client: TestClient) -> None:
+    response = client.get("/dashboard")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["matches_today"] == 0
+    assert payload["upcoming_matches"] == 0
+    assert payload["latest_kickoff"] is None
+    assert payload["top_value_bets"] == []
+    assert payload["model_accuracy"] is None
+    assert payload["roi"] is None

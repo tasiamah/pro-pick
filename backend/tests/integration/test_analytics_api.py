@@ -85,3 +85,16 @@ def test_get_analytics_returns_accuracy_log_loss_roi_and_trend(
     assert round(payload["log_loss"], 6) == round(-math.log(0.7), 6)
     assert payload["roi"] is not None
     assert any(point["date"] == "2026-06-02" for point in payload["roi_trend"])
+
+
+def test_get_analytics_returns_empty_state_without_data(client: TestClient) -> None:
+    response = client.get("/analytics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["accuracy"] is None
+    assert payload["log_loss"] is None
+    assert payload["roi"] is None
+    assert payload["total_value_bets"] == 0
+    assert payload["settled_value_bets"] == 0
+    assert payload["roi_trend"] == []
