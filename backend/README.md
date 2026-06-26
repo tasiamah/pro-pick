@@ -20,7 +20,9 @@ uvicorn app.main:app --reload
 
 Populate the database with a deterministic demo dataset for the mobile app
 (Bournemouth vs Luton, team form history, predictions, odds, and value bets).
-The script is idempotent — safe to run multiple times:
+The script is idempotent — safe to run multiple times.
+
+### Local SQLite
 
 ```bash
 cd backend
@@ -30,6 +32,31 @@ python -m app.scripts.seed_demo
 ```
 
 Then start the API and point the mobile app at `http://localhost:8000`.
+
+### Remote database (Render / Supabase)
+
+The seed script reads `DATABASE_URL` from the environment (or `backend/.env`).
+Use this when the API runs on Render and you cannot access Render Shell.
+
+**Option A — GitHub Actions (recommended)**
+
+1. Copy the `DATABASE_URL` value from Render → **pro-pick** → **Environment**
+   (same Supabase Session pooler URI as production; must include `+psycopg2`).
+2. In GitHub → **Settings** → **Secrets and variables** → **Actions**, add repository
+   secret `DATABASE_URL` with that value.
+3. Open **Actions** → **Seed demo database** → **Run workflow**.
+
+**Option B — from your machine**
+
+```bash
+cd backend
+source .venv/bin/activate
+export DATABASE_URL='postgresql+psycopg2://postgres.[PROJECT-REF]:[PASSWORD]@[POOLER-HOST]:5432/postgres'
+alembic upgrade head
+python -m app.scripts.seed_demo
+```
+
+Never commit real connection strings to git.
 
 ## Managed PostgreSQL (Supabase)
 

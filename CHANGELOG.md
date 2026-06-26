@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- GitHub Actions workflow to seed the remote demo database via the `DATABASE_URL`
+  repository secret, so demo data can be loaded without Render Shell access.
 - Physical device E2E test checklist for iPhone sign-off before TestFlight, plus
   longer API timeouts for Render cold starts and dark-mode Expo config (PP-92).
 - Idempotent demo seed script for local development with Bournemouth vs Luton

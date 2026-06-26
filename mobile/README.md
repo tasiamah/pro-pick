@@ -50,12 +50,27 @@ URL above, or point at a machine on your LAN if you run the API locally.
 EAS builds inject `EXPO_PUBLIC_API_URL` from `eas.json` (preview and production
 profiles target `https://pro-pick.onrender.com`).
 
-For richer local or staging data, run the demo seed on the backend:
+For richer data against the deployed backend (`https://pro-pick.onrender.com`), seed
+the remote database instead of SQLite. The seed script uses `DATABASE_URL` — the same
+Supabase connection string configured on Render.
+
+**GitHub Actions (no Render Shell required):**
+
+1. Add repository secret `DATABASE_URL` in GitHub (copy from Render → pro-pick →
+   Environment).
+2. Run **Actions** → **Seed demo database** → **Run workflow**.
+
+**Local against remote:**
 
 ```bash
 cd backend
+source .venv/bin/activate
+export DATABASE_URL='postgresql+psycopg2://postgres.[PROJECT-REF]:[PASSWORD]@[POOLER-HOST]:5432/postgres'
+alembic upgrade head
 python -m app.scripts.seed_demo
 ```
+
+See `backend/README.md` for full setup details.
 
 ## Physical device E2E test (PP-92)
 
