@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.cache import set_cache_headers
 from app.core.database import get_db
 from app.models import ValueBet
 from app.schemas.common import AnalyticsOut, RoiTrendPointOut
@@ -19,7 +20,7 @@ from app.services.analytics import (
 router = APIRouter()
 
 
-@router.get("", response_model=AnalyticsOut)
+@router.get("", response_model=AnalyticsOut, dependencies=[Depends(set_cache_headers)])
 def get_analytics(db: Session = Depends(get_db)) -> AnalyticsOut:
     """Model performance and ROI of value bets (PP: GET /analytics)."""
     total_value_bets = db.execute(select(func.count(ValueBet.id))).scalar_one()

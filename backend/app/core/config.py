@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     model_retraining_enabled: bool = False
     model_retraining_interval_days: int = Field(default=7, ge=1)
 
+    cache_ttl_seconds: int = Field(default=30, ge=0)
+
+    rate_limit_enabled: bool = True
+    rate_limit_requests: int = Field(default=120, ge=1)
+    rate_limit_window_seconds: float = Field(default=60.0, gt=0)
+
     cors_origins: str = "*"
 
     @property

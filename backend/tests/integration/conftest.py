@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from app.core.database import SessionLocal
+from app.core.rate_limit import rate_limit_store
 from app.models import Competition, Match, Odds, Prediction, Team, ValueBet
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -29,6 +30,11 @@ def apply_migrations() -> None:
     )
 
     assert result.returncode == 0, result.stderr or result.stdout
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limit_store() -> None:
+    rate_limit_store.clear()
 
 
 @pytest.fixture(autouse=True)

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- API hardening: consistent JSON error responses, `Cache-Control` headers on the
+  heavy `/analytics` and `/dashboard` endpoints, and per-client rate limiting
+  with configurable limits (PP-73).
 - Shared demo UI component library for Epic 9: search, filters, form dots,
   badges, charts, odds cards, alert banner, edge bar, and dev preview screen
   (`mobile/src/components/demo/`, PP-101).

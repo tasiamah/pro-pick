@@ -70,3 +70,18 @@ def test_validate_for_runtime_rejects_empty_sync_date_offsets() -> None:
 def test_validate_for_runtime_rejects_invalid_scheduler_hour() -> None:
     with pytest.raises(ValueError):
         Settings(scheduler_daily_hour=24)
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"cache_ttl_seconds": -1},
+        {"rate_limit_requests": 0},
+        {"rate_limit_window_seconds": 0},
+    ],
+)
+def test_rejects_invalid_cache_and_rate_limit_settings(
+    overrides: dict[str, int],
+) -> None:
+    with pytest.raises(ValueError):
+        Settings(**overrides)

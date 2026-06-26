@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
 from app.core.config import settings
+from app.core.errors import register_exception_handlers
+from app.core.rate_limit import RateLimitMiddleware
 from app.scheduler.jobs import start_scheduler, stop_scheduler
 from app.schemas.common import ServiceInfoOut
 
@@ -32,6 +34,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -39,6 +42,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+register_exception_handlers(app)
 
 app.include_router(api_router)
 

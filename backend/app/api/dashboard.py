@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.cache import set_cache_headers
 from app.core.database import get_db
 from app.models import Match, ValueBet
 from app.schemas.common import DashboardOut, ValueBetOut
@@ -19,7 +20,7 @@ from app.services.analytics import (
 router = APIRouter()
 
 
-@router.get("", response_model=DashboardOut)
+@router.get("", response_model=DashboardOut, dependencies=[Depends(set_cache_headers)])
 def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
     """Summary overview for the dashboard (PP: GET /dashboard)."""
     now = datetime.utcnow()
