@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Physical device E2E test checklist for iPhone sign-off before TestFlight, plus
+  longer API timeouts for Render cold starts and dark-mode Expo config (PP-92).
 - Idempotent demo seed script for local development with Bournemouth vs Luton
   fixtures, team form history, predictions, odds, and value bets
   (`python -m app.scripts.seed_demo`, PP-108).
