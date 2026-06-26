@@ -22,14 +22,19 @@ def db_session() -> Session:
 
 
 def _make_match(
-    db: Session, *, home_goals: int | None, away_goals: int | None
+    db: Session,
+    *,
+    home_goals: int | None,
+    away_goals: int | None,
+    status: str | None = None,
 ) -> Match:
     home = Team(name="Settle Home", logo_url=None)
     away = Team(name="Settle Away", logo_url=None)
     db.add_all([home, away])
     db.flush()
 
-    status = "finished" if home_goals is not None else "scheduled"
+    if status is None:
+        status = "finished" if home_goals is not None else "scheduled"
     match = Match(
         home_team_id=home.id,
         away_team_id=away.id,
@@ -91,3 +96,17 @@ def test_settlement_skips_unfinished_matches_and_is_idempotent(
     assert pending_bet.settled is False
     assert pending_bet.profit is None
     assert (settled_bet.settled, settled_bet.profit) == (True, 15.0)
+
+
+def test_settlement_ignores_live_matches_with_intermediate_scores(
+    db_session: Session,
+) -> None:
+    live = _make_match(db_session, home_goals=1, away_goals=0, status="live")
+    bet = _make_bet(db_session, live, "home", odd=2.0, stake=10.0)
+    db_session.commit()
+
+    settled = settle_value_bets(db_session)
+
+    assert settled == 0
+    assert bet.settled is False
+    assert bet.profit is None

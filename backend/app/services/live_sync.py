@@ -15,6 +15,7 @@ from app.models import Match, ValueBet
 from app.services.analytics import actual_outcome
 from app.services.data_ingestion import FootballApiClient, FootballApiError
 from app.services.historical_import import (
+    FINISHED_MATCH_STATUS,
     UPCOMING_MATCH_STATUSES,
     HistoricalDataImporter,
     ImportSummary,
@@ -170,6 +171,7 @@ def settle_value_bets(db: Session) -> int:
         .join(Match, ValueBet.match_id == Match.id)
         .where(
             ValueBet.settled.is_(False),
+            Match.status == FINISHED_MATCH_STATUS,
             Match.home_goals.is_not(None),
             Match.away_goals.is_not(None),
         )
@@ -219,29 +221,27 @@ def run_live_sync(
     fixtures = fetch_result.fixtures
     summary.fixtures_fetched = len(fixtures)
 
-    if not fixtures:
+    if fixtures:
+        importer = HistoricalDataImporter(
+            db,
+            client=api_client,
+            import_odds=resolved_import_odds,
+            upcoming_odds_only=True,
+        )
+        summary.merge_import(importer.import_fixture_items(fixtures))
+        summary.predictions = sync_predictions_for_upcoming(db, now=resolved_now)
+        summary.value_bets = sync_value_bets_for_upcoming(db, now=resolved_now)
+    else:
         logger.info("Live sync found no fixtures for leagues %s", resolved_league_ids)
-        return summary
 
-    importer = HistoricalDataImporter(
-        db,
-        client=api_client,
-        import_odds=resolved_import_odds,
-        upcoming_odds_only=True,
-    )
-    import_summary = importer.import_fixture_items(fixtures)
-    summary.merge_import(import_summary)
-
-    summary.predictions = sync_predictions_for_upcoming(db, now=resolved_now)
-    summary.value_bets = sync_value_bets_for_upcoming(db, now=resolved_now)
     summary.settled_value_bets = settle_value_bets(db)
 
     logger.info(
         "Live sync complete: %s fixtures, %s new matches, %s odds rows, "
         "%s predictions, %s value bets, %s settled bets",
         summary.fixtures_fetched,
-        import_summary.matches,
-        import_summary.odds,
+        summary.import_summary.matches if summary.import_summary else 0,
+        summary.import_summary.odds if summary.import_summary else 0,
         summary.predictions,
         summary.value_bets,
         summary.settled_value_bets,
