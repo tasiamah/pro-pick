@@ -1,4 +1,4 @@
-"""Integration tests for the matches list API."""
+"""Integration tests for the matches API."""
 
 from __future__ import annotations
 
@@ -178,3 +178,60 @@ def test_list_matches_filters_by_kickoff_window(
     match_ids = {item["id"] for item in response.json()}
     assert in_window_match.id in match_ids
     assert out_of_window_match.id not in match_ids
+
+
+def test_get_match_returns_detail_with_prediction_and_odds(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    competition = Competition(name="Serie A", country="Italy")
+    home_team = Team(name="Juventus", logo_url=None)
+    away_team = Team(name="Napoli", logo_url=None)
+    db_session.add_all([competition, home_team, away_team])
+    db_session.flush()
+
+    match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=1),
+        status="scheduled",
+    )
+    db_session.add(match)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            Prediction(
+                match_id=match.id,
+                prob_home=0.6,
+                prob_draw=0.25,
+                prob_away=0.15,
+            ),
+            Odds(
+                match_id=match.id,
+                bookmaker="Demo",
+                home=1.7,
+                draw=3.6,
+                away=5.0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get(f"/matches/{match.id}")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == match.id
+    assert payload["competition_name"] == "Serie A"
+    assert payload["prediction"]["prob_home"] == 0.6
+    assert payload["odds"][0]["bookmaker"] == "Demo"
+    assert payload["odds"][0]["home"] == 1.7
+
+
+def test_get_match_returns_404_for_unknown_id(client: TestClient) -> None:
+    response = client.get("/matches/999999")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Match not found"
