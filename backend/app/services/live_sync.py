@@ -18,12 +18,24 @@ from app.services.historical_import import (
     HistoricalDataImporter,
     ImportSummary,
 )
+from app.services.ingestion_alerts import IngestionPipelineError
 from app.services.prediction import predict_match
 from app.services.value_bets import evaluate_match
 
 logger = logging.getLogger(__name__)
 
 PREDICTION_MODEL_VERSION = "stub-v1"
+
+
+@dataclass
+class FetchWindowResult:
+    fixtures: list[dict]
+    dates_attempted: int = 0
+    dates_failed: int = 0
+
+    @property
+    def all_dates_failed(self) -> bool:
+        return self.dates_attempted > 0 and self.dates_failed == self.dates_attempted
 
 
 @dataclass
@@ -49,17 +61,21 @@ def fetch_fixtures_for_window(
     league_ids: tuple[int, ...],
     date_offsets: tuple[int, ...],
     now: datetime | None = None,
-) -> list[dict]:
+) -> FetchWindowResult:
     resolved = now or datetime.now(UTC)
     today = resolved.date()
     league_set = set(league_ids)
     fixtures_by_id: dict[int, dict] = {}
+    dates_attempted = 0
+    dates_failed = 0
 
     for offset in date_offsets:
         sync_date = today + timedelta(days=offset)
+        dates_attempted += 1
         try:
             fixtures = client.get_fixtures_by_date(sync_date)
         except (FootballApiError, httpx.HTTPError):
+            dates_failed += 1
             logger.exception("Provider error while fetching fixtures for %s", sync_date)
             continue
 
@@ -72,7 +88,11 @@ def fetch_fixtures_for_window(
                 continue
             fixtures_by_id[int(external_id)] = fixture_item
 
-    return list(fixtures_by_id.values())
+    return FetchWindowResult(
+        fixtures=list(fixtures_by_id.values()),
+        dates_attempted=dates_attempted,
+        dates_failed=dates_failed,
+    )
 
 
 def sync_predictions_for_upcoming(
@@ -208,12 +228,18 @@ def run_live_sync(
     summary = LiveSyncSummary()
     resolved_now = _resolve_sync_now(now)
 
-    fixtures = fetch_fixtures_for_window(
+    fetch_result = fetch_fixtures_for_window(
         api_client,
         resolved_league_ids,
         resolved_offsets,
         now=resolved_now,
     )
+    if fetch_result.all_dates_failed:
+        raise IngestionPipelineError(
+            f"All {fetch_result.dates_attempted} fixture date fetches failed"
+        )
+
+    fixtures = fetch_result.fixtures
     summary.fixtures_fetched = len(fixtures)
 
     if not fixtures:

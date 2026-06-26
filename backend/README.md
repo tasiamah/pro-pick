@@ -162,6 +162,11 @@ Set `SCHEDULER_IMPORT_ODDS=false` to sync fixtures only and reduce API usage.
 The job runs at the configured UTC hour while the API process is running.
 Only one worker runs the job in production thanks to a PostgreSQL advisory lock.
 
+Ingestion failures emit structured `ERROR` logs on the `pro_pick.ingestion`
+logger (for example `Ingestion failure [scheduler.daily_update]: ...`). Filter
+these in Render logs to monitor pipeline health. Zero fixtures during off-season
+is not treated as a failure.
+
 ## PostgreSQL + Alembic (Docker Compose)
 
 ```bash
@@ -226,7 +231,7 @@ app/
 ├── api/               # endpoints (health, matches, predictions, value_bets, analytics, dashboard)
 ├── models/            # SQLAlchemy models
 ├── schemas/           # Pydantic request/response models
-├── services/          # data_ingestion, historical_import, live_sync, prediction, value_bets
+├── services/          # data_ingestion, historical_import, live_sync, ingestion_alerts, prediction, value_bets
 ├── scripts/           # CLI tools (historical import, live sync)
 ├── ml/                # features, train, model.pkl
 └── scheduler/         # scheduled jobs (daily update)

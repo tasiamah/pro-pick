@@ -12,6 +12,7 @@ from sqlalchemy.engine import Connection
 
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
+from app.services.ingestion_alerts import alert_ingestion_failure
 from app.services.live_sync import run_live_sync
 
 logger = logging.getLogger(__name__)
@@ -64,7 +65,12 @@ def daily_update() -> None:
             )
         finally:
             db.close()
-    except Exception:
+    except Exception as exc:
+        alert_ingestion_failure(
+            source="scheduler.daily_update",
+            message="Daily live sync failed",
+            exc_info=exc,
+        )
         logger.exception("Daily live sync failed")
     finally:
         if lock_connection is not None:
