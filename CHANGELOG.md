@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Value-bet confidence score derived from model certainty: the margin between
+  the chosen outcome's probability and the next most likely outcome, surfaced
+  per value bet (PP-62).
 - Mobile production API wiring: `mobile/eas.json` build profiles
   (development/preview/production) that inject `EXPO_PUBLIC_API_URL`, plus a
   `.env.example` default pointing the app at the deployed backend

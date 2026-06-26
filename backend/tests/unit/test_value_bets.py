@@ -1,6 +1,7 @@
 import pytest
 
 from app.services.value_bets import (
+    confidence_score,
     evaluate_match,
     evaluate_outcome,
     expected_value,
@@ -67,6 +68,11 @@ def test_evaluate_outcome_rejects_non_value():
     assert result.is_value is False
 
 
+def test_evaluate_outcome_without_probs_uses_model_prob_as_confidence():
+    result = evaluate_outcome("home", 0.55, 2.10)
+    assert result.confidence == 0.55
+
+
 def test_value_status_gates_on_edge_not_expected_value():
     # P=0.55, odd=1.95: EV=+0.0725 clears 5% but edge=+0.0372 does not.
     result = evaluate_outcome("home", 0.55, 1.95, edge_threshold=0.05)
@@ -88,3 +94,23 @@ def test_evaluate_match_returns_only_value_outcomes_per_market():
 
     assert {result.outcome for result in results} == {"home"}
     assert all(result.is_value for result in results)
+
+
+def test_confidence_score_uses_margin_over_next_best():
+    probs = {"home": 0.6, "draw": 0.25, "away": 0.15}
+    assert round(confidence_score(probs, "home"), 4) == 0.35
+
+
+def test_confidence_score_is_zero_for_non_favored_outcome():
+    probs = {"home": 0.6, "draw": 0.25, "away": 0.15}
+    assert confidence_score(probs, "away") == 0.0
+
+
+def test_evaluate_match_sets_margin_based_confidence():
+    probs = {"home": 0.6, "draw": 0.25, "away": 0.15}
+    odds = {"home": 2.1, "draw": 3.5, "away": 6.0}
+
+    results = evaluate_match(probs, odds)
+
+    home_bet = next(result for result in results if result.outcome == "home")
+    assert home_bet.confidence == 0.35
