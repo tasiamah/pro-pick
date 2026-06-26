@@ -18,5 +18,8 @@ class Odds(Base):
     home: Mapped[float] = mapped_column(Float)
     draw: Mapped[float] = mapped_column(Float)
     away: Mapped[float] = mapped_column(Float)
+    previous_home: Mapped[float | None] = mapped_column(Float, nullable=True)
+    previous_draw: Mapped[float | None] = mapped_column(Float, nullable=True)
+    previous_away: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     match: Mapped["Match"] = relationship(back_populates="odds")

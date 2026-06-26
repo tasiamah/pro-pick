@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Competition, Match, Odds, Team
 from app.services.data_ingestion import FootballApiClient
+from app.services.match_enrichment import capture_previous_odds
 
 FINISHED_STATUS_CODES = frozenset({"FT", "AET", "PEN", "AWD", "WO"})
 LIVE_STATUS_CODES = frozenset({"1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT"})
@@ -294,9 +295,7 @@ class HistoricalDataImporter:
         )
 
         if existing is not None:
-            existing.home = home
-            existing.draw = draw
-            existing.away = away
+            capture_previous_odds(existing, home, draw, away)
             return
 
         self.db.add(

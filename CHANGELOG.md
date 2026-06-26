@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Idempotent demo seed script for local development with Bournemouth vs Luton
   fixtures, team form history, predictions, odds, and value bets
   (`python -m app.scripts.seed_demo`, PP-108).
+- Enriched match API for demo parity: team form, prediction confidence,
+  recommended outcome, insights, odds movement fields, and list filters for
+  `status`, `odds_tier`, and `q` on `GET /matches` and `GET /matches/{id}`
+  (PP-107).
 - Value-bet settlement for ROI tracking: once a match finishes, open value bets
   are scored against the result and their realized profit (fractional-Kelly
   stake) is recorded, so `/analytics` reports ROI and its trend over time
