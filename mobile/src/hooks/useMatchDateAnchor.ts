@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useDashboard } from '../api/hooks';
 import {
@@ -28,12 +28,14 @@ export function useMatchDateAnchor() {
     const rangeStart = dateRange[0] ?? startOfUtcDay();
     return buildDateWindowParams(rangeStart, addUtcDays(anchorDate, 1));
   }, [anchorDate, dateRange]);
-  const [selectedDate, setSelectedDate] = useState(() => startOfUtcDay());
   const anchorKey = toUtcDateKey(anchorDate);
+  const [selectedDate, setSelectedDate] = useState(anchorDate);
+  const [prevAnchorKey, setPrevAnchorKey] = useState(anchorKey);
 
-  useEffect(() => {
+  if (anchorKey !== prevAnchorKey) {
+    setPrevAnchorKey(anchorKey);
     setSelectedDate(anchorDate);
-  }, [anchorKey, anchorDate]);
+  }
 
   return {
     anchorDate,

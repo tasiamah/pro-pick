@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -46,27 +46,35 @@ def parse_kickoff(raw_value: str | None) -> datetime | None:
     if not raw_value:
         return None
     normalized = raw_value.replace("Z", "+00:00")
-    return datetime.fromisoformat(normalized)
+    parsed = datetime.fromisoformat(normalized)
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(UTC).replace(tzinfo=None)
+    return parsed
 
 
 def extract_match_winner_odds(
     bookmaker: dict,
 ) -> tuple[str, float, float, float] | None:
+    name = bookmaker.get("name")
+    if not name:
+        return None
+
     for bet in bookmaker.get("bets", []):
         if bet.get("name") not in MATCH_WINNER_BET_NAMES:
             continue
 
-        values = {item["value"]: float(item["odd"]) for item in bet.get("values", [])}
+        values: dict[str, float] = {}
+        for item in bet.get("values", []):
+            try:
+                values[item["value"]] = float(item["odd"])
+            except (KeyError, TypeError, ValueError):
+                continue
+
         required = {"Home", "Draw", "Away"}
         if not required.issubset(values):
             continue
 
-        return (
-            bookmaker["name"],
-            values["Home"],
-            values["Draw"],
-            values["Away"],
-        )
+        return name, values["Home"], values["Draw"], values["Away"]
 
     return None
 

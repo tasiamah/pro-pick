@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 import pytest
 from sqlalchemy import create_engine
@@ -88,7 +88,43 @@ def test_map_fixture_status_maps_finished_and_live_codes() -> None:
 def test_parse_kickoff_parses_utc_timestamp() -> None:
     kickoff = parse_kickoff("2024-08-16T19:00:00+00:00")
 
-    assert kickoff == datetime(2024, 8, 16, 19, 0, tzinfo=UTC)
+    assert kickoff == datetime(2024, 8, 16, 19, 0)
+    assert kickoff.tzinfo is None
+
+
+def test_parse_kickoff_normalizes_z_suffix_to_utc_naive() -> None:
+    kickoff = parse_kickoff("2024-08-16T19:00:00Z")
+
+    assert kickoff == datetime(2024, 8, 16, 19, 0)
+    assert kickoff.tzinfo is None
+
+
+def test_extract_match_winner_odds_skips_malformed_values() -> None:
+    bookmaker = {
+        "name": "Bet365",
+        "bets": [
+            {
+                "name": "Match Winner",
+                "values": [
+                    {"value": "Home", "odd": "not-a-number"},
+                    {"value": "Draw", "odd": "3.40"},
+                    {"value": "Away", "odd": "4.20"},
+                ],
+            },
+            {
+                "name": "Match Winner",
+                "values": [
+                    {"value": "Home", "odd": "1.85"},
+                    {"value": "Draw", "odd": "3.40"},
+                    {"value": "Away", "odd": "4.20"},
+                ],
+            },
+        ],
+    }
+
+    odds = extract_match_winner_odds(bookmaker)
+
+    assert odds == ("Bet365", 1.85, 3.4, 4.2)
 
 
 def test_extract_match_winner_odds_reads_home_draw_away_values() -> None:
