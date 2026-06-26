@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import datetime
 
 import pytest
@@ -17,7 +18,7 @@ BASE = datetime(2026, 6, 27, 15, 0)
 
 
 @pytest.fixture
-def db_session() -> Session:
+def db_session() -> Iterator[Session]:
     db = SessionLocal()
     try:
         yield db
@@ -110,7 +111,7 @@ def test_generate_value_bets_replaces_unsettled_but_keeps_settled(
     unsettled = [bet for bet in bets if not bet.settled]
     assert len(settled) == 1
     assert settled[0].profit == 1.0
-    assert all(bet.outcome == "home" for bet in unsettled)
+    assert [bet.outcome for bet in unsettled] == ["home"]
 
 
 def test_generate_value_bets_returns_empty_without_prediction_or_odds(

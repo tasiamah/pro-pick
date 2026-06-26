@@ -134,7 +134,7 @@ def generate_value_bets(db: Session, match: Match) -> list[ValueBet]:
     if odds is None:
         return []
 
-    prediction = max(match.predictions, key=lambda item: item.created_at)
+    prediction = max(match.predictions, key=lambda item: (item.created_at, item.id))
     probabilities = {
         "home": prediction.prob_home,
         "draw": prediction.prob_draw,
