@@ -63,6 +63,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Persistent entertainment disclaimer banner on all mobile screens (PP-84).
 
 ### Changed
+- Mobile Home and Matches screens anchor the date picker on the latest imported
+  kickoff when no upcoming fixtures exist, so historical data is visible
+  (PP-49).
+- Default historical import seasons set to 2022–2024 for API-Football free tier
+  (PP-49).
+
+### Fixed
+- `GET /dashboard` now returns `latest_kickoff` so clients can browse imported
+  historical match weeks (PP-49).
+
+### Changed
 - Mobile screens use shared query-state helpers so loading, empty, and error
   views stay consistent and keep cached data visible during refetch failures
   (PP-85).

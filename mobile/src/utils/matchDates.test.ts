@@ -1,7 +1,9 @@
 import {
   buildDateRange,
+  buildDateRangeEndingAt,
   buildDateWindowParams,
   filterMatchesByDate,
+  resolveMatchAnchorDate,
   startOfUtcDay,
   toUtcDateKey,
 } from './matchDates';
@@ -28,11 +30,20 @@ describe('matchDates', () => {
 
   it('builds API params for the visible date window', () => {
     const start = startOfUtcDay(new Date('2026-06-24T15:00:00Z'));
-    const params = buildDateWindowParams(start);
+    const end = startOfUtcDay(new Date('2026-07-01T00:00:00Z'));
+    const params = buildDateWindowParams(start, end);
 
     expect(params.kickoff_from).toBe('2026-06-24T00:00:00.000Z');
     expect(params.kickoff_to).toBe('2026-07-01T00:00:00.000Z');
     expect(params.limit).toBe(200);
+  });
+
+  it('anchors on the latest kickoff when nothing is upcoming', () => {
+    const anchor = resolveMatchAnchorDate(0, '2025-05-25T18:30:00Z');
+    const range = buildDateRangeEndingAt(anchor, 3);
+
+    expect(toUtcDateKey(anchor)).toBe('2025-05-25');
+    expect(range.map(toUtcDateKey)).toEqual(['2025-05-23', '2025-05-24', '2025-05-25']);
   });
 
   it('filters and sorts matches for the selected day', () => {

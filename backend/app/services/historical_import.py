@@ -16,7 +16,7 @@ LIVE_STATUS_CODES = frozenset({"1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT"}
 MATCH_WINNER_BET_NAMES = frozenset({"Match Winner", "1X2", "Home/Draw/Away"})
 
 DEFAULT_LEAGUE_IDS = (39, 140, 135, 78, 61)
-DEFAULT_SEASONS = (2023, 2024, 2025)
+DEFAULT_SEASONS = (2022, 2023, 2024)
 
 
 @dataclass

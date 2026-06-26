@@ -78,6 +78,7 @@ class AnalyticsOut(BaseModel):
 class DashboardOut(BaseModel):
     matches_today: int = 0
     upcoming_matches: int = 0
+    latest_kickoff: datetime | None = None
     top_value_bets: list[ValueBetOut] = []
     model_accuracy: float | None = None
     roi: float | None = None
