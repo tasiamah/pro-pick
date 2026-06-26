@@ -1,5 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -11,17 +12,25 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMatch, useValueBets } from '../api/hooks';
 import type { MatchDetail, Odds, Prediction, ValueBet } from '../api/types';
 import {
-  AsyncState,
+  AiPickLabel,
+  AlertBanner,
+  ConfidenceRing,
+  EdgeBar,
   EmptyState,
   ErrorState,
+  InsightBullet,
   LoadingState,
-  ValueBetCard,
+  OddsMarketCard,
+  ProbabilityBarChart,
+  SectionHeader,
+  ValueStatusBadge,
 } from '../components';
+import { formatKickoff, formatPercent } from '../components/formatters';
 import {
-  formatKickoff,
-  formatOdd,
-  formatPercent,
-} from '../components/formatters';
+  formatPredictedOutcomeLabel,
+  getConfidence,
+  getRecommendedOutcome,
+} from '../components/matchCard/matchCardUtils';
 import type {
   FavoritesStackParamList,
   HomeStackParamList,
@@ -30,7 +39,17 @@ import type {
 import { colors, radii, spacing, typography } from '../theme';
 import { formatMatchTeams } from '../utils/matchDisplay';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
-import { parseMatchId } from './matchDetailUtils';
+import {
+  buildMarketAnalysis,
+  deriveMarketMovements,
+  findValueBetForOutcome,
+  formatStakeReturnLabel,
+  getMatchInsights,
+  hasSignificantOddsMovement,
+  impliedProbability,
+  parseMatchId,
+  type MarketMovements,
+} from './matchDetailUtils';
 
 type MatchDetailProps =
   | NativeStackScreenProps<HomeStackParamList, 'MatchDetail'>
@@ -58,126 +77,148 @@ function MatchHeader({ match }: MatchHeaderProps) {
   );
 }
 
-type PredictionSectionProps = {
-  prediction: Prediction | null;
+type RecommendedPickSectionProps = {
+  prediction: Prediction;
+  homeName: string;
+  awayName: string;
 };
 
-function PredictionSection({ prediction }: PredictionSectionProps) {
+function RecommendedPickSection({
+  prediction,
+  homeName,
+  awayName,
+}: RecommendedPickSectionProps) {
+  const confidencePercent = Math.round(getConfidence(prediction) * 100);
+
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Prediction</Text>
-      {prediction ? (
-        <View style={styles.infoCard}>
-          <Text style={styles.modelVersion}>Model {prediction.model_version}</Text>
-          <View style={styles.probabilityRow}>
-            <ProbabilityItem label="Home" value={prediction.prob_home} />
-            <ProbabilityItem label="Draw" value={prediction.prob_draw} />
-            <ProbabilityItem label="Away" value={prediction.prob_away} />
-          </View>
+    <View style={styles.sectionCard}>
+      <View style={styles.recommendedPickRow}>
+        <ConfidenceRing value={confidencePercent} />
+        <View style={styles.recommendedPickCopy}>
+          <AiPickLabel />
+          <Text style={styles.recommendedPickLabel}>
+            {formatPredictedOutcomeLabel(
+              getRecommendedOutcome(prediction),
+              homeName,
+              awayName,
+            )}
+          </Text>
+          <Text style={styles.confidenceCaption}>
+            {confidencePercent}% model confidence
+          </Text>
         </View>
-      ) : (
-        <EmptyState message="No prediction available" />
-      )}
-    </View>
-  );
-}
-
-type ProbabilityItemProps = {
-  label: string;
-  value: number;
-};
-
-function ProbabilityItem({ label, value }: ProbabilityItemProps) {
-  return (
-    <View style={styles.probabilityItem}>
-      <Text style={styles.probabilityLabel}>{label}</Text>
-      <Text style={styles.probabilityValue}>{formatPercent(value)}</Text>
-    </View>
-  );
-}
-
-type OddsSectionProps = {
-  odds: Odds[];
-};
-
-function OddsSection({ odds }: OddsSectionProps) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Odds by market</Text>
-      {odds.length > 0 ? (
-        <View style={styles.cardList}>
-          {odds.map((entry) => (
-            <OddsRow key={entry.bookmaker} odds={entry} />
-          ))}
-        </View>
-      ) : (
-        <EmptyState message="No odds available" />
-      )}
-    </View>
-  );
-}
-
-type OddsRowProps = {
-  odds: Odds;
-};
-
-function OddsRow({ odds }: OddsRowProps) {
-  return (
-    <View style={styles.infoCard}>
-      <Text style={styles.bookmaker}>{odds.bookmaker}</Text>
-      <View style={styles.oddsRow}>
-        <OddsItem label="Home" value={odds.home} />
-        <OddsItem label="Draw" value={odds.draw} />
-        <OddsItem label="Away" value={odds.away} />
       </View>
     </View>
   );
 }
 
-type OddsItemProps = {
-  label: string;
-  value: number;
+type KeyInsightsSectionProps = {
+  insights: string[];
 };
 
-function OddsItem({ label, value }: OddsItemProps) {
+function KeyInsightsSection({ insights }: KeyInsightsSectionProps) {
   return (
-    <View style={styles.oddsItem}>
-      <Text style={styles.oddsLabel}>{label}</Text>
-      <Text style={styles.oddsValue}>{formatOdd(value)}</Text>
+    <View style={styles.section}>
+      <SectionHeader title="Key Insights" />
+      <View style={styles.insightsList}>
+        {insights.map((insight, index) => (
+          <InsightBullet key={`${index}-${insight}`} text={insight} />
+        ))}
+      </View>
     </View>
   );
 }
 
-type ValueBetsSectionProps = {
-  isLoading: boolean;
-  error: unknown;
-  valueBets: ValueBet[];
-  onRetry: () => void;
+type LiveOddsSectionProps = {
+  odds: Odds;
+  movements: MarketMovements | null;
+  onUpdateOdds: () => void;
+  isUpdating: boolean;
+  showMovementAlert: boolean;
 };
 
-function ValueBetsSection({
-  isLoading,
-  error,
-  valueBets,
-  onRetry,
-}: ValueBetsSectionProps) {
+function LiveOddsSection({
+  odds,
+  movements,
+  onUpdateOdds,
+  isUpdating,
+  showMovementAlert,
+}: LiveOddsSectionProps) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Value bets</Text>
-      <AsyncState
-        isLoading={isLoading}
-        error={error}
-        isEmpty={valueBets.length === 0}
-        emptyMessage="No value bets for this match"
-        errorMessage="Could not load value bets"
-        onRetry={onRetry}
+      <SectionHeader subtitle="Home, draw, and away prices" title="Live Odds" />
+      <View style={styles.oddsRow}>
+        <OddsMarketCard
+          label="Home Win"
+          movement={movements?.home}
+          price={odds.home}
+        />
+        <OddsMarketCard label="Draw" movement={movements?.draw} price={odds.draw} />
+        <OddsMarketCard
+          label="Away Win"
+          movement={movements?.away}
+          price={odds.away}
+        />
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Update odds"
+        accessibilityState={{ disabled: isUpdating }}
+        disabled={isUpdating}
+        onPress={onUpdateOdds}
+        style={({ pressed }) => [
+          styles.updateButton,
+          isUpdating && styles.updateButtonDisabled,
+          pressed && !isUpdating && styles.pressed,
+        ]}
       >
-        <View style={styles.cardList}>
-          {valueBets.map((valueBet) => (
-            <ValueBetCard key={valueBet.id} valueBet={valueBet} />
-          ))}
+        <Text style={styles.updateButtonText}>
+          {isUpdating ? 'Updating…' : 'Update Odds'}
+        </Text>
+      </Pressable>
+      {showMovementAlert ? (
+        <AlertBanner message="Significant Odds Movement Detected" />
+      ) : null}
+    </View>
+  );
+}
+
+type MarketAnalysisSectionProps = {
+  prediction: Prediction;
+  odds: Odds;
+  valueBets: ValueBet[];
+};
+
+function MarketAnalysisSection({
+  prediction,
+  odds,
+  valueBets,
+}: MarketAnalysisSectionProps) {
+  const outcome = getRecommendedOutcome(prediction);
+  const valueBet = findValueBetForOutcome(valueBets, outcome);
+  const analysis = buildMarketAnalysis(prediction, odds, valueBet);
+
+  return (
+    <View style={styles.section}>
+      <SectionHeader
+        subtitle="Model probability versus market pricing"
+        title="AI vs Market Analysis"
+      />
+      <View style={styles.sectionCard}>
+        <ValueStatusBadge status={analysis.status} />
+        <View style={styles.analysisStats}>
+          <Text style={styles.analysisStat}>
+            Model {formatPercent(analysis.modelProb)}
+          </Text>
+          <Text style={styles.analysisStat}>
+            Market {formatPercent(impliedProbability(analysis.odd))}
+          </Text>
         </View>
-      </AsyncState>
+        <EdgeBar edge={analysis.edge} />
+        <Text style={styles.stakeReturn}>
+          {formatStakeReturnLabel(analysis.recommendedStake ?? 0, analysis.odd)}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -189,10 +230,26 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
     { match_id: matchId ?? undefined },
     { enabled: matchId != null },
   );
+  const [oddsBaseline, setOddsBaseline] = useState<Odds | null>(null);
+  const [marketMovements, setMarketMovements] = useState<MarketMovements | null>(
+    null,
+  );
+  const [isUpdatingOdds, setIsUpdatingOdds] = useState(false);
 
+  const match = matchQuery.data;
+  const primaryOdds = match?.odds?.[0] ?? null;
+
+  const insights = useMemo(
+    () => getMatchInsights(match?.prediction ?? null),
+    [match?.prediction],
+  );
+
+  const showMovementAlert = hasSignificantOddsMovement(marketMovements);
   const isRefreshing = matchQuery.isRefetching || valueBetsQuery.isRefetching;
 
   const onRefresh = useCallback(() => {
+    setMarketMovements(null);
+    setOddsBaseline(null);
     void matchQuery.refetch();
     void valueBetsQuery.refetch();
   }, [matchQuery, valueBetsQuery]);
@@ -200,6 +257,25 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
   const onRetry = useCallback(() => {
     onRefresh();
   }, [onRefresh]);
+
+  const onUpdateOdds = useCallback(async () => {
+    const baseline = oddsBaseline ?? primaryOdds;
+    if (!baseline) {
+      return;
+    }
+
+    setIsUpdatingOdds(true);
+    try {
+      const result = await matchQuery.refetch();
+      const updatedOdds = result.data?.odds?.[0] ?? null;
+      if (updatedOdds) {
+        setMarketMovements(deriveMarketMovements(baseline, updatedOdds));
+        setOddsBaseline(updatedOdds);
+      }
+    } finally {
+      setIsUpdatingOdds(false);
+    }
+  }, [matchQuery, oddsBaseline, primaryOdds]);
 
   if (matchId == null) {
     return <ErrorState message="Invalid match" />;
@@ -213,10 +289,13 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
     return <ErrorState message="Could not load match" onRetry={onRetry} />;
   }
 
-  const match = matchQuery.data;
   if (!match) {
     return <EmptyState message="Match not found" />;
   }
+
+  const homeName = match.home_team.name;
+  const awayName = match.away_team.name;
+  const prediction = match.prediction;
 
   return (
     <ScrollView
@@ -232,14 +311,50 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
       }
     >
       <MatchHeader match={match} />
-      <PredictionSection prediction={match.prediction} />
-      <OddsSection odds={match.odds ?? []} />
-      <ValueBetsSection
-        isLoading={isInitialQueryLoad(valueBetsQuery.isLoading, valueBetsQuery.data)}
-        error={queryErrorForDisplay(valueBetsQuery.error, valueBetsQuery.data)}
-        valueBets={valueBetsQuery.data ?? []}
-        onRetry={() => void valueBetsQuery.refetch()}
-      />
+
+      {prediction ? (
+        <>
+          <RecommendedPickSection
+            awayName={awayName}
+            homeName={homeName}
+            prediction={prediction}
+          />
+          <View style={styles.section}>
+            <SectionHeader title="Win Probabilities" />
+            <View style={styles.sectionCard}>
+              <ProbabilityBarChart
+                away={prediction.prob_away}
+                draw={prediction.prob_draw}
+                home={prediction.prob_home}
+              />
+            </View>
+          </View>
+        </>
+      ) : (
+        <EmptyState message="No prediction available" />
+      )}
+
+      {insights.length > 0 ? <KeyInsightsSection insights={insights} /> : null}
+
+      {primaryOdds ? (
+        <LiveOddsSection
+          isUpdating={isUpdatingOdds}
+          movements={marketMovements}
+          odds={primaryOdds}
+          onUpdateOdds={() => void onUpdateOdds()}
+          showMovementAlert={showMovementAlert}
+        />
+      ) : (
+        <EmptyState message="No odds available" />
+      )}
+
+      {prediction && primaryOdds ? (
+        <MarketAnalysisSection
+          odds={primaryOdds}
+          prediction={prediction}
+          valueBets={valueBetsQuery.data ?? []}
+        />
+      ) : null}
     </ScrollView>
   );
 }
@@ -257,21 +372,15 @@ const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
   },
-  sectionTitle: {
-    ...typography.bodySemibold,
-    color: colors.text,
-  },
-  cardList: {
-    gap: spacing.md,
-  },
-  headerCard: {
+  sectionCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
+    gap: spacing.md,
     padding: spacing.lg,
   },
-  infoCard: {
+  headerCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: radii.md,
@@ -301,50 +410,57 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textTransform: 'capitalize',
   },
-  modelVersion: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginBottom: spacing.md,
-  },
-  probabilityRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  probabilityItem: {
+  recommendedPickRow: {
     alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  recommendedPickCopy: {
     flex: 1,
+    gap: spacing.xs,
   },
-  probabilityLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  probabilityValue: {
-    ...typography.bodySemibold,
-    color: colors.primary,
-  },
-  bookmaker: {
+  recommendedPickLabel: {
     ...typography.bodySemibold,
     color: colors.text,
-    marginBottom: spacing.md,
+  },
+  confidenceCaption: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  insightsList: {
+    gap: spacing.sm,
   },
   oddsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: spacing.md,
   },
-  oddsItem: {
+  updateButton: {
     alignItems: 'center',
-    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  oddsLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
+  updateButtonDisabled: {
+    opacity: 0.6,
   },
-  oddsValue: {
+  updateButtonText: {
     ...typography.bodySemibold,
+    color: colors.background,
+  },
+  pressed: {
+    opacity: 0.85,
+  },
+  analysisStats: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  analysisStat: {
+    ...typography.label,
+    color: colors.textMuted,
+  },
+  stakeReturn: {
+    ...typography.bodySmall,
     color: colors.text,
   },
 });
