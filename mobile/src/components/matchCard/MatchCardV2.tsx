@@ -84,10 +84,7 @@ export function MatchCardV2({
   const homeName = getTeamName(match.home_team, 'Home');
   const awayName = getTeamName(match.away_team, 'Away');
 
-  const handleDetailsPress = () => {
-    const handler = onDetailsPress ?? onPress;
-    handler?.();
-  };
+  const detailsHandler = onDetailsPress ?? onPress;
 
   return (
     <View style={styles.card}>
@@ -96,13 +93,9 @@ export function MatchCardV2({
           {match.competition_name ?? 'League'}
         </Text>
         <View style={styles.headerActions}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Notifications"
-            style={({ pressed }) => pressed && styles.pressed}
-          >
+          <View accessibilityElementsHidden>
             <Ionicons name="notifications-outline" size={18} color={colors.textMuted} />
-          </Pressable>
+          </View>
           <HeaderFavoriteStar team={match.home_team} />
           <Text style={styles.kickoff}>{formatKickoff(match.kickoff)}</Text>
         </View>
@@ -139,7 +132,7 @@ export function MatchCardV2({
         </View>
       ) : null}
 
-      <DetailsLink onPress={handleDetailsPress} />
+      {detailsHandler ? <DetailsLink onPress={detailsHandler} /> : null}
     </View>
   );
 }

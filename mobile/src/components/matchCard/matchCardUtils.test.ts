@@ -65,7 +65,7 @@ describe('matchCardUtils', () => {
     expect(formatPredictedOutcomeLabel('away', 'Bournemouth', 'Luton')).toBe('Luton Win');
   });
 
-  it('uses the first insight or a fallback message', () => {
+  it('uses the first non-empty insight or a fallback message', () => {
     expect(getMatchInsight(prediction)).toBe(
       'AI model highlights this fixture based on current form and market odds.',
     );
@@ -73,6 +73,12 @@ describe('matchCardUtils', () => {
       getMatchInsight({
         ...prediction,
         insights: ['Strong home advantage in recent meetings.'],
+      }),
+    ).toBe('Strong home advantage in recent meetings.');
+    expect(
+      getMatchInsight({
+        ...prediction,
+        insights: ['', 'Strong home advantage in recent meetings.'],
       }),
     ).toBe('Strong home advantage in recent meetings.');
   });

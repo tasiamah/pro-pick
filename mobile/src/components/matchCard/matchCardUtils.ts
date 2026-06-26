@@ -65,7 +65,9 @@ export function formatPredictedOutcomeLabel(
 }
 
 export function getMatchInsight(prediction: Prediction): string {
-  const insight = prediction.insights?.[0]?.trim();
+  const insight = prediction.insights
+    ?.map((entry) => entry.trim())
+    .find((entry) => entry.length > 0);
   return insight || 'AI model highlights this fixture based on current form and market odds.';
 }
 
