@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
+from contextlib import closing
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.engine import Connection
 
 from app.core.config import settings
-from app.core.database import SessionLocal
+from app.core.database import SessionLocal, engine
 from app.services.live_sync import run_live_sync
 
 logger = logging.getLogger(__name__)
@@ -19,22 +20,16 @@ SCHEDULER_LOCK_ID = 514901
 scheduler = BackgroundScheduler()
 
 
-def _try_acquire_scheduler_lock(db: Session) -> bool:
-    if settings.database_url.startswith("sqlite"):
-        return True
-
-    acquired = db.execute(
+def _try_acquire_scheduler_lock(connection: Connection) -> bool:
+    acquired = connection.execute(
         text("SELECT pg_try_advisory_lock(:lock_id)"),
         {"lock_id": SCHEDULER_LOCK_ID},
     ).scalar_one()
     return bool(acquired)
 
 
-def _release_scheduler_lock(db: Session) -> None:
-    if settings.database_url.startswith("sqlite"):
-        return
-
-    db.execute(
+def _release_scheduler_lock(connection: Connection) -> None:
+    connection.execute(
         text("SELECT pg_advisory_unlock(:lock_id)"),
         {"lock_id": SCHEDULER_LOCK_ID},
     )
@@ -42,14 +37,18 @@ def _release_scheduler_lock(db: Session) -> None:
 
 def daily_update() -> None:
     logger.info("Starting daily live sync")
-    db = SessionLocal()
-    try:
-        if not _try_acquire_scheduler_lock(db):
-            logger.info(
-                "Another worker holds the scheduler lock; skipping daily live sync"
-            )
-            return
+    lock_connection: Connection | None = None
 
+    try:
+        if not settings.database_url.startswith("sqlite"):
+            lock_connection = engine.connect()
+            if not _try_acquire_scheduler_lock(lock_connection):
+                logger.info(
+                    "Another worker holds the scheduler lock; skipping daily live sync"
+                )
+                return
+
+        db = SessionLocal()
         try:
             summary = run_live_sync(db)
             import_summary = summary.import_summary
@@ -63,11 +62,13 @@ def daily_update() -> None:
                 summary.value_bets,
             )
         finally:
-            _release_scheduler_lock(db)
+            db.close()
     except Exception:
         logger.exception("Daily live sync failed")
     finally:
-        db.close()
+        if lock_connection is not None:
+            with closing(lock_connection):
+                _release_scheduler_lock(lock_connection)
 
 
 def start_scheduler() -> None:
