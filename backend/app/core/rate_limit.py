@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import threading
 import time
 
@@ -17,16 +18,24 @@ class FixedWindowStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._windows: dict[str, tuple[float, int]] = {}
+        self._last_prune = 0.0
 
-    def increment(self, key: str, window_seconds: float) -> int:
+    def increment(self, key: str, window_seconds: float) -> tuple[int, float]:
         now = time.monotonic()
         with self._lock:
+            if now - self._last_prune >= window_seconds:
+                self._windows = {
+                    client: window
+                    for client, window in self._windows.items()
+                    if now - window[0] < window_seconds
+                }
+                self._last_prune = now
             window_start, count = self._windows.get(key, (now, 0))
             if now - window_start >= window_seconds:
                 window_start, count = now, 0
             count += 1
             self._windows[key] = (window_start, count)
-            return count
+            return count, window_start + window_seconds
 
     def clear(self) -> None:
         with self._lock:
@@ -46,11 +55,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         client = request.client.host if request.client else "unknown"
-        count = rate_limit_store.increment(client, settings.rate_limit_window_seconds)
+        count, reset_at = rate_limit_store.increment(
+            client, settings.rate_limit_window_seconds
+        )
         if count > settings.rate_limit_requests:
+            retry_after = max(1, math.ceil(reset_at - time.monotonic()))
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Rate limit exceeded. Try again later."},
-                headers={"Retry-After": str(int(settings.rate_limit_window_seconds))},
+                headers={"Retry-After": str(retry_after)},
             )
         return await call_next(request)

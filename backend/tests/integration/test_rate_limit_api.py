@@ -26,7 +26,8 @@ def test_requests_exceeding_limit_return_429(
 
     response = client.get("/health")
     assert response.json() == {"detail": "Rate limit exceeded. Try again later."}
-    assert "Retry-After" in response.headers
+    retry_after = int(response.headers["Retry-After"])
+    assert 1 <= retry_after <= settings.rate_limit_window_seconds
 
 
 def test_rate_limiting_can_be_disabled(

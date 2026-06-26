@@ -37,11 +37,11 @@ class Settings(BaseSettings):
     model_algorithm: str = "logistic"
     model_calibrate: bool = True
 
-    cache_ttl_seconds: int = 30
+    cache_ttl_seconds: int = Field(default=30, ge=0)
 
     rate_limit_enabled: bool = True
-    rate_limit_requests: int = 120
-    rate_limit_window_seconds: float = 60.0
+    rate_limit_requests: int = Field(default=120, ge=1)
+    rate_limit_window_seconds: float = Field(default=60.0, gt=0)
 
     cors_origins: str = "*"
 
