@@ -8,63 +8,26 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { useMatches } from '../api/hooks';
-import type { Dashboard } from '../api/types';
+import { useAnalytics, useMatches } from '../api/hooks';
 import {
+  AiPredictionsHero,
   AsyncState,
   DatePickerRow,
   EmptyState,
   ErrorState,
   LoadingState,
   MatchCard,
+  SectionHeader,
   ValueBetCard,
 } from '../components';
-import { formatPercent } from '../components/formatters';
 import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
 import type { HomeStackParamList } from '../navigation/types';
-import { colors, radii, spacing, typography } from '../theme';
-import {
-  filterMatchesByDate,
-} from '../utils/matchDates';
+import { colors, spacing, typography } from '../theme';
+import { filterMatchesByDate } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
+import { buildHeroStats } from './homeHeroUtils';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
-
-function formatNullablePercent(value: number | null): string {
-  return value == null ? '—' : formatPercent(value);
-}
-
-type StatItemProps = {
-  label: string;
-  value: string;
-};
-
-function StatItem({ label, value }: StatItemProps) {
-  return (
-    <View style={styles.statCard}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
-    </View>
-  );
-}
-
-type StatsRowProps = {
-  dashboard: Dashboard;
-};
-
-function StatsRow({ dashboard }: StatsRowProps) {
-  return (
-    <View style={styles.statsGrid}>
-      <StatItem label="Matches today" value={String(dashboard.matches_today)} />
-      <StatItem label="Upcoming" value={String(dashboard.upcoming_matches)} />
-      <StatItem
-        label="Model accuracy"
-        value={formatNullablePercent(dashboard.model_accuracy)}
-      />
-      <StatItem label="ROI" value={formatNullablePercent(dashboard.roi)} />
-    </View>
-  );
-}
 
 export function HomeScreen({ navigation }: Props) {
   const {
@@ -75,22 +38,39 @@ export function HomeScreen({ navigation }: Props) {
     dashboardQuery,
   } = useMatchDateAnchor();
   const matchesQuery = useMatches(matchListParams);
+  const analyticsQuery = useAnalytics();
 
   const filteredMatches = useMemo(
     () => filterMatchesByDate(matchesQuery.data ?? [], selectedDate),
     [matchesQuery.data, selectedDate],
   );
 
+  const heroStats = useMemo(
+    () =>
+      dashboardQuery.data
+        ? buildHeroStats(
+            dashboardQuery.data,
+            analyticsQuery.data,
+            matchesQuery.data ?? [],
+          )
+        : null,
+    [analyticsQuery.data, dashboardQuery.data, matchesQuery.data],
+  );
+
   const isInitialLoading =
     isInitialQueryLoad(dashboardQuery.isLoading, dashboardQuery.data) ||
     isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data);
 
-  const isRefreshing = dashboardQuery.isRefetching || matchesQuery.isRefetching;
+  const isRefreshing =
+    dashboardQuery.isRefetching ||
+    matchesQuery.isRefetching ||
+    analyticsQuery.isRefetching;
 
   const onRefresh = useCallback(() => {
     void dashboardQuery.refetch();
     void matchesQuery.refetch();
-  }, [dashboardQuery, matchesQuery]);
+    void analyticsQuery.refetch();
+  }, [analyticsQuery, dashboardQuery, matchesQuery]);
 
   const onRetry = useCallback(() => {
     onRefresh();
@@ -105,7 +85,7 @@ export function HomeScreen({ navigation }: Props) {
   }
 
   const dashboard = dashboardQuery.data;
-  if (!dashboard) {
+  if (!dashboard || !heroStats) {
     return <EmptyState message="No dashboard data available" />;
   }
 
@@ -128,7 +108,7 @@ export function HomeScreen({ navigation }: Props) {
         onSelectDate={setSelectedDate}
       />
 
-      <StatsRow dashboard={dashboard} />
+      <AiPredictionsHero stats={heroStats} />
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Matches</Text>
@@ -157,7 +137,10 @@ export function HomeScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Top value bets</Text>
+        <SectionHeader
+          subtitle="Highest edge picks kicking off today"
+          title="Top Value Bets"
+        />
         <AsyncState
           isLoading={false}
           error={null}
@@ -199,29 +182,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.bodySemibold,
     color: colors.text,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  statCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    flexBasis: '47%',
-    flexGrow: 1,
-    padding: spacing.lg,
-  },
-  statLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  statValue: {
-    ...typography.title,
-    color: colors.primary,
   },
   cardList: {
     gap: spacing.md,

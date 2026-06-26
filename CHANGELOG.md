@@ -133,6 +133,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
+- Home screen stat grid replaced with AI Predictions hero showing win rate, average
+  odds, and value bet count; top value bets section uses demo section header
+  styling (PP-105).
 - Match detail screen redesigned with confidence ring, probability chart, live odds
   movement, and AI vs market analysis using shared demo components (PP-104).
 - Matches screen rebuilt with search, status and odds-tier filters, MatchCard v2

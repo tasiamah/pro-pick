@@ -1,5 +1,6 @@
 export {
   AiPickLabel,
+  AiPredictionsHero,
   AlertBanner,
   ConfidenceBadge,
   ConfidenceRing,
