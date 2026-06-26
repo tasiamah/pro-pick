@@ -147,6 +147,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   query parameters), pagination limits, and empty-state responses across the
   matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
+### Fixed
+- Mobile: declare `expo-linear-gradient` in `package.json` so Analytics charts and
+  gradient UI work on a fresh clone (PP-109).
+
 ### Changed
 - Home and Favorites screens now use MatchCard v2; legacy MatchCard removed
   (PP-106).
