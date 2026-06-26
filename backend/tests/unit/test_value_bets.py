@@ -1,6 +1,7 @@
 import pytest
 
 from app.services.value_bets import (
+    confidence_score,
     evaluate_match,
     evaluate_outcome,
     expected_value,
@@ -88,3 +89,23 @@ def test_evaluate_match_returns_only_value_outcomes_per_market():
 
     assert {result.outcome for result in results} == {"home"}
     assert all(result.is_value for result in results)
+
+
+def test_confidence_score_uses_margin_over_next_best():
+    probs = {"home": 0.6, "draw": 0.25, "away": 0.15}
+    assert round(confidence_score(probs, "home"), 4) == 0.35
+
+
+def test_confidence_score_is_zero_for_non_favored_outcome():
+    probs = {"home": 0.6, "draw": 0.25, "away": 0.15}
+    assert confidence_score(probs, "away") == 0.0
+
+
+def test_evaluate_match_sets_margin_based_confidence():
+    probs = {"home": 0.6, "draw": 0.25, "away": 0.15}
+    odds = {"home": 2.1, "draw": 3.5, "away": 6.0}
+
+    results = evaluate_match(probs, odds)
+
+    home_bet = next(result for result in results if result.outcome == "home")
+    assert home_bet.confidence == 0.35
