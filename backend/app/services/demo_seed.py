@@ -77,14 +77,19 @@ def _get_or_create_competition(db: Session) -> Competition:
             Competition.external_id == DEMO_COMPETITION_EXTERNAL_ID
         )
     )
+    values = {
+        "name": "Premier League",
+        "country": "England",
+        "season": "2025/26",
+    }
     if existing is not None:
+        for key, value in values.items():
+            setattr(existing, key, value)
         return existing
 
     competition = Competition(
         external_id=DEMO_COMPETITION_EXTERNAL_ID,
-        name="Premier League",
-        country="England",
-        season="2025/26",
+        **values,
     )
     db.add(competition)
     db.flush()
@@ -100,6 +105,9 @@ def _get_or_create_team(
 ) -> Team:
     existing = db.scalar(select(Team).where(Team.external_id == external_id))
     if existing is not None:
+        existing.name = name
+        existing.logo_url = None
+        existing.competition_id = competition_id
         return existing
 
     team = Team(

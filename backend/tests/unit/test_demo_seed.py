@@ -37,6 +37,9 @@ def test_run_demo_seed_is_idempotent(db_session: Session) -> None:
     assert first.matches == second.matches == 12
     assert db_session.scalar(select(func.count()).select_from(Match)) == 12
     assert db_session.scalar(select(func.count()).select_from(Team)) == 4
+    assert db_session.scalar(select(func.count()).select_from(Prediction)) == 2
+    assert db_session.scalar(select(func.count()).select_from(Odds)) == 2
+    assert db_session.scalar(select(func.count()).select_from(ValueBet)) == 1
 
 
 def test_run_demo_seed_creates_bournemouth_vs_luton_fixture(
@@ -54,16 +57,18 @@ def test_run_demo_seed_creates_bournemouth_vs_luton_fixture(
     assert match.away_team.name == "Luton"
     assert match.status == "scheduled"
 
-    prediction = db_session.scalar(
-        select(Prediction).where(
+    prediction_count = db_session.scalar(
+        select(func.count()).where(
             Prediction.match_id == match.id,
             Prediction.model_version == DEMO_MODEL_VERSION,
         )
     )
-    assert prediction is not None
+    assert prediction_count == 1
 
-    odds = db_session.scalar(select(Odds).where(Odds.match_id == match.id))
-    assert odds is not None
+    odds_count = db_session.scalar(
+        select(func.count()).where(Odds.match_id == match.id)
+    )
+    assert odds_count == 1
 
     value_bets = db_session.scalars(
         select(ValueBet).where(ValueBet.match_id == match.id)
