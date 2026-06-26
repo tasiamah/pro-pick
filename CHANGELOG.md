@@ -61,6 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Analytics tab: accuracy and ROI summary cards with ROI trend chart via
   `react-native-gifted-charts` (PP-83).
 - Persistent entertainment disclaimer banner on all mobile screens (PP-84).
+- Integration tests for `GET /matches/{id}` covering the detail response
+  (prediction and odds) and the not-found case (PP-68).
 
 ### Changed
 - Mobile Home and Matches screens anchor the date picker on the latest imported
