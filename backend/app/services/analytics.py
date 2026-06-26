@@ -5,6 +5,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session, joinedload
+
+from app.models import Match, Prediction, ValueBet
+
 LOG_LOSS_EPSILON = 1e-15
 
 
@@ -102,6 +107,59 @@ def build_roi_trend(settled_bets: list[SettledBetSnapshot]) -> list[RoiTrendPoin
         points.append(RoiTrendPoint(date=day.isoformat(), roi=roi))
 
     return points
+
+
+def load_prediction_snapshots(db: Session) -> list[PredictionSnapshot]:
+    finished_matches = (
+        db.execute(
+            select(Match)
+            .options(joinedload(Match.predictions))
+            .where(
+                Match.home_goals.is_not(None),
+                Match.away_goals.is_not(None),
+            )
+        )
+        .unique()
+        .scalars()
+        .all()
+    )
+
+    snapshots: list[PredictionSnapshot] = []
+    for match in finished_matches:
+        latest_prediction = _latest_prediction(match)
+        if latest_prediction is None:
+            continue
+        snapshots.append(
+            PredictionSnapshot(
+                prob_home=latest_prediction.prob_home,
+                prob_draw=latest_prediction.prob_draw,
+                prob_away=latest_prediction.prob_away,
+                home_goals=match.home_goals,
+                away_goals=match.away_goals,
+            )
+        )
+    return snapshots
+
+
+def load_settled_bet_snapshots(db: Session) -> list[SettledBetSnapshot]:
+    settled_bets = (
+        db.execute(select(ValueBet).where(ValueBet.settled.is_(True))).scalars().all()
+    )
+    return [
+        SettledBetSnapshot(
+            profit=value_bet.profit or 0.0,
+            recommended_stake=value_bet.recommended_stake,
+            created_at=value_bet.created_at,
+        )
+        for value_bet in settled_bets
+        if value_bet.profit is not None
+    ]
+
+
+def _latest_prediction(match: Match) -> Prediction | None:
+    if not match.predictions:
+        return None
+    return max(match.predictions, key=lambda prediction: prediction.created_at)
 
 
 def _actual_outcome(home_goals: int, away_goals: int) -> str:

@@ -87,6 +87,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   from settled value bets and finished matches (PP-83).
 - `GET /analytics` now reports model `log_loss` over finished matches with
   predictions (PP-71).
+- `GET /dashboard` now scopes `top_value_bets` to matches kicking off today and
+  reports `model_accuracy` and `roi` from the shared analytics computation
+  (PP-72).
 - Mobile screens and navigation now consume shared theme tokens instead of
   hardcoded values (PP-77).
 - Mobile tab label **Dashboard** renamed to **Home** (PP-76).
