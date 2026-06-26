@@ -29,7 +29,5 @@ export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { FavoriteToggle } from './FavoriteToggle';
 export { LoadingState } from './LoadingState';
-export { MatchCard } from './MatchCard';
 export { MatchCardV2 } from './matchCard/MatchCardV2';
-export { MatchFavoriteActions } from './MatchFavoriteActions';
 export { ValueBetCard } from './ValueBetCard';
