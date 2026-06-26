@@ -23,6 +23,7 @@ class TeamOut(BaseModel):
     id: int
     name: str
     logo_url: str | None = None
+    form: list[str] | None = None
 
 
 class OddsOut(BaseModel):
@@ -32,6 +33,12 @@ class OddsOut(BaseModel):
     home: float
     draw: float
     away: float
+    previous_home: float | None = None
+    previous_draw: float | None = None
+    previous_away: float | None = None
+    home_movement: str | None = None
+    draw_movement: str | None = None
+    away_movement: str | None = None
 
 
 class PredictionOut(BaseModel):
@@ -42,6 +49,9 @@ class PredictionOut(BaseModel):
     prob_home: float
     prob_draw: float
     prob_away: float
+    confidence: float | None = None
+    recommended_outcome: str | None = None
+    insights: list[str] = []
 
 
 class MatchOut(BaseModel):
