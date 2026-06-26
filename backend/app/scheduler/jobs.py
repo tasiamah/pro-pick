@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import closing
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy import text
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 SCHEDULER_LOCK_ID = 514901
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler(timezone=ZoneInfo("UTC"))
 
 
 def _try_acquire_scheduler_lock(connection: Connection) -> bool:

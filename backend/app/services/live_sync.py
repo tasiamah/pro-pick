@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+import httpx
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
@@ -36,6 +37,13 @@ class LiveSyncSummary:
         self.import_summary = summary
 
 
+def _resolve_sync_now(now: datetime | None) -> datetime:
+    resolved = now or datetime.now(UTC)
+    if resolved.tzinfo is not None:
+        return resolved.astimezone(UTC).replace(tzinfo=None)
+    return resolved
+
+
 def fetch_fixtures_for_window(
     client: FootballApiClient,
     league_ids: tuple[int, ...],
@@ -51,7 +59,7 @@ def fetch_fixtures_for_window(
         sync_date = today + timedelta(days=offset)
         try:
             fixtures = client.get_fixtures_by_date(sync_date)
-        except FootballApiError:
+        except (FootballApiError, httpx.HTTPError):
             logger.exception("Provider error while fetching fixtures for %s", sync_date)
             continue
 
@@ -67,14 +75,18 @@ def fetch_fixtures_for_window(
     return list(fixtures_by_id.values())
 
 
-def sync_predictions_for_upcoming(db: Session) -> int:
-    now = datetime.utcnow()
+def sync_predictions_for_upcoming(
+    db: Session,
+    *,
+    now: datetime | None = None,
+) -> int:
+    cutoff = _resolve_sync_now(now)
     matches = db.scalars(
         select(Match)
         .options(selectinload(Match.predictions))
         .where(
             Match.status.in_(UPCOMING_MATCH_STATUSES),
-            Match.kickoff >= now,
+            Match.kickoff >= cutoff,
         )
     ).all()
     created = 0
@@ -101,8 +113,12 @@ def sync_predictions_for_upcoming(db: Session) -> int:
     return created
 
 
-def sync_value_bets_for_upcoming(db: Session) -> int:
-    now = datetime.utcnow()
+def sync_value_bets_for_upcoming(
+    db: Session,
+    *,
+    now: datetime | None = None,
+) -> int:
+    cutoff = _resolve_sync_now(now)
     matches = db.scalars(
         select(Match)
         .options(
@@ -112,7 +128,7 @@ def sync_value_bets_for_upcoming(db: Session) -> int:
         )
         .where(
             Match.status.in_(UPCOMING_MATCH_STATUSES),
-            Match.kickoff >= now,
+            Match.kickoff >= cutoff,
         )
     ).all()
     created = 0
@@ -190,12 +206,13 @@ def run_live_sync(
     )
     api_client = client or FootballApiClient()
     summary = LiveSyncSummary()
+    resolved_now = _resolve_sync_now(now)
 
     fixtures = fetch_fixtures_for_window(
         api_client,
         resolved_league_ids,
         resolved_offsets,
-        now=now,
+        now=resolved_now,
     )
     summary.fixtures_fetched = len(fixtures)
 
@@ -212,8 +229,8 @@ def run_live_sync(
     import_summary = importer.import_fixture_items(fixtures)
     summary.merge_import(import_summary)
 
-    summary.predictions = sync_predictions_for_upcoming(db)
-    summary.value_bets = sync_value_bets_for_upcoming(db)
+    summary.predictions = sync_predictions_for_upcoming(db, now=resolved_now)
+    summary.value_bets = sync_value_bets_for_upcoming(db, now=resolved_now)
 
     logger.info(
         "Live sync complete: %s fixtures, %s new matches, %s odds rows, "

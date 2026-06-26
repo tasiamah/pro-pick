@@ -14,6 +14,7 @@ from app.schemas.common import ServiceInfoOut
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings.validate_for_runtime()
+    # Scheduler runs in-process; PostgreSQL advisory lock ensures one worker syncs.
     start_scheduler()
     try:
         yield
