@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
 from app.core.config import settings
 from app.scheduler.jobs import start_scheduler, stop_scheduler
+from app.schemas.common import ServiceInfoOut
 
 
 @asynccontextmanager
@@ -42,6 +43,6 @@ app.add_middleware(
 app.include_router(api_router)
 
 
-@app.get("/")
-def root() -> dict:
-    return {"app": settings.app_name, "docs": "/docs", "health": "/health"}
+@app.get("/", response_model=ServiceInfoOut)
+def root() -> ServiceInfoOut:
+    return ServiceInfoOut(app=settings.app_name, docs="/docs", health="/health")

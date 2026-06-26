@@ -1,4 +1,4 @@
-"""Integration tests for the matches list API."""
+"""Integration tests for the matches API."""
 
 from __future__ import annotations
 
@@ -178,3 +178,115 @@ def test_list_matches_filters_by_kickoff_window(
     match_ids = {item["id"] for item in response.json()}
     assert in_window_match.id in match_ids
     assert out_of_window_match.id not in match_ids
+
+
+def test_get_match_returns_detail_with_prediction_and_odds(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    competition = Competition(name="Serie A", country="Italy")
+    home_team = Team(name="Juventus", logo_url=None)
+    away_team = Team(name="Napoli", logo_url=None)
+    db_session.add_all([competition, home_team, away_team])
+    db_session.flush()
+
+    match = Match(
+        competition_id=competition.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=1),
+        status="scheduled",
+    )
+    db_session.add(match)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            Prediction(
+                match_id=match.id,
+                prob_home=0.6,
+                prob_draw=0.25,
+                prob_away=0.15,
+            ),
+            Odds(
+                match_id=match.id,
+                bookmaker="Demo",
+                home=1.7,
+                draw=3.6,
+                away=5.0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get(f"/matches/{match.id}")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == match.id
+    assert payload["competition_name"] == "Serie A"
+    assert payload["prediction"]["prob_home"] == 0.6
+    assert payload["odds"][0]["bookmaker"] == "Demo"
+    assert payload["odds"][0]["home"] == 1.7
+
+
+def test_get_match_returns_404_for_unknown_id(client: TestClient) -> None:
+    response = client.get("/matches/999999")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Match not found"
+
+
+def test_get_match_rejects_non_integer_id(client: TestClient) -> None:
+    response = client.get("/matches/not-a-number")
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"limit": 0},
+        {"limit": 201},
+        {"offset": -1},
+    ],
+)
+def test_list_matches_rejects_invalid_pagination(
+    client: TestClient,
+    params: dict[str, int],
+) -> None:
+    response = client.get("/matches", params=params)
+
+    assert response.status_code == 422
+
+
+def test_list_matches_applies_limit_and_offset(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    home_team = Team(name="Pagination Home", logo_url=None)
+    away_team = Team(name="Pagination Away", logo_url=None)
+    db_session.add_all([home_team, away_team])
+    db_session.flush()
+
+    base = datetime.utcnow() + timedelta(days=1)
+    matches = [
+        Match(
+            home_team_id=home_team.id,
+            away_team_id=away_team.id,
+            kickoff=base + timedelta(days=offset),
+            status="scheduled",
+        )
+        for offset in range(3)
+    ]
+    db_session.add_all(matches)
+    db_session.commit()
+    ordered_ids = [match.id for match in matches]
+
+    first_page = client.get("/matches", params={"limit": 2})
+    second_page = client.get("/matches", params={"limit": 2, "offset": 2})
+
+    assert first_page.status_code == 200
+    assert second_page.status_code == 200
+    assert [item["id"] for item in first_page.json()] == ordered_ids[:2]
+    assert [item["id"] for item in second_page.json()] == ordered_ids[2:]

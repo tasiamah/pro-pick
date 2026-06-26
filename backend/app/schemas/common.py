@@ -5,6 +5,18 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
+class HealthOut(BaseModel):
+    status: str
+    app: str
+    env: str
+
+
+class ServiceInfoOut(BaseModel):
+    app: str
+    docs: str
+    health: str
+
+
 class TeamOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -25,6 +37,7 @@ class OddsOut(BaseModel):
 class PredictionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    match_id: int
     model_version: str
     prob_home: float
     prob_draw: float
@@ -78,6 +91,7 @@ class AnalyticsOut(BaseModel):
 class DashboardOut(BaseModel):
     matches_today: int = 0
     upcoming_matches: int = 0
+    latest_kickoff: datetime | None = None
     top_value_bets: list[ValueBetOut] = []
     model_accuracy: float | None = None
     roi: float | None = None

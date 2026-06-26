@@ -80,6 +80,7 @@ def test_run_daily_import_continues_after_provider_error(
         FootballApiError("rate limit"),
         ImportSummary(matches=1),
     ]
+    db_session.rollback = MagicMock(wraps=db_session.rollback)
 
     summary = run_daily_import(
         db_session,
@@ -90,6 +91,7 @@ def test_run_daily_import_continues_after_provider_error(
 
     assert summary.matches == 1
     assert mock_import.call_count == 2
+    db_session.rollback.assert_called_once()
 
 
 @patch("app.scheduler.jobs.run_daily_import")

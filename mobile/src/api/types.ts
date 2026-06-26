@@ -12,6 +12,7 @@ export type Odds = {
 };
 
 export type Prediction = {
+  match_id: number;
   model_version: string;
   prob_home: number;
   prob_draw: number;
@@ -61,6 +62,7 @@ export type Analytics = {
 export type Dashboard = {
   matches_today: number;
   upcoming_matches: number;
+  latest_kickoff: string | null;
   top_value_bets: ValueBet[];
   model_accuracy: number | null;
   roi: number | null;
@@ -75,6 +77,7 @@ export type MatchListParams = {
 
 export type PredictionListParams = {
   limit?: number;
+  match_id?: number;
 };
 
 export type ValueBetListParams = {

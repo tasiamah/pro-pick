@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { useDashboard, useMatches } from '../api/hooks';
+import { useMatches } from '../api/hooks';
 import type { Dashboard } from '../api/types';
 import {
   AsyncState,
@@ -20,14 +20,11 @@ import {
   ValueBetCard,
 } from '../components';
 import { formatPercent } from '../components/formatters';
+import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme';
 import {
-  buildDateRange,
-  buildDateWindowParams,
-  DATE_RANGE_DAYS,
   filterMatchesByDate,
-  startOfUtcDay,
 } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 
@@ -70,12 +67,14 @@ function StatsRow({ dashboard }: StatsRowProps) {
 }
 
 export function HomeScreen({ navigation }: Props) {
-  const [selectedDate, setSelectedDate] = useState(() => startOfUtcDay());
-  const dashboardQuery = useDashboard();
-  const matchListParams = useMemo(() => buildDateWindowParams(), []);
+  const {
+    dateRange,
+    matchListParams,
+    selectedDate,
+    setSelectedDate,
+    dashboardQuery,
+  } = useMatchDateAnchor();
   const matchesQuery = useMatches(matchListParams);
-
-  const dateRange = useMemo(() => buildDateRange(startOfUtcDay(), DATE_RANGE_DAYS), []);
 
   const filteredMatches = useMemo(
     () => filterMatchesByDate(matchesQuery.data ?? [], selectedDate),

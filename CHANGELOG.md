@@ -64,8 +64,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Analytics tab: accuracy and ROI summary cards with ROI trend chart via
   `react-native-gifted-charts` (PP-83).
 - Persistent entertainment disclaimer banner on all mobile screens (PP-84).
+- Integration tests for `GET /matches/{id}` covering the detail response
+  (prediction and odds) and the not-found case (PP-68).
+- API integration tests covering request validation (invalid pagination and
+  query parameters), pagination limits, and empty-state responses across the
+  matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
+- Mobile Home and Matches screens anchor the date picker on the latest imported
+  kickoff when no upcoming fixtures exist, so historical data is visible
+  (PP-49).
+- Default historical import seasons set to 2022–2024 for API-Football free tier
+  (PP-49).
 - Mobile screens use shared query-state helpers so loading, empty, and error
   views stay consistent and keep cached data visible during refetch failures
   (PP-85).
@@ -74,8 +84,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   for list screens (PP-80).
 - `GET /value-bets` accepts optional `match_id` query parameter for
   match-scoped value bet lists (PP-81).
+- `GET /predictions` now includes `match_id` per prediction and accepts an
+  optional `match_id` filter for match-scoped prediction lists (PP-69).
+- `/health` and `/` now return typed Pydantic responses (`HealthOut`,
+  `ServiceInfoOut`) so every endpoint is fully described in the auto-generated
+  OpenAPI schema (PP-66).
 - `GET /analytics` now computes accuracy, ROI, and cumulative daily ROI trend
   from settled value bets and finished matches (PP-83).
+- `GET /analytics` now reports model `log_loss` over finished matches with
+  predictions (PP-71).
+- `GET /dashboard` now scopes `top_value_bets` to matches kicking off today and
+  reports `model_accuracy` and `roi` from the shared analytics computation
+  (PP-72).
 - Mobile screens and navigation now consume shared theme tokens instead of
   hardcoded values (PP-77).
 - Mobile tab label **Dashboard** renamed to **Home** (PP-76).
@@ -87,6 +107,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Remaining Dutch comment in `alembic/env.py` translated to English.
 
 ### Fixed
+- `GET /dashboard` now returns `latest_kickoff` so clients can browse imported
+  historical match weeks (PP-49).
 - `mobile/LICENSE` copyright updated from Expo template text to Pro Pick.
 
 [Unreleased]: https://github.com/tasiamah/pro-pick/commits/main

@@ -4,11 +4,17 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
+from app.core.database import SessionLocal
+from app.models import Competition, Match, Odds, Prediction, Team, ValueBet
+
 BACKEND_DIR = Path(__file__).resolve().parents[2]
+
+CLEANUP_MODELS = (ValueBet, Odds, Prediction, Match, Team, Competition)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -23,3 +29,15 @@ def apply_migrations() -> None:
     )
 
     assert result.returncode == 0, result.stderr or result.stdout
+
+
+@pytest.fixture(autouse=True)
+def reset_database() -> Iterator[None]:
+    yield
+    session = SessionLocal()
+    try:
+        for model in CLEANUP_MODELS:
+            session.query(model).delete()
+        session.commit()
+    finally:
+        session.close()

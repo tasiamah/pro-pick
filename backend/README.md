@@ -117,7 +117,7 @@ source .venv/bin/activate
 python -m app.scripts.import_historical
 ```
 
-By default this imports three seasons (2023–2025) for the top five European
+By default this imports three seasons (2022–2024) for the top five European
 leagues (Premier League, La Liga, Serie A, Bundesliga, Ligue 1). Override
 leagues or seasons:
 

@@ -1,8 +1,16 @@
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session, joinedload
+
+from app.models import Match, Prediction, ValueBet
+
+LOG_LOSS_EPSILON = 1e-15
 
 
 @dataclass(frozen=True)
@@ -59,6 +67,22 @@ def compute_accuracy(predictions: list[PredictionSnapshot]) -> float | None:
     return correct / len(predictions)
 
 
+def compute_log_loss(predictions: list[PredictionSnapshot]) -> float | None:
+    if not predictions:
+        return None
+
+    total = 0.0
+    for prediction in predictions:
+        probabilities = {
+            "home": prediction.prob_home,
+            "draw": prediction.prob_draw,
+            "away": prediction.prob_away,
+        }
+        outcome = _actual_outcome(prediction.home_goals, prediction.away_goals)
+        total += -math.log(_actual_probability(probabilities, outcome))
+    return total / len(predictions)
+
+
 def build_roi_trend(settled_bets: list[SettledBetSnapshot]) -> list[RoiTrendPoint]:
     if not settled_bets:
         return []
@@ -85,12 +109,71 @@ def build_roi_trend(settled_bets: list[SettledBetSnapshot]) -> list[RoiTrendPoin
     return points
 
 
+def load_prediction_snapshots(db: Session) -> list[PredictionSnapshot]:
+    finished_matches = (
+        db.execute(
+            select(Match)
+            .options(joinedload(Match.predictions))
+            .where(
+                Match.home_goals.is_not(None),
+                Match.away_goals.is_not(None),
+            )
+        )
+        .unique()
+        .scalars()
+        .all()
+    )
+
+    snapshots: list[PredictionSnapshot] = []
+    for match in finished_matches:
+        latest_prediction = _latest_prediction(match)
+        if latest_prediction is None:
+            continue
+        snapshots.append(
+            PredictionSnapshot(
+                prob_home=latest_prediction.prob_home,
+                prob_draw=latest_prediction.prob_draw,
+                prob_away=latest_prediction.prob_away,
+                home_goals=match.home_goals,
+                away_goals=match.away_goals,
+            )
+        )
+    return snapshots
+
+
+def load_settled_bet_snapshots(db: Session) -> list[SettledBetSnapshot]:
+    settled_bets = (
+        db.execute(select(ValueBet).where(ValueBet.settled.is_(True))).scalars().all()
+    )
+    return [
+        SettledBetSnapshot(
+            profit=value_bet.profit or 0.0,
+            recommended_stake=value_bet.recommended_stake,
+            created_at=value_bet.created_at,
+        )
+        for value_bet in settled_bets
+        if value_bet.profit is not None
+    ]
+
+
+def _latest_prediction(match: Match) -> Prediction | None:
+    if not match.predictions:
+        return None
+    return max(match.predictions, key=lambda prediction: prediction.created_at)
+
+
 def _actual_outcome(home_goals: int, away_goals: int) -> str:
     if home_goals > away_goals:
         return "home"
     if home_goals < away_goals:
         return "away"
     return "draw"
+
+
+def _actual_probability(probabilities: dict[str, float], outcome: str) -> float:
+    total = sum(max(value, 0.0) for value in probabilities.values())
+    probability = max(probabilities[outcome], 0.0) / total if total > 0 else 0.0
+    return min(max(probability, LOG_LOSS_EPSILON), 1.0)
 
 
 def _predicted_outcome(prob_home: float, prob_draw: float, prob_away: float) -> str:

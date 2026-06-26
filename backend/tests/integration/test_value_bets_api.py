@@ -130,3 +130,29 @@ def test_list_value_bets_filters_by_match_id(
     other_match_payload = other_match_response.json()
     assert len(other_match_payload) == 1
     assert other_match_payload[0]["match_id"] == value_bets_api.match_two_id
+
+
+def test_list_value_bets_respects_limit(value_bets_api: ValueBetFixture) -> None:
+    response = value_bets_api.client.get("/value-bets", params={"limit": 1})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["edge"] == 0.15
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"limit": 0},
+        {"limit": 201},
+        {"match_id": 0},
+    ],
+)
+def test_list_value_bets_rejects_invalid_query_params(
+    client: TestClient,
+    params: dict[str, int],
+) -> None:
+    response = client.get("/value-bets", params=params)
+
+    assert response.status_code == 422

@@ -46,12 +46,14 @@ def run_daily_import(
                 result.odds,
             )
         except FootballApiError:
+            db.rollback()
             logger.exception(
                 "Provider error during daily import for league %s season %s",
                 league_id,
                 resolved_season,
             )
         except Exception:
+            db.rollback()
             logger.exception(
                 "Unexpected error during daily import for league %s season %s",
                 league_id,

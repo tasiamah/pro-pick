@@ -32,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         action="append",
         dest="seasons",
-        help="Season start year (repeatable). Defaults to 2023, 2024, and 2025.",
+        help="Season start year (repeatable). Defaults to 2022, 2023, and 2024.",
     )
     parser.add_argument(
         "--skip-odds",

@@ -30,16 +30,40 @@ export function buildDateRange(start: Date, count: number): Date[] {
   return Array.from({ length: count }, (_, index) => addUtcDays(start, index));
 }
 
-export function buildDateWindowParams(start = startOfUtcDay()): {
+export function buildDateWindowParams(
+  start = startOfUtcDay(),
+  end = addUtcDays(start, DATE_RANGE_DAYS),
+): {
   kickoff_from: string;
   kickoff_to: string;
   limit: number;
 } {
   return {
     kickoff_from: start.toISOString(),
-    kickoff_to: addUtcDays(start, DATE_RANGE_DAYS).toISOString(),
+    kickoff_to: end.toISOString(),
     limit: 200,
   };
+}
+
+export function resolveMatchAnchorDate(
+  upcomingMatches: number,
+  latestKickoff: string | null,
+  now = startOfUtcDay(),
+): Date {
+  if (upcomingMatches > 0) {
+    return now;
+  }
+
+  if (latestKickoff) {
+    return startOfUtcDay(new Date(latestKickoff));
+  }
+
+  return now;
+}
+
+export function buildDateRangeEndingAt(anchor: Date, count = DATE_RANGE_DAYS): Date[] {
+  const start = addUtcDays(anchor, -(count - 1));
+  return buildDateRange(start, count);
 }
 
 export function filterMatchesByDate<T extends Match>(
