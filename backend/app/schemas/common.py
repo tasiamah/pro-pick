@@ -25,6 +25,7 @@ class OddsOut(BaseModel):
 class PredictionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    match_id: int
     model_version: str
     prob_home: float
     prob_draw: float

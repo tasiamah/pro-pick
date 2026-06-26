@@ -15,8 +15,12 @@ router = APIRouter()
 def list_predictions(
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
+    match_id: int | None = Query(None, ge=1),
 ) -> list[PredictionOut]:
     """Predictions (model probabilities) per match (PP: GET /predictions)."""
-    stmt = select(Prediction).order_by(Prediction.created_at.desc()).limit(limit)
+    stmt = select(Prediction).order_by(Prediction.created_at.desc())
+    if match_id is not None:
+        stmt = stmt.where(Prediction.match_id == match_id)
+    stmt = stmt.limit(limit)
     predictions = db.execute(stmt).scalars().all()
     return [PredictionOut.model_validate(p) for p in predictions]

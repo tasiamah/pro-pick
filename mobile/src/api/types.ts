@@ -12,6 +12,7 @@ export type Odds = {
 };
 
 export type Prediction = {
+  match_id: number;
   model_version: string;
   prob_home: number;
   prob_draw: number;
@@ -76,6 +77,7 @@ export type MatchListParams = {
 
 export type PredictionListParams = {
   limit?: number;
+  match_id?: number;
 };
 
 export type ValueBetListParams = {
