@@ -19,6 +19,7 @@ DEFAULT_LEAGUE_IDS = (39, 140, 135, 78, 61)
 FREE_TIER_SYNC_LEAGUE_IDS = (39, 140)
 DEFAULT_SEASONS = (2022, 2023, 2024)
 UPCOMING_MATCH_STATUSES = frozenset({"scheduled", "live"})
+FINISHED_MATCH_STATUS = "finished"
 
 
 @dataclass
@@ -38,7 +39,7 @@ class ImportSummary:
 def map_fixture_status(short_code: str) -> str:
     code = short_code.upper()
     if code in FINISHED_STATUS_CODES:
-        return "finished"
+        return FINISHED_MATCH_STATUS
     if code in LIVE_STATUS_CODES:
         return "live"
     return "scheduled"

@@ -203,6 +203,53 @@ def test_run_live_sync_persists_upcoming_match_prediction_and_value_bet(
     assert db_session.query(ValueBet).count() >= 1
 
 
+def test_run_live_sync_settles_finished_bets_when_no_fixtures(
+    db_session: Session,
+) -> None:
+    home = Team(name="Arsenal")
+    away = Team(name="Chelsea")
+    db_session.add_all([home, away])
+    db_session.flush()
+    match = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=datetime(2026, 6, 25, 15, 0),
+        status="finished",
+        home_goals=2,
+        away_goals=1,
+    )
+    db_session.add(match)
+    db_session.flush()
+    bet = ValueBet(
+        match_id=match.id,
+        outcome="home",
+        model_prob=0.5,
+        odd=2.0,
+        expected_value=0.1,
+        edge=0.1,
+        recommended_stake=10.0,
+    )
+    db_session.add(bet)
+    db_session.commit()
+
+    class EmptyClient:
+        def get_fixtures_by_date(self, _match_date: date) -> list[dict]:
+            return []
+
+    summary = run_live_sync(
+        db_session,
+        league_ids=(39,),
+        date_offsets=(0,),
+        client=EmptyClient(),
+        now=datetime(2026, 6, 26, 12, 0, tzinfo=UTC),
+    )
+
+    assert summary.fixtures_fetched == 0
+    assert summary.settled_value_bets == 1
+    assert bet.settled is True
+    assert bet.profit == 10.0
+
+
 def test_sync_predictions_skips_matches_with_existing_prediction(
     db_session: Session,
 ) -> None:

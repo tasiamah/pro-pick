@@ -62,7 +62,7 @@ def compute_accuracy(predictions: list[PredictionSnapshot]) -> float | None:
             prediction.prob_draw,
             prediction.prob_away,
         )
-        == _actual_outcome(prediction.home_goals, prediction.away_goals)
+        == actual_outcome(prediction.home_goals, prediction.away_goals)
     )
     return correct / len(predictions)
 
@@ -78,7 +78,7 @@ def compute_log_loss(predictions: list[PredictionSnapshot]) -> float | None:
             "draw": prediction.prob_draw,
             "away": prediction.prob_away,
         }
-        outcome = _actual_outcome(prediction.home_goals, prediction.away_goals)
+        outcome = actual_outcome(prediction.home_goals, prediction.away_goals)
         total += -math.log(_actual_probability(probabilities, outcome))
     return total / len(predictions)
 
@@ -162,7 +162,7 @@ def _latest_prediction(match: Match) -> Prediction | None:
     return max(match.predictions, key=lambda prediction: prediction.created_at)
 
 
-def _actual_outcome(home_goals: int, away_goals: int) -> str:
+def actual_outcome(home_goals: int, away_goals: int) -> str:
     if home_goals > away_goals:
         return "home"
     if home_goals < away_goals:
