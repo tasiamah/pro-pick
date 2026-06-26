@@ -35,6 +35,7 @@ class Settings(BaseSettings):
 
     model_path: str = ""
     model_algorithm: str = "logistic"
+    model_calibrate: bool = True
 
     cors_origins: str = "*"
 

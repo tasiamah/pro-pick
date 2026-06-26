@@ -71,9 +71,11 @@ def test_train_model_persists_versioned_bundle(
     assert bundle.metadata.version.startswith("logistic-")
     assert bundle.metadata.n_samples == len(RESULTS)
     assert bundle.metadata.feature_columns == FEATURE_COLUMNS
-    assert set(bundle.metadata.metrics) == {"accuracy", "log_loss"}
+    assert set(bundle.metadata.metrics) == {"accuracy", "log_loss", "brier"}
     assert 0.0 <= bundle.metadata.metrics["accuracy"] <= 1.0
     assert bundle.metadata.metrics["log_loss"] > 0.0
+    assert bundle.metadata.evaluation == "walk_forward"
+    assert bundle.metadata.calibrated is False
 
     reloaded = load_model(path)
     assert reloaded is not None

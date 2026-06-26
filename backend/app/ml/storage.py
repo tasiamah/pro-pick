@@ -26,6 +26,8 @@ class ModelMetadata:
     n_samples: int
     feature_columns: list[str]
     metrics: dict[str, float]
+    evaluation: str = "in_sample"
+    calibrated: bool = False
 
 
 @dataclass(frozen=True)

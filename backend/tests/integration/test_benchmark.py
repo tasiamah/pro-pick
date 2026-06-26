@@ -1,4 +1,4 @@
-"""Integration test: model vs bookmaker benchmark (PP-56)."""
+"""Integration test: walk-forward model vs bookmaker benchmark (PP-56)."""
 
 from __future__ import annotations
 
@@ -8,9 +8,8 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.ml.backtest import backtest_against_bookmaker
 from app.ml.baseline import train_baseline_model
-from app.ml.evaluation import benchmark_against_bookmaker
-from app.ml.features import build_training_dataset
 from app.models import Competition, Match, Odds, Team
 
 pytestmark = pytest.mark.integration
@@ -60,11 +59,11 @@ def test_benchmark_scores_model_and_bookmaker(db_session: Session) -> None:
     )
     db_session.commit()
 
-    model = train_baseline_model(build_training_dataset(db_session))
-    result = benchmark_against_bookmaker(db_session, model)
+    result = backtest_against_bookmaker(db_session, train_fn=train_baseline_model)
 
-    assert result.model.sample_size == len(RESULTS)
-    assert result.bookmaker.sample_size == len(RESULTS)
+    assert result.model.sample_size > 0
+    assert result.model.sample_size == result.bookmaker.sample_size
     for metrics in (result.model, result.bookmaker):
         assert 0.0 <= metrics.accuracy <= 1.0
         assert metrics.log_loss > 0.0
+        assert metrics.brier >= 0.0

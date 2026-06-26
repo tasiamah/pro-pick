@@ -1,9 +1,9 @@
-"""Model evaluation and bookmaker benchmark (EPIC-3 / PP-56).
+"""Probabilistic 1X2 metric primitives (EPIC-3 / PP-56).
 
-Scores 1X2 probabilities with accuracy and multiclass log loss, and compares
-the model against the bookmaker's margin-removed implied probabilities on
-finished matches that have odds. Model probabilities are rebuilt point-in-time
-so the comparison does not leak future results.
+Scores home/draw/away probabilities with accuracy, multiclass log loss, and
+the multiclass Brier score (a calibration-sensitive metric). The bookmaker
+comparison itself lives in ``app/ml/backtest.py`` so it can be evaluated
+out-of-sample rather than on data the model was trained on.
 """
 
 from __future__ import annotations
@@ -13,18 +13,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
-
-from app.ml.baseline import predict_outcome_probabilities
-from app.ml.features import (
-    OUTCOME_AWAY,
-    OUTCOME_DRAW,
-    OUTCOME_HOME,
-    build_features,
-    match_outcome,
-)
-from app.models import Match
+from app.ml.baseline import OUTCOMES, predict_outcome_probabilities
+from app.ml.features import OUTCOME_AWAY, OUTCOME_DRAW, OUTCOME_HOME
 
 LOG_LOSS_EPSILON = 1e-15
 
@@ -36,17 +26,21 @@ class EvaluationMetrics:
     sample_size: int
     accuracy: float
     log_loss: float
-
-
-@dataclass(frozen=True)
-class BenchmarkResult:
-    model: EvaluationMetrics
-    bookmaker: EvaluationMetrics
+    brier: float
 
 
 def multiclass_log_loss(probabilities: Mapping[str, float], outcome: str) -> float:
     probability = max(probabilities.get(outcome, 0.0), 0.0)
     return -math.log(min(max(probability, LOG_LOSS_EPSILON), 1.0))
+
+
+def brier_score(probabilities: Mapping[str, float], outcome: str) -> float:
+    total = 0.0
+    for candidate in OUTCOMES:
+        probability = max(probabilities.get(candidate, 0.0), 0.0)
+        indicator = 1.0 if candidate == outcome else 0.0
+        total += (probability - indicator) ** 2
+    return total
 
 
 def implied_probabilities(home: float, draw: float, away: float) -> dict[str, float]:
@@ -63,13 +57,14 @@ def implied_probabilities(home: float, draw: float, away: float) -> dict[str, fl
 
 def evaluate_scored_outcomes(rows: Sequence[ScoredOutcome]) -> EvaluationMetrics:
     if not rows:
-        return EvaluationMetrics(0, 0.0, 0.0)
+        return EvaluationMetrics(0, 0.0, 0.0, 0.0)
+    count = len(rows)
     hits = sum(1 for probabilities, outcome in rows if _is_hit(probabilities, outcome))
-    loss = sum(
+    log_loss = sum(
         multiclass_log_loss(probabilities, outcome) for probabilities, outcome in rows
     )
-    count = len(rows)
-    return EvaluationMetrics(count, hits / count, loss / count)
+    brier = sum(brier_score(probabilities, outcome) for probabilities, outcome in rows)
+    return EvaluationMetrics(count, hits / count, log_loss / count, brier / count)
 
 
 def evaluate_model(model: Any, dataset: Any) -> EvaluationMetrics:
@@ -78,41 +73,6 @@ def evaluate_model(model: Any, dataset: Any) -> EvaluationMetrics:
         for features, label in zip(dataset.features, dataset.labels, strict=True)
     ]
     return evaluate_scored_outcomes(rows)
-
-
-def benchmark_against_bookmaker(db: Session, model: Any) -> BenchmarkResult:
-    matches = (
-        db.execute(
-            select(Match)
-            .options(selectinload(Match.odds))
-            .where(
-                Match.kickoff.is_not(None),
-                Match.home_goals.is_not(None),
-                Match.away_goals.is_not(None),
-            )
-        )
-        .scalars()
-        .all()
-    )
-
-    model_rows: list[ScoredOutcome] = []
-    bookmaker_rows: list[ScoredOutcome] = []
-    for match in matches:
-        if not match.odds:
-            continue
-        outcome = match_outcome(match.home_goals, match.away_goals)
-        model_rows.append(
-            (predict_outcome_probabilities(model, build_features(db, match)), outcome)
-        )
-        odds = match.odds[0]
-        bookmaker_rows.append(
-            (implied_probabilities(odds.home, odds.draw, odds.away), outcome)
-        )
-
-    return BenchmarkResult(
-        model=evaluate_scored_outcomes(model_rows),
-        bookmaker=evaluate_scored_outcomes(bookmaker_rows),
-    )
 
 
 def _is_hit(probabilities: Mapping[str, float], outcome: str) -> bool:

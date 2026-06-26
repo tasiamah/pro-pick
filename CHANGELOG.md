@@ -29,13 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`app/ml/baseline.py`, PP-54).
 - XGBoost 1X2 model with light chronological-hold-out tuning over the same
   feature vector as the baseline (`app/ml/xgboost_model.py`, PP-55).
-- Bookmaker-benchmark evaluation that scores model and margin-removed bookmaker
-  probabilities on finished matches with accuracy and multiclass log loss
-  (`app/ml/evaluation.py`, PP-56).
+- Out-of-sample model evaluation: walk-forward backtesting that scores the model
+  and the margin-removed bookmaker probabilities on held-out matches with
+  accuracy, multiclass log loss, and the (calibration-sensitive) Brier score,
+  plus one-vs-rest isotonic probability calibration (`app/ml/evaluation.py`,
+  `app/ml/backtest.py`, `app/ml/calibration.py`, PP-56).
 - Model persistence and versioning: a training pipeline that builds the
-  point-in-time dataset, fits the selected algorithm, records metrics, and
-  writes a versioned model bundle (`app/ml/storage.py`, `app/ml/train.py`,
-  PP-57).
+  point-in-time dataset, fits and optionally calibrates the selected algorithm,
+  records walk-forward metrics, and writes a versioned model bundle
+  (`app/ml/storage.py`, `app/ml/train.py`, PP-57).
 - Model-backed prediction service that loads the persisted model to produce
   versioned 1X2 probabilities, falling back to a neutral distribution before a
   model is trained (`app/services/prediction.py`, PP-58).
