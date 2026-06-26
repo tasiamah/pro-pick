@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 import pytest
 
 from app.services.analytics import (
+    LOG_LOSS_EPSILON,
     PredictionSnapshot,
     SettledBetSnapshot,
     build_roi_trend,
@@ -56,11 +57,11 @@ def test_compute_accuracy_returns_none_without_predictions():
     assert compute_accuracy([]) is None
 
 
-def test_compute_log_loss_returns_none_without_predictions():
+def test_compute_log_loss_returns_none_without_predictions() -> None:
     assert compute_log_loss([]) is None
 
 
-def test_compute_log_loss_scores_probability_of_actual_outcome():
+def test_compute_log_loss_scores_probability_of_actual_outcome() -> None:
     predictions = [
         PredictionSnapshot(
             prob_home=0.7,
@@ -82,7 +83,21 @@ def test_compute_log_loss_scores_probability_of_actual_outcome():
     assert round(compute_log_loss(predictions), 6) == round(expected, 6)
 
 
-def test_compute_log_loss_handles_zero_probability_for_actual_outcome():
+def test_compute_log_loss_normalizes_probabilities() -> None:
+    predictions = [
+        PredictionSnapshot(
+            prob_home=2.0,
+            prob_draw=1.0,
+            prob_away=1.0,
+            home_goals=2,
+            away_goals=0,
+        )
+    ]
+
+    assert round(compute_log_loss(predictions), 6) == round(-math.log(0.5), 6)
+
+
+def test_compute_log_loss_clamps_zero_probability_to_epsilon() -> None:
     predictions = [
         PredictionSnapshot(
             prob_home=0.5,
@@ -93,9 +108,7 @@ def test_compute_log_loss_handles_zero_probability_for_actual_outcome():
         )
     ]
 
-    score = compute_log_loss(predictions)
-    assert score is not None
-    assert score > 30.0
+    assert compute_log_loss(predictions) == -math.log(LOG_LOSS_EPSILON)
 
 
 def test_build_roi_trend_returns_cumulative_roi_by_day():
