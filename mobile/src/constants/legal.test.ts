@@ -1,16 +1,10 @@
 import {
   BOOKMAKER_INDEPENDENCE_TEXT,
   getPrivacyPolicyUrl,
-  PRIVACY_POLICY_URL,
   RESPONSIBLE_PLAY_TEXT,
 } from './legal';
 
 describe('legal', () => {
-  it('points to the published privacy policy in the repository', () => {
-    expect(PRIVACY_POLICY_URL).toMatch(/^https:\/\//);
-    expect(PRIVACY_POLICY_URL).toContain('PRIVACY_POLICY.md');
-  });
-
   describe('getPrivacyPolicyUrl', () => {
     const original = process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL;
 
@@ -22,17 +16,19 @@ describe('legal', () => {
       }
     });
 
-    it('falls back to the published policy when no override is configured', () => {
-      delete process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL;
-      expect(getPrivacyPolicyUrl()).toBe(PRIVACY_POLICY_URL);
-    });
-
-    it('prefers a secure env override with trailing slashes trimmed', () => {
+    it('returns a secure URL with trailing slashes trimmed when configured', () => {
       process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL = 'https://example.com/privacy/';
-      expect(getPrivacyPolicyUrl()).toBe('https://example.com/privacy');
+      const url = getPrivacyPolicyUrl();
+      expect(url).toBe('https://example.com/privacy');
+      expect(url).toMatch(/^https:\/\//);
     });
 
-    it('rejects non-HTTPS overrides to avoid opening unexpected schemes', () => {
+    it('returns null when the endpoint is not configured', () => {
+      delete process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL;
+      expect(getPrivacyPolicyUrl()).toBeNull();
+    });
+
+    it('rejects non-HTTPS URLs to avoid opening unexpected schemes', () => {
       process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL = 'http://example.com/privacy';
       expect(getPrivacyPolicyUrl()).toBeNull();
 

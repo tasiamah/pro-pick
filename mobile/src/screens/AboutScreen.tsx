@@ -1,9 +1,9 @@
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DISCLAIMER_TEXT } from '../constants/disclaimer';
 import {
   BOOKMAKER_INDEPENDENCE_TEXT,
-  PRIVACY_POLICY_URL,
+  getPrivacyPolicyUrl,
   RESPONSIBLE_PLAY_TEXT,
 } from '../constants/legal';
 import { colors, radii, spacing, typography } from '../theme';
@@ -23,8 +23,25 @@ function LegalSection({ title, body }: LegalSectionProps) {
 }
 
 export function AboutScreen() {
-  const openPrivacyPolicy = () => {
-    void Linking.openURL(PRIVACY_POLICY_URL);
+  const privacyPolicyUrl = getPrivacyPolicyUrl();
+
+  const openPrivacyPolicy = async () => {
+    if (!privacyPolicyUrl) {
+      return;
+    }
+    try {
+      const supported = await Linking.canOpenURL(privacyPolicyUrl);
+      if (!supported) {
+        Alert.alert('Privacy policy unavailable', 'No app is available to open the privacy policy.');
+        return;
+      }
+      await Linking.openURL(privacyPolicyUrl);
+    } catch {
+      Alert.alert(
+        'Privacy policy unavailable',
+        'The privacy policy could not be opened right now. Please try again later.',
+      );
+    }
   };
 
   return (
@@ -38,14 +55,18 @@ export function AboutScreen() {
         <Text style={styles.cardBody}>
           Learn what data Pro Pick collects and how it is used.
         </Text>
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel="Open privacy policy"
-          onPress={openPrivacyPolicy}
-          style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}
-        >
-          <Text style={styles.linkText}>Privacy Policy {'>'}</Text>
-        </Pressable>
+        {privacyPolicyUrl ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Open privacy policy"
+            onPress={openPrivacyPolicy}
+            style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}
+          >
+            <Text style={styles.linkText}>Privacy Policy {'>'}</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.cardBody}>The full privacy policy is coming soon.</Text>
+        )}
       </View>
     </ScrollView>
   );

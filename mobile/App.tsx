@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DisclaimerBanner } from './src/components';
-import { navigationRef } from './src/navigation/navigationRef';
+import { flushPendingNavigation, navigationRef } from './src/navigation/navigationRef';
 import { RootStackNavigator } from './src/navigation/RootStackNavigator';
 import { colors } from './src/theme';
 
@@ -30,7 +30,11 @@ export default function App() {
         <View style={styles.app}>
           <DisclaimerBanner />
           <View style={styles.navigation}>
-            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+            <NavigationContainer
+              ref={navigationRef}
+              theme={navigationTheme}
+              onReady={flushPendingNavigation}
+            >
               <RootStackNavigator />
             </NavigationContainer>
           </View>

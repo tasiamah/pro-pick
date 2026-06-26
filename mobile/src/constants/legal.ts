@@ -1,19 +1,15 @@
 /**
- * Published privacy policy (PP-96), kept in the repo so the in-app link always
- * resolves even without extra Expo configuration.
- */
-export const PRIVACY_POLICY_URL =
-  'https://github.com/tasiamah/pro-pick/blob/main/docs/PRIVACY_POLICY.md';
-
-/**
- * Resolves the privacy-policy URL. Prefers the Expo env override
- * (`EXPO_PUBLIC_PRIVACY_POLICY_URL`, from `eas.json` / `.env`) so it can be
- * rotated without an app release, otherwise uses the published policy above.
- * Returns null unless the resolved value is an `https://` URL, since this is the
- * only normalization step before the link reaches `Linking.openURL`.
+ * Privacy-policy endpoint, sourced from Expo env (`eas.json` / `.env`) rather
+ * than a shipped source constant so it can be finalized or rotated without
+ * cutting a new app release. Returns null when unconfigured or when the value
+ * is not an `https://` URL, since this is the only normalization step before
+ * the link reaches `Linking.openURL`.
  */
 export function getPrivacyPolicyUrl(): string | null {
-  const configured = process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL?.trim() || PRIVACY_POLICY_URL;
+  const configured = process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL?.trim();
+  if (!configured) {
+    return null;
+  }
   const normalized = configured.replace(/\/+$/, '');
   return normalized.startsWith('https://') ? normalized : null;
 }
