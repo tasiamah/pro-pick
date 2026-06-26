@@ -2,10 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Match, Odds, Prediction, Team } from '../../api/types';
-import { buildFavoriteTeamIds, useFavoritesStore } from '../../store';
-import { colors, radii, spacing, typography } from '../../theme';
-import { getTeamName } from '../../utils/matchDisplay';
-import { formatKickoff } from '../formatters';
 import {
   AiPickLabel,
   ConfidenceBadge,
@@ -13,7 +9,11 @@ import {
   FormIndicator,
   InsightBullet,
   OddsTierBadge,
-} from './matchCardParts';
+} from '../demo';
+import { buildFavoriteTeamIds, useFavoritesStore } from '../../store';
+import { colors, radii, spacing, typography } from '../../theme';
+import { getTeamName } from '../../utils/matchDisplay';
+import { formatKickoff } from '../formatters';
 import {
   classifyOddsTier,
   formatPredictedOutcomeLabel,
@@ -85,6 +85,10 @@ export function MatchCardV2({
   const awayName = getTeamName(match.away_team, 'Away');
 
   const detailsHandler = onDetailsPress ?? onPress;
+  const oddsTier =
+    prediction && primaryOdds
+      ? classifyOddsTier(getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)))
+      : null;
 
   return (
     <View style={styles.card}>
@@ -106,7 +110,7 @@ export function MatchCardV2({
         <TeamRow team={match.away_team} fallbackName="Away" />
       </View>
 
-      {showAiBlock ? (
+      {showAiBlock && prediction && primaryOdds ? (
         <View style={styles.aiBlock}>
           <View style={styles.aiHeaderRow}>
             <View style={styles.aiPickGroup}>
@@ -121,18 +125,18 @@ export function MatchCardV2({
             </View>
             <View style={styles.badgeRow}>
               <ConfidenceBadge confidence={getConfidence(prediction)} />
-              <OddsTierBadge
-                tier={classifyOddsTier(
-                  getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)),
-                )}
-              />
+              {oddsTier ? <OddsTierBadge tier={oddsTier} /> : null}
             </View>
           </View>
           <InsightBullet text={getMatchInsight(prediction)} />
         </View>
       ) : null}
 
-      {detailsHandler ? <DetailsLink onPress={detailsHandler} /> : null}
+      {detailsHandler ? (
+        <View style={styles.detailsLinkWrap}>
+          <DetailsLink onPress={detailsHandler} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -198,6 +202,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  detailsLinkWrap: {
+    marginTop: spacing.md,
   },
   pressed: {
     opacity: 0.85,

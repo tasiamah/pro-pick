@@ -1,8 +1,7 @@
 import type { Odds, Prediction } from '../../api/types';
 
+import { classifyOddsTier } from '../demo/demoUtils';
 import {
-  classifyOddsTier,
-  formatOddsTierLabel,
   formatPredictedOutcomeLabel,
   getConfidence,
   getMatchInsight,
@@ -50,12 +49,6 @@ describe('matchCardUtils', () => {
     expect(getConfidence(prediction)).toBe(0.55);
   });
 
-  it('classifies odds tiers from decimal prices', () => {
-    expect(classifyOddsTier(1.75)).toBe('low');
-    expect(classifyOddsTier(2.5)).toBe('medium');
-    expect(classifyOddsTier(4)).toBe('high');
-  });
-
   it('maps recommended outcomes to odds and labels', () => {
     expect(getOddForOutcome(odds, 'home')).toBe(1.85);
     expect(formatPredictedOutcomeLabel('home', 'Bournemouth', 'Luton')).toBe(
@@ -63,6 +56,7 @@ describe('matchCardUtils', () => {
     );
     expect(formatPredictedOutcomeLabel('draw', 'Bournemouth', 'Luton')).toBe('Draw');
     expect(formatPredictedOutcomeLabel('away', 'Bournemouth', 'Luton')).toBe('Luton Win');
+    expect(classifyOddsTier(getOddForOutcome(odds, 'home'))).toBe('low');
   });
 
   it('uses the first non-empty insight or a fallback message', () => {
@@ -81,11 +75,5 @@ describe('matchCardUtils', () => {
         insights: ['', 'Strong home advantage in recent meetings.'],
       }),
     ).toBe('Strong home advantage in recent meetings.');
-  });
-
-  it('labels odds tiers for badges', () => {
-    expect(formatOddsTierLabel('low')).toBe('LOW ODDS');
-    expect(formatOddsTierLabel('medium')).toBe('MEDIUM ODDS');
-    expect(formatOddsTierLabel('high')).toBe('HIGH ODDS');
   });
 });

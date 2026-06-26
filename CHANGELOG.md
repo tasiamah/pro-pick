@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Shared demo UI component library for Epic 9: search, filters, form dots,
+  badges, charts, odds cards, alert banner, edge bar, and dev preview screen
+  (`mobile/src/components/demo/`, PP-101).
 - Demo-style MatchCard v2 with AI pick, confidence, odds tier badge, form dots,
   and Details CTA for Epic 9 demo parity (`MatchCardV2`, PP-102).
 - Ingestion failure alerting for the live sync pipeline via structured
@@ -101,6 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
+- MatchCard v2 now consumes shared demo UI components instead of local card
+  parts (PP-101).
 - Mobile app shell polish: darker tab bar with green active indicator, consistent
   stack headers, and Match Predictions title with subtitle space on Matches
   (PP-100).
