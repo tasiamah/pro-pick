@@ -90,6 +90,15 @@ blank screen, unusable navigation, or permanent loading/error on a healthy API).
 Record the device model, iOS version, build method (Expo Go vs EAS preview), and
 API URL in the Jira ticket comment when signing off.
 
+## Privacy policy and App Privacy (PP-96)
+
+- Published policy: [`docs/PRIVACY_POLICY.md`](../docs/PRIVACY_POLICY.md)
+- App Store Connect questionnaire guide: [`docs/APP_PRIVACY.md`](../docs/APP_PRIVACY.md)
+- Privacy Policy URL for App Store Connect:
+  `https://github.com/tasiamah/pro-pick/blob/main/docs/PRIVACY_POLICY.md`
+- The in-app disclaimer banner includes a **Privacy Policy** link that opens
+  the same URL.
+
 ## Scripts
 
 ```bash

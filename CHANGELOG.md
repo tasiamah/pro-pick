@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Privacy policy and App Store Connect App Privacy guide, plus an in-app Privacy
+  Policy link on the disclaimer banner (PP-96).
 - Physical device E2E test checklist for iPhone sign-off before TestFlight, plus
   longer API timeouts for Render cold starts and dark-mode Expo config (PP-92).
 - Idempotent demo seed script for local development with Bournemouth vs Luton
