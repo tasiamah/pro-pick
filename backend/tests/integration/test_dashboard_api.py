@@ -1,0 +1,184 @@
+"""Integration tests for the dashboard API."""
+
+from __future__ import annotations
+
+from datetime import datetime, timedelta
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.core.database import SessionLocal
+from app.main import app
+from app.models import Match, Prediction, Team, ValueBet
+
+pytestmark = pytest.mark.integration
+
+
+@pytest.fixture
+def client() -> TestClient:
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def db_session() -> Session:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def test_get_dashboard_summarizes_today_and_model_performance(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    now = datetime.utcnow()
+    start_of_day = datetime(now.year, now.month, now.day)
+
+    home = Team(name="Dashboard Home", logo_url=None)
+    away = Team(name="Dashboard Away", logo_url=None)
+    db_session.add_all([home, away])
+    db_session.flush()
+
+    today_match = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=start_of_day + timedelta(hours=12),
+        status="scheduled",
+    )
+    future_match = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=now + timedelta(days=2),
+        status="scheduled",
+    )
+    finished_match = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=start_of_day - timedelta(days=3),
+        status="finished",
+        home_goals=2,
+        away_goals=1,
+    )
+    db_session.add_all([today_match, future_match, finished_match])
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            Prediction(
+                match_id=finished_match.id,
+                prob_home=0.7,
+                prob_draw=0.2,
+                prob_away=0.1,
+            ),
+            ValueBet(
+                match_id=today_match.id,
+                outcome="home",
+                model_prob=0.6,
+                odd=2.0,
+                expected_value=0.2,
+                edge=0.3,
+                recommended_stake=10.0,
+            ),
+            ValueBet(
+                match_id=finished_match.id,
+                outcome="home",
+                model_prob=0.7,
+                odd=2.0,
+                expected_value=0.4,
+                edge=0.5,
+                recommended_stake=10.0,
+                settled=True,
+                profit=10.0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get("/dashboard")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["matches_today"] == 1
+    assert payload["upcoming_matches"] >= 1
+    assert payload["model_accuracy"] == 1.0
+    assert payload["roi"] == 1.0
+    assert [bet["match_id"] for bet in payload["top_value_bets"]] == [today_match.id]
+
+
+def test_get_dashboard_top_value_bets_scoped_to_today_ordered_by_edge(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    now = datetime.utcnow()
+    start_of_day = datetime(now.year, now.month, now.day)
+
+    home = Team(name="Scoped Home", logo_url=None)
+    away = Team(name="Scoped Away", logo_url=None)
+    db_session.add_all([home, away])
+    db_session.flush()
+
+    strong_today_match = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=start_of_day + timedelta(hours=10),
+        status="scheduled",
+    )
+    weak_today_match = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=start_of_day + timedelta(hours=14),
+        status="scheduled",
+    )
+    future_match = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=now + timedelta(days=2),
+        status="scheduled",
+    )
+    db_session.add_all([strong_today_match, weak_today_match, future_match])
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            ValueBet(
+                match_id=strong_today_match.id,
+                outcome="home",
+                model_prob=0.7,
+                odd=2.0,
+                expected_value=0.4,
+                edge=0.4,
+                recommended_stake=10.0,
+            ),
+            ValueBet(
+                match_id=weak_today_match.id,
+                outcome="away",
+                model_prob=0.55,
+                odd=2.0,
+                expected_value=0.1,
+                edge=0.2,
+                recommended_stake=10.0,
+            ),
+            ValueBet(
+                match_id=future_match.id,
+                outcome="home",
+                model_prob=0.9,
+                odd=2.0,
+                expected_value=0.8,
+                edge=0.9,
+                recommended_stake=10.0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get("/dashboard")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert [bet["match_id"] for bet in payload["top_value_bets"]] == [
+        strong_today_match.id,
+        weak_today_match.id,
+    ]
