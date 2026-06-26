@@ -2,8 +2,8 @@
 
 A multinomial logistic-regression model trained on the historical feature
 dataset from ``app/ml/features.py``. It produces home/draw/away probabilities
-for a match. Model persistence and versioning (PP-57) and the live prediction
-service (PP-58) are deliberately handled in their own tickets.
+for a match and serves as the default algorithm for the training pipeline and
+prediction service.
 """
 
 from __future__ import annotations
