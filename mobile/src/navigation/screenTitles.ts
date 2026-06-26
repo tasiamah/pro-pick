@@ -4,6 +4,7 @@ export const screenTitles = {
   favorites: 'Favorites',
   analytics: 'Pro Pick',
   matchDetail: 'Pro Pick',
+  about: 'About',
 } as const;
 
 export const screenSubtitles = {

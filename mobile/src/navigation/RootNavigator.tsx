@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { ComponentProps } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AboutScreen } from '../screens/AboutScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { colors } from '../theme';
 import { FavoritesStackNavigator } from './FavoritesStackNavigator';
@@ -71,6 +72,17 @@ export function RootNavigator() {
           ...tabStackHeaderOptions(screenTitles.analytics),
           tabBarIcon: ({ focused }) => (
             <TabBarIcon name="bar-chart-outline" focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="AboutTab"
+        component={AboutScreen}
+        options={{
+          title: 'About',
+          ...tabStackHeaderOptions(screenTitles.about),
+          tabBarIcon: ({ focused }) => (
+            <TabBarIcon name="information-circle-outline" focused={focused} />
           ),
         }}
       />

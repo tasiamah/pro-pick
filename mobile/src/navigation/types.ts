@@ -22,4 +22,5 @@ export type RootTabParamList = {
   MatchesTab: undefined;
   FavoritesTab: undefined;
   AnalyticsTab: undefined;
+  AboutTab: undefined;
 };
