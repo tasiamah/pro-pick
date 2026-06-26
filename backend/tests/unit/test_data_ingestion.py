@@ -90,3 +90,25 @@ def test_get_fixtures_retries_on_rate_limit() -> None:
 
     assert fixtures == [{"fixture": {"id": 1001}}]
     assert attempts["count"] == 2
+
+
+def test_client_rejects_invalid_timeout() -> None:
+    with pytest.raises(ValueError, match="timeout_seconds must be > 0"):
+        FootballApiClient(timeout_seconds=0)
+
+
+def test_get_fixtures_raises_football_api_error_on_unauthorized() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            401,
+            json={"response": [], "errors": {"token": "Invalid API key"}},
+        )
+
+    client = FootballApiClient(
+        api_key="bad-key",
+        min_request_interval_seconds=0,
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(FootballApiError, match="Invalid API key"):
+        client.get_fixtures(league=39, season=2024)

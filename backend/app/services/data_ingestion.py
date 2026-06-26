@@ -39,6 +39,12 @@ class FootballApiClient:
             if min_request_interval_seconds is not None
             else settings.football_api_min_request_interval_seconds
         )
+        if self.timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be > 0")
+        if self.max_retries < 0:
+            raise ValueError("max_retries must be >= 0")
+        if self.min_request_interval_seconds < 0:
+            raise ValueError("min_request_interval_seconds must be >= 0")
         self._transport = transport
         self._last_request_at = 0.0
 
@@ -97,11 +103,19 @@ class FootballApiClient:
         raise FootballApiError("Football API request failed")
 
     def _parse_response(self, response: httpx.Response) -> dict[str, Any]:
-        response.raise_for_status()
-        payload = response.json()
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise FootballApiError("Invalid JSON response from football API") from exc
+
+        if not isinstance(payload, dict):
+            raise FootballApiError("Unexpected football API response shape")
+
         errors = payload.get("errors")
         if errors:
             raise FootballApiError(str(errors))
+
+        response.raise_for_status()
         return payload
 
     def get_fixtures(self, league: int, season: int) -> list[dict[str, Any]]:
