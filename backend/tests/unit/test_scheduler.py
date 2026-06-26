@@ -101,6 +101,32 @@ def test_daily_update_uses_dedicated_lock_connection(
     mock_lock_connection.close.assert_called_once()
 
 
+@patch("app.scheduler.jobs.alert_ingestion_failure")
+@patch("app.scheduler.jobs.settings")
+@patch("app.scheduler.jobs.run_live_sync")
+@patch("app.scheduler.jobs.SessionLocal")
+def test_daily_update_alerts_when_live_sync_fails(
+    mock_session_local: MagicMock,
+    mock_run_live_sync: MagicMock,
+    mock_settings: MagicMock,
+    mock_alert: MagicMock,
+) -> None:
+    mock_settings.database_url = "sqlite:///./test.db"
+    mock_db = MagicMock()
+    mock_session_local.return_value = mock_db
+    error = RuntimeError("database unavailable")
+    mock_run_live_sync.side_effect = error
+
+    daily_update()
+
+    mock_alert.assert_called_once_with(
+        source="scheduler.daily_update",
+        message="Daily live sync failed",
+        exc_info=error,
+    )
+    mock_db.close.assert_called_once()
+
+
 @patch("app.scheduler.jobs.settings")
 def test_start_scheduler_skips_when_disabled(mock_settings: MagicMock) -> None:
     mock_settings.scheduler_enabled = False
