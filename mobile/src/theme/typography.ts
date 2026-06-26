@@ -36,6 +36,27 @@ export const typography = {
     fontWeight: '500',
     lineHeight: 18,
   },
+  hero: {
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 34,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 30,
+  },
+  badge: {
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+    letterSpacing: 0.6,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 20,
+  },
 } satisfies Record<string, TextStyle>;
 
 export type TypographyName = keyof typeof typography;

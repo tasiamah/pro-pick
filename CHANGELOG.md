@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Demo parity theme tokens for elevated surfaces, glow accents, chart palette,
+  alert colors, and typography variants (`hero`, `statValue`, `badge`,
+  `sectionSubtitle`) in `mobile/src/theme/` (PP-99).
 - Free-tier live sync for Premier League and La Liga using date-based fixture
   imports, stub predictions, value bets, scheduler, and
   `python -m app.scripts.sync_live_fixtures` (PP-51).

@@ -41,6 +41,23 @@ npm run typecheck  # TypeScript strict check
 npm test           # placeholder until tests are added
 ```
 
+## Design tokens
+
+Demo-parity UI (EPIC-9) uses semantic tokens from `src/theme/` instead of
+hard-coded colors or font sizes.
+
+| Token group | Examples | Use |
+|-------------|----------|-----|
+| Surfaces | `surfaceElevated`, `cardElevated` | Elevated cards and panels |
+| Accents | `primary`, `primaryGlow` | CTAs, active states, glow shadows |
+| Form & odds | `win`, `loss`, `draw`, `oddsLow`, `oddsMedium`, `oddsHigh` | Form dots and odds-tier badges |
+| Charts | `chartHome`, `chartDraw`, `chartAway` | Probability bar charts |
+| Market | `marketBlue` | Live odds and market labels |
+| Alerts | `alertWarning` | Odds movement and warning banners |
+| Typography | `hero`, `statValue`, `badge`, `sectionSubtitle` | Hero stats, badges, section headers |
+
+Import from `src/theme` (re-exported in `index.ts`).
+
 ## Project structure
 
 ```text
