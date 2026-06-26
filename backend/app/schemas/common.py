@@ -5,6 +5,18 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
+class HealthOut(BaseModel):
+    status: str
+    app: str
+    env: str
+
+
+class ServiceInfoOut(BaseModel):
+    app: str
+    docs: str
+    health: str
+
+
 class TeamOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
