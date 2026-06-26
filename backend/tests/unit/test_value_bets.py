@@ -45,6 +45,11 @@ def test_recommended_stake_scales_with_multiplier():
     assert half == pytest.approx(quarter * 2.0)
 
 
+def test_recommended_stake_clamps_out_of_range_multiplier():
+    assert recommended_stake(0.55, 2.10, -1.0) == 0.0
+    assert recommended_stake(0.99, 2.10, 100.0) == 1.0
+
+
 def test_edge_is_model_prob_minus_implied_probability():
     result = evaluate_outcome("home", 0.55, 2.10)
     assert round(result.edge, 4) == round(0.55 - implied_probability(2.10), 4)

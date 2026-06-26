@@ -38,8 +38,13 @@ def full_kelly_fraction(prob: float, odd: float) -> float:
 
 
 def recommended_stake(prob: float, odd: float, kelly_multiplier: float) -> float:
-    """Fractional-Kelly stake: full Kelly scaled by the configured fraction."""
-    return full_kelly_fraction(prob, odd) * kelly_multiplier
+    """Fractional-Kelly stake scaled by the multiplier, clamped to [0, 1].
+
+    Clamping keeps an out-of-range multiplier from persisting an invalid
+    bankroll fraction.
+    """
+    stake = full_kelly_fraction(prob, odd) * kelly_multiplier
+    return max(0.0, min(1.0, stake))
 
 
 def evaluate_outcome(

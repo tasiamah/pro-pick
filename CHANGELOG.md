@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   heavy `/analytics` and `/dashboard` endpoints, and per-client rate limiting
   with configurable limits (PP-73).
 - Value-bet engine: per-market (home/draw/away) expected value and edge
-  (model probability minus margin-free implied probability), flagged as a value
+  (model probability minus the implied probability `1/odd`), flagged as a value
   bet when the edge clears the configurable `value_bet_edge_threshold`
   (`app/services/value_bets.py`, PP-60).
 - Recommended stake via fractional Kelly: full Kelly bounded to [0, 1] scaled by
