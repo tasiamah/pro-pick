@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Daily scheduler that syncs the current season for the top five European
   leagues via APScheduler, with logging, per-league error handling, and env
   toggles (`scheduler/jobs.py`, `daily_import.py`, PP-50).
+- Reproducible, point-in-time feature engineering for the 1X2 model: recent
+  form, home/away form, goals for/against, head-to-head, league standing, and
+  rest days, plus a training-dataset builder over finished matches
+  (`app/ml/features.py`, PP-53). Injuries are deferred until an injuries data
+  source exists.
 - Historical data import service and CLI to load 2–3 seasons of fixtures,
   final scores, and 1X2 odds for the top five European leagues into the
   database (`historical_import.py`, `python -m app.scripts.import_historical`,
