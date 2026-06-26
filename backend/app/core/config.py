@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +23,10 @@ class Settings(BaseSettings):
     football_api_timeout_seconds: float = 20.0
     football_api_max_retries: int = 3
     football_api_min_request_interval_seconds: float = 0.6
+
+    scheduler_enabled: bool = False
+    scheduler_daily_hour: int = Field(default=6, ge=0, le=23)
+    scheduler_import_odds: bool = True
 
     value_bet_edge_threshold: float = 0.05
     kelly_fraction: float = 0.25
