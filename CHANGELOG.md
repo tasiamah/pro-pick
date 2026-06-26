@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Demo-style MatchCard v2 with AI pick, confidence, odds tier badge, form dots,
+  and Details CTA for Epic 9 demo parity (`MatchCardV2`, PP-102).
 - Ingestion failure alerting for the live sync pipeline via structured
   `pro_pick.ingestion` error logs in the scheduler and
   `sync_live_fixtures` CLI (PP-52).

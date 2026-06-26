@@ -2,6 +2,7 @@ export type Team = {
   id: number;
   name: string;
   logo_url: string | null;
+  form?: ('W' | 'D' | 'L')[];
 };
 
 export type Odds = {
@@ -17,6 +18,7 @@ export type Prediction = {
   prob_home: number;
   prob_draw: number;
   prob_away: number;
+  insights?: string[];
 };
 
 export type Match = {
