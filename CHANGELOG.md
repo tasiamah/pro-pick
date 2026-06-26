@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Historical data import service and CLI to load 2–3 seasons of fixtures,
+  final scores, and 1X2 odds for the top five European leagues into the
+  database (`historical_import.py`, `python -m app.scripts.import_historical`,
+  PP-49).
 - API-Football client for fixtures and odds with retries, rate limiting, and
   mocked unit tests in `data_ingestion.py` (PP-48).
 - Data provider decision document comparing API-Football, Sportmonks, and Opta
@@ -59,6 +63,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Persistent entertainment disclaimer banner on all mobile screens (PP-84).
 
 ### Changed
+- Mobile Home and Matches screens anchor the date picker on the latest imported
+  kickoff when no upcoming fixtures exist, so historical data is visible
+  (PP-49).
+- Default historical import seasons set to 2022–2024 for API-Football free tier
+  (PP-49).
 - Mobile screens use shared query-state helpers so loading, empty, and error
   views stay consistent and keep cached data visible during refetch failures
   (PP-85).
@@ -80,6 +89,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Remaining Dutch comment in `alembic/env.py` translated to English.
 
 ### Fixed
+- `GET /dashboard` now returns `latest_kickoff` so clients can browse imported
+  historical match weeks (PP-49).
 - `mobile/LICENSE` copyright updated from Expo template text to Pro Pick.
 
 [Unreleased]: https://github.com/tasiamah/pro-pick/commits/main

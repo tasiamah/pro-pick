@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -10,25 +10,25 @@ import {
   LoadingState,
   MatchCard,
 } from '../components';
+import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, spacing } from '../theme';
-import {
-  buildDateRange,
-  buildDateWindowParams,
-  DATE_RANGE_DAYS,
-  filterMatchesByDate,
-  startOfUtcDay,
-} from '../utils/matchDates';
+import { filterMatchesByDate } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 
 type Props = NativeStackScreenProps<MatchesStackParamList, 'Matches'>;
 
 export function MatchesScreen({ navigation }: Props) {
-  const [selectedDate, setSelectedDate] = useState(() => startOfUtcDay());
-  const matchListParams = useMemo(() => buildDateWindowParams(), []);
-  const matchesQuery = useMatches(matchListParams);
-
-  const dateRange = useMemo(() => buildDateRange(startOfUtcDay(), DATE_RANGE_DAYS), []);
+  const {
+    dateRange,
+    matchListParams,
+    selectedDate,
+    setSelectedDate,
+    dashboardQuery,
+  } = useMatchDateAnchor();
+  const matchesQuery = useMatches(matchListParams, {
+    enabled: !dashboardQuery.isLoading,
+  });
 
   const filteredMatches = useMemo(
     () => filterMatchesByDate(matchesQuery.data ?? [], selectedDate),
@@ -39,7 +39,10 @@ export function MatchesScreen({ navigation }: Props) {
     void matchesQuery.refetch();
   }, [matchesQuery]);
 
-  if (isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)) {
+  if (
+    isInitialQueryLoad(dashboardQuery.isLoading, dashboardQuery.data) ||
+    isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)
+  ) {
     return <LoadingState message="Loading matches…" />;
   }
 

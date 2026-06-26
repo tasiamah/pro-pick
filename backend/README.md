@@ -106,6 +106,31 @@ of API-Football, Sportmonks, and Opta, plus cost estimates.
 Configure `FOOTBALL_API_BASE_URL` and `FOOTBALL_API_KEY` in `.env` (see
 `.env.example`). The HTTP client lives in `app/services/data_ingestion.py`.
 
+## Historical data import (PP-49)
+
+After migrations and a valid `FOOTBALL_API_KEY`, load historical fixtures,
+final scores, and 1X2 odds into the database:
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m app.scripts.import_historical
+```
+
+By default this imports three seasons (2022–2024) for the top five European
+leagues (Premier League, La Liga, Serie A, Bundesliga, Ligue 1). Override
+leagues or seasons:
+
+```bash
+python -m app.scripts.import_historical --league 39 --season 2024
+python -m app.scripts.import_historical --skip-odds
+```
+
+Odds are fetched per match and can exceed the API-Football free tier (100
+requests/day). Use `--skip-odds` for fixture-only runs during development, or
+upgrade to a paid plan for a full import. See
+[docs/DATA_PROVIDER.md](../docs/DATA_PROVIDER.md).
+
 ## PostgreSQL + Alembic (Docker Compose)
 
 ```bash
@@ -170,7 +195,8 @@ app/
 ├── api/               # endpoints (health, matches, predictions, value_bets, analytics, dashboard)
 ├── models/            # SQLAlchemy models
 ├── schemas/           # Pydantic request/response models
-├── services/          # data_ingestion, prediction, value_bets
+├── services/          # data_ingestion, historical_import, prediction, value_bets
+├── scripts/           # CLI tools (historical import)
 ├── ml/                # features, train, model.pkl
 └── scheduler/         # scheduled jobs (daily update)
 alembic/               # database migrations
@@ -188,4 +214,4 @@ alembic/               # database migrations
 | GET | `/value-bets` | Value bets |
 | GET | `/analytics` | Model performance & ROI |
 
-> Data ingestion, ML model, and scheduler are stubbed and will be implemented in later tickets.
+> ML model and scheduler are stubbed and will be implemented in later tickets.
