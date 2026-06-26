@@ -74,7 +74,7 @@ def test_daily_update_skips_when_lock_not_acquired(
     mock_try_acquire.assert_called_once_with(mock_lock_connection)
     mock_run_live_sync.assert_not_called()
     mock_session_local.assert_not_called()
-    mock_release.assert_called_once_with(mock_lock_connection)
+    mock_release.assert_not_called()
     mock_lock_connection.close.assert_called_once()
 
 

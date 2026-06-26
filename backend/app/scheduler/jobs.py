@@ -49,14 +49,14 @@ def _scheduler_lock() -> Iterator[bool]:
         return
 
     lock_connection = engine.connect()
+    acquired = False
     try:
-        if not _try_acquire_scheduler_lock(lock_connection):
-            yield False
-            return
-        yield True
+        acquired = _try_acquire_scheduler_lock(lock_connection)
+        yield acquired
     finally:
         with closing(lock_connection):
-            _release_scheduler_lock(lock_connection)
+            if acquired:
+                _release_scheduler_lock(lock_connection)
 
 
 def daily_update() -> None:
