@@ -16,6 +16,21 @@ uvicorn app.main:app --reload
 - API docs (Swagger): http://localhost:8000/docs
 - Health check: http://localhost:8000/health
 
+## Demo seed (local development)
+
+Populate the database with a deterministic demo dataset for the mobile app
+(Bournemouth vs Luton, team form history, predictions, odds, and value bets).
+The script is idempotent — safe to run multiple times:
+
+```bash
+cd backend
+source .venv/bin/activate
+alembic upgrade head
+python -m app.scripts.seed_demo
+```
+
+Then start the API and point the mobile app at `http://localhost:8000`.
+
 ## Managed PostgreSQL (Supabase)
 
 Use Supabase for a production-ready database. Store the connection string in `.env` only — never commit it to git.
@@ -231,8 +246,8 @@ app/
 ├── api/               # endpoints (health, matches, predictions, value_bets, analytics, dashboard)
 ├── models/            # SQLAlchemy models
 ├── schemas/           # Pydantic request/response models
-├── services/          # data_ingestion, historical_import, live_sync, ingestion_alerts, prediction, value_bets
-├── scripts/           # CLI tools (historical import, live sync)
+├── services/          # data_ingestion, historical_import, live_sync, demo_seed, ingestion_alerts, prediction, value_bets
+├── scripts/           # CLI tools (historical import, live sync, demo seed)
 ├── ml/                # features, train, model.pkl
 └── scheduler/         # scheduled jobs (daily update)
 alembic/               # database migrations
