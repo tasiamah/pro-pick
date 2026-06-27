@@ -1,28 +1,40 @@
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DISCLAIMER_TEXT } from '../constants/disclaimer';
-import { PRIVACY_POLICY_URL } from '../constants/legal';
-import { colors, spacing, typography } from '../theme';
+import { DISCLAIMER_SHORT } from '../constants/disclaimer';
+import { openAbout } from '../navigation/navigationRef';
+import { colors, spacing } from '../theme';
 
 export function DisclaimerBanner() {
   const insets = useSafeAreaInsets();
+  const [dismissed, setDismissed] = useState(false);
 
-  const openPrivacyPolicy = () => {
-    void Linking.openURL(PRIVACY_POLICY_URL);
-  };
+  if (dismissed) {
+    return null;
+  }
 
   return (
     <View style={[styles.banner, { paddingTop: insets.top + spacing.xs }]}>
-      <Text accessibilityRole="text" style={styles.text}>
-        {DISCLAIMER_TEXT}
-      </Text>
       <Pressable
-        accessibilityRole="link"
-        accessibilityLabel="Privacy Policy"
-        onPress={openPrivacyPolicy}
+        accessibilityRole="button"
+        accessibilityHint="Opens about and legal information"
+        onPress={openAbout}
+        style={({ pressed }) => [styles.label, pressed && styles.pressed]}
       >
-        <Text style={styles.link}>Privacy Policy</Text>
+        <Text numberOfLines={1} style={styles.text}>
+          {DISCLAIMER_SHORT}
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss disclaimer"
+        hitSlop={spacing.sm}
+        onPress={() => setDismissed(true)}
+        style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+      >
+        <Ionicons name="close" size={14} color={colors.textMuted} />
       </Pressable>
     </View>
   );
@@ -30,22 +42,26 @@ export function DisclaimerBanner() {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: colors.card,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    gap: spacing.xs,
-    paddingBottom: spacing.sm,
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    flexDirection: 'row',
+    paddingBottom: spacing.xs,
     paddingHorizontal: spacing.lg,
   },
+  label: {
+    flex: 1,
+  },
+  pressed: {
+    opacity: 0.6,
+  },
   text: {
-    ...typography.caption,
     color: colors.textMuted,
+    fontSize: 10,
+    letterSpacing: 0.3,
+    lineHeight: 13,
     textAlign: 'center',
   },
-  link: {
-    ...typography.caption,
-    color: colors.primary,
-    textAlign: 'center',
-    textDecorationLine: 'underline',
+  close: {
+    paddingLeft: spacing.sm,
   },
 });

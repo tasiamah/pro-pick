@@ -23,3 +23,9 @@ export type RootTabParamList = {
   FavoritesTab: undefined;
   AnalyticsTab: undefined;
 };
+
+export type RootStackParamList = {
+  Tabs: undefined;
+  About: undefined;
+  PrivacyPolicy: undefined;
+};
