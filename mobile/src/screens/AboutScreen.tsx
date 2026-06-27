@@ -1,11 +1,9 @@
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DISCLAIMER_TEXT } from '../constants/disclaimer';
-import {
-  BOOKMAKER_INDEPENDENCE_TEXT,
-  getPrivacyPolicyUrl,
-  RESPONSIBLE_PLAY_TEXT,
-} from '../constants/legal';
+import { BOOKMAKER_INDEPENDENCE_TEXT, RESPONSIBLE_PLAY_TEXT } from '../constants/legal';
+import type { RootStackParamList } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme';
 
 type LegalSectionProps = {
@@ -22,28 +20,9 @@ function LegalSection({ title, body }: LegalSectionProps) {
   );
 }
 
-export function AboutScreen() {
-  const privacyPolicyUrl = getPrivacyPolicyUrl();
+type Props = NativeStackScreenProps<RootStackParamList, 'About'>;
 
-  const openPrivacyPolicy = async () => {
-    if (!privacyPolicyUrl) {
-      return;
-    }
-    try {
-      const supported = await Linking.canOpenURL(privacyPolicyUrl);
-      if (!supported) {
-        Alert.alert('Privacy policy unavailable', 'No app is available to open the privacy policy.');
-        return;
-      }
-      await Linking.openURL(privacyPolicyUrl);
-    } catch {
-      Alert.alert(
-        'Privacy policy unavailable',
-        'The privacy policy could not be opened right now. Please try again later.',
-      );
-    }
-  };
-
+export function AboutScreen({ navigation }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <LegalSection title="Entertainment only" body={DISCLAIMER_TEXT} />
@@ -55,18 +34,14 @@ export function AboutScreen() {
         <Text style={styles.cardBody}>
           Learn what data Pro Pick collects and how it is used.
         </Text>
-        {privacyPolicyUrl ? (
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel="Open privacy policy"
-            onPress={openPrivacyPolicy}
-            style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}
-          >
-            <Text style={styles.linkText}>Privacy Policy {'>'}</Text>
-          </Pressable>
-        ) : (
-          <Text style={styles.cardBody}>The full privacy policy is coming soon.</Text>
-        )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Read the full privacy policy"
+          onPress={() => navigation.navigate('PrivacyPolicy')}
+          style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}
+        >
+          <Text style={styles.linkText}>Read more {'>'}</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );

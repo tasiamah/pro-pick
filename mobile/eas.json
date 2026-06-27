@@ -8,22 +8,19 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://pro-pick.onrender.com",
-        "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://pro-pick.onrender.com/privacy"
+        "EXPO_PUBLIC_API_URL": "https://pro-pick.onrender.com"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://pro-pick.onrender.com",
-        "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://pro-pick.onrender.com/privacy"
+        "EXPO_PUBLIC_API_URL": "https://pro-pick.onrender.com"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://pro-pick.onrender.com",
-        "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://pro-pick.onrender.com/privacy"
+        "EXPO_PUBLIC_API_URL": "https://pro-pick.onrender.com"
       }
     }
   },

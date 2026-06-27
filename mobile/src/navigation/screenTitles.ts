@@ -5,6 +5,7 @@ export const screenTitles = {
   analytics: 'ProPick',
   matchDetail: 'ProPick',
   about: 'About',
+  privacyPolicy: 'Privacy Policy',
 } as const;
 
 export const screenSubtitles = {

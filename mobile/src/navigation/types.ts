@@ -27,4 +27,5 @@ export type RootTabParamList = {
 export type RootStackParamList = {
   Tabs: undefined;
   About: undefined;
+  PrivacyPolicy: undefined;
 };

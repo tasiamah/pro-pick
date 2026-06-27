@@ -28,10 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `app.json` (display name "ProPick", `bundleIdentifier` `com.propick.app`) and
   a documented EAS build, submit, and beta-test/feedback runbook
   (`mobile/README.md`, PP-94).
-- App Store compliance: an in-app About screen, reachable by tapping the
-  persistent disclaimer banner, that restates the entertainment-only disclaimer,
-  adds 18+/responsible-gambling guidance, states independence from any
-  bookmaker, and links to the privacy policy (PP-93).
+- App Store compliance: a dismissible disclaimer banner that opens an in-app
+  About screen (entertainment-only disclaimer, 18+/responsible-gambling
+  guidance, independence from any bookmaker) plus a self-contained in-app
+  Privacy Policy screen, so the policy is always reachable without an external
+  link (PP-93).
 - Value-bet settlement for ROI tracking: once a match finishes, open value bets
   are scored against the result and their realized profit (fractional-Kelly
   stake) is recorded, so `/analytics` reports ROI and its trend over time
