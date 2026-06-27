@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   chipTextSelected: {
+    ...typography.labelStrong,
     color: colors.background,
-    fontWeight: '600',
   },
 });

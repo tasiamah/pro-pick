@@ -14,7 +14,7 @@ import {
 } from '../components';
 import type { FavoritesStackParamList } from '../navigation/types';
 import { filterMatchesByFavorites, useFavoritesStore } from '../store';
-import { colors, spacing, typography } from '../theme';
+import { colors, screenStyles, spacing, typography } from '../theme';
 import {
   buildDateRange,
   buildDateWindowParams,
@@ -90,7 +90,7 @@ export function FavoritesScreen({ navigation }: Props) {
 
   if (!hasFavorites) {
     return (
-      <View style={styles.container}>
+      <View style={screenStyles.screenContainer}>
         <EmptyState message="Favorite teams or competitions from a match to see them here." />
       </View>
     );
@@ -106,8 +106,8 @@ export function FavoritesScreen({ navigation }: Props) {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={screenStyles.screenContainer}
+      contentContainerStyle={screenStyles.scrollContent}
       refreshControl={
         <RefreshControl
           refreshing={matchesQuery.isRefetching}
@@ -131,7 +131,7 @@ export function FavoritesScreen({ navigation }: Props) {
         isEmpty={filteredMatches.length === 0}
         emptyMessage="No favorite matches on this day"
       >
-        <View style={styles.cardList}>
+        <View style={screenStyles.cardList}>
           {filteredMatches.map((match) => (
             <MatchCardV2
               key={match.id}
@@ -150,15 +150,6 @@ export function FavoritesScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    gap: spacing.xl,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
   savedSection: {
     gap: spacing.sm,
   },
@@ -168,8 +159,5 @@ const styles = StyleSheet.create({
   },
   savedRow: {
     gap: spacing.sm,
-  },
-  cardList: {
-    gap: spacing.md,
   },
 });

@@ -26,10 +26,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   value: {
-    ...typography.statValue,
+    ...typography.metric,
     color: colors.primary,
-    fontSize: 18,
-    lineHeight: 22,
   },
   label: {
     ...typography.badge,

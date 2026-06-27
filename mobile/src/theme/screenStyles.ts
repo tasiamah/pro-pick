@@ -6,6 +6,26 @@ import { spacing } from './spacing';
 import { typography } from './typography';
 
 export const screenStyles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    gap: spacing.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  stackContent: {
+    gap: spacing.md,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  section: {
+    gap: spacing.md,
+  },
+  cardList: {
+    gap: spacing.md,
+  },
   centeredContainer: {
     flex: 1,
     alignItems: 'center',

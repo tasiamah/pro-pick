@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { DISCLAIMER_TEXT } from '../constants/disclaimer';
 import { BOOKMAKER_INDEPENDENCE_TEXT, RESPONSIBLE_PLAY_TEXT } from '../constants/legal';
 import type { RootStackParamList } from '../navigation/types';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, screenStyles, spacing, typography } from '../theme';
 
 type LegalSectionProps = {
   title: string;
@@ -24,7 +24,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'About'>;
 
 export function AboutScreen({ navigation }: Props) {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={screenStyles.screenContainer} contentContainerStyle={screenStyles.stackContent}>
       <LegalSection title="Entertainment only" body={DISCLAIMER_TEXT} />
       <LegalSection title="18+ and responsible play" body={RESPONSIBLE_PLAY_TEXT} />
       <LegalSection title="Independent analysis" body={BOOKMAKER_INDEPENDENCE_TEXT} />
@@ -48,15 +48,6 @@ export function AboutScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    gap: spacing.md,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,

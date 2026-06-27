@@ -66,9 +66,8 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   edge: {
-    ...typography.bodySmall,
+    ...typography.labelStrong,
     color: colors.primary,
-    fontWeight: '600',
   },
   statsRow: {
     flexDirection: 'row',

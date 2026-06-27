@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
-import { colors } from '../theme';
+import { colors, spacing } from '../theme';
 import { FavoritesStackNavigator } from './FavoritesStackNavigator';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { MatchesStackNavigator } from './MatchesStackNavigator';
@@ -81,7 +81,7 @@ export function RootNavigator() {
 const styles = StyleSheet.create({
   tabIconContainer: {
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   tabIconGlow: {
     elevation: 4,
@@ -92,8 +92,8 @@ const styles = StyleSheet.create({
   },
   tabActiveDot: {
     backgroundColor: colors.primary,
-    borderRadius: 3,
-    height: 4,
-    width: 4,
+    borderRadius: spacing.xs / 2,
+    height: spacing.xs,
+    width: spacing.xs,
   },
 });

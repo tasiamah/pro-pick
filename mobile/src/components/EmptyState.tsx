@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '../theme';
+import { colors, screenStyles, typography } from '../theme';
 
 type EmptyStateProps = {
   message?: string;
@@ -8,18 +8,13 @@ type EmptyStateProps = {
 
 export function EmptyState({ message = 'No data available' }: EmptyStateProps) {
   return (
-    <View style={styles.container}>
+    <View style={screenStyles.centeredContainer}>
       <Text style={styles.message}>{message}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
   message: {
     ...typography.bodySmall,
     color: colors.textMuted,

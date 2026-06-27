@@ -55,10 +55,8 @@ const styles = StyleSheet.create({
     width: RING_SIZE,
   },
   value: {
-    ...typography.statValue,
+    ...typography.metric,
     color: colors.primary,
-    fontSize: 18,
-    lineHeight: 22,
     position: 'absolute',
   },
 });

@@ -11,9 +11,9 @@ import { LineChart } from 'react-native-gifted-charts';
 
 import { useAnalytics } from '../api/hooks';
 import type { Analytics } from '../api/types';
-import { EmptyState, ErrorState, LoadingState } from '../components';
+import { EmptyState, ErrorState, LoadingState, SectionHeader } from '../components';
 import { formatPercent } from '../components/formatters';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, screenStyles, spacing, typography } from '../theme';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 
 import { toRoiTrendChartData } from './analyticsUtils';
@@ -121,8 +121,8 @@ export function AnalyticsScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={screenStyles.screenContainer}
+      contentContainerStyle={screenStyles.scrollContent}
       refreshControl={
         <RefreshControl
           refreshing={analyticsQuery.isRefetching}
@@ -134,8 +134,8 @@ export function AnalyticsScreen() {
     >
       <StatsRow analytics={analytics} />
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>ROI trend</Text>
+      <View style={screenStyles.section}>
+        <SectionHeader title="ROI trend" />
         <RoiTrendChart analytics={analytics} chartWidth={chartWidth} />
       </View>
     </ScrollView>
@@ -143,22 +143,6 @@ export function AnalyticsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    gap: spacing.xl,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    ...typography.bodySemibold,
-    color: colors.text,
-  },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -174,12 +158,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   statLabel: {
-    ...typography.caption,
+    ...typography.badge,
     color: colors.textMuted,
     marginBottom: spacing.xs,
   },
   statValue: {
-    ...typography.title,
+    ...typography.statValue,
     color: colors.primary,
   },
   chartCard: {

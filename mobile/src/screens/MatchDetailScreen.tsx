@@ -36,7 +36,7 @@ import type {
   HomeStackParamList,
   MatchesStackParamList,
 } from '../navigation/types';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, screenStyles, spacing, typography } from '../theme';
 import { formatMatchTeams } from '../utils/matchDisplay';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import {
@@ -118,7 +118,7 @@ type KeyInsightsSectionProps = {
 
 function KeyInsightsSection({ insights }: KeyInsightsSectionProps) {
   return (
-    <View style={styles.section}>
+    <View style={screenStyles.section}>
       <SectionHeader title="Key Insights" />
       <View style={styles.insightsList}>
         {insights.map((insight, index) => (
@@ -145,7 +145,7 @@ function LiveOddsSection({
   showMovementAlert,
 }: LiveOddsSectionProps) {
   return (
-    <View style={styles.section}>
+    <View style={screenStyles.section}>
       <SectionHeader subtitle="Home, draw, and away prices" title="Live Odds" />
       <View style={styles.oddsRow}>
         <OddsMarketCard
@@ -199,7 +199,7 @@ function MarketAnalysisSection({
   const analysis = buildMarketAnalysis(prediction, odds, valueBet);
 
   return (
-    <View style={styles.section}>
+    <View style={screenStyles.section}>
       <SectionHeader
         subtitle="Model probability versus market pricing"
         title="AI vs Market Analysis"
@@ -299,8 +299,8 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={screenStyles.screenContainer}
+      contentContainerStyle={screenStyles.scrollContent}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
@@ -319,7 +319,7 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
             homeName={homeName}
             prediction={prediction}
           />
-          <View style={styles.section}>
+          <View style={screenStyles.section}>
             <SectionHeader title="Win Probabilities" />
             <View style={styles.sectionCard}>
               <ProbabilityBarChart
@@ -360,18 +360,6 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    gap: spacing.xl,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  section: {
-    gap: spacing.md,
-  },
   sectionCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,

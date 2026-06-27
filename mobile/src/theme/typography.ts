@@ -36,6 +36,22 @@ export const typography = {
     fontWeight: '500',
     lineHeight: 18,
   },
+  labelStrong: {
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  micro: {
+    fontSize: 10,
+    fontWeight: '400',
+    letterSpacing: 0.3,
+    lineHeight: 13,
+  },
+  metric: {
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
   hero: {
     fontSize: 28,
     fontWeight: '700',
