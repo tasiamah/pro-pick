@@ -2,8 +2,6 @@ import { useCallback, useMemo } from 'react';
 import {
   RefreshControl,
   ScrollView,
-  StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -22,7 +20,7 @@ import {
 } from '../components';
 import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
 import type { HomeStackParamList } from '../navigation/types';
-import { colors, spacing, typography } from '../theme';
+import { colors, screenStyles } from '../theme';
 import { filterMatchesByDate } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
@@ -91,8 +89,8 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={screenStyles.screenContainer}
+      contentContainerStyle={screenStyles.scrollContent}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
@@ -110,8 +108,8 @@ export function HomeScreen({ navigation }: Props) {
 
       <AiPredictionsHero stats={heroStats} />
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Matches</Text>
+      <View style={screenStyles.section}>
+        <SectionHeader title="Matches" />
         <AsyncState
           isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
           error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
@@ -120,7 +118,7 @@ export function HomeScreen({ navigation }: Props) {
           errorMessage="Could not load matches"
           onRetry={() => void matchesQuery.refetch()}
         >
-          <View style={styles.cardList}>
+          <View style={screenStyles.cardList}>
             {filteredMatches.map((match) => (
               <MatchCardV2
                 key={match.id}
@@ -136,7 +134,7 @@ export function HomeScreen({ navigation }: Props) {
         </AsyncState>
       </View>
 
-      <View style={styles.section}>
+      <View style={screenStyles.section}>
         <SectionHeader
           subtitle="Highest edge picks kicking off today"
           title="Top Value Bets"
@@ -147,7 +145,7 @@ export function HomeScreen({ navigation }: Props) {
           isEmpty={(dashboard.top_value_bets ?? []).length === 0}
           emptyMessage="No value bets yet"
         >
-          <View style={styles.cardList}>
+          <View style={screenStyles.cardList}>
             {(dashboard.top_value_bets ?? []).map((valueBet) => (
               <ValueBetCard
                 key={valueBet.id}
@@ -165,25 +163,3 @@ export function HomeScreen({ navigation }: Props) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    gap: spacing.xl,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    ...typography.bodySemibold,
-    color: colors.text,
-  },
-  cardList: {
-    gap: spacing.md,
-  },
-});

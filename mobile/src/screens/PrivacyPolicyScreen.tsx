@@ -6,7 +6,7 @@ import {
   PRIVACY_POLICY_SECTIONS,
   type PrivacyPolicySection,
 } from '../constants/privacyPolicy';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, screenStyles, spacing, typography } from '../theme';
 
 function PolicySection({ heading, paragraphs, bullets }: PrivacyPolicySection) {
   return (
@@ -29,7 +29,7 @@ function PolicySection({ heading, paragraphs, bullets }: PrivacyPolicySection) {
 
 export function PrivacyPolicyScreen() {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={screenStyles.screenContainer} contentContainerStyle={screenStyles.stackContent}>
       <Text style={styles.lastUpdated}>Last updated: {PRIVACY_POLICY_LAST_UPDATED}</Text>
       <Text style={styles.intro}>{PRIVACY_POLICY_INTRO}</Text>
       {PRIVACY_POLICY_SECTIONS.map((section) => (
@@ -40,15 +40,6 @@ export function PrivacyPolicyScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    gap: spacing.md,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
   lastUpdated: {
     ...typography.caption,
     color: colors.textMuted,

@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   segmentTextSelected: {
+    ...typography.labelStrong,
     color: colors.text,
-    fontWeight: '600',
   },
 });

@@ -12,7 +12,7 @@ export function ErrorState({
   onRetry,
 }: ErrorStateProps) {
   return (
-    <View style={styles.container}>
+    <View style={screenStyles.centeredContainer}>
       <Text style={styles.message}>{message}</Text>
       {onRetry ? (
         <Pressable
@@ -28,11 +28,6 @@ export function ErrorState({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
   message: {
     ...typography.bodySmall,
     color: colors.textMuted,

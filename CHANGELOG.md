@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Mobile UI/UX polish for demo parity: shared screen layout styles, consistent
+  section headers and stat typography, and theme tokens for micro, metric, and
+  label-strong text (PP-90).
+
 ### Added
 - Privacy policy and App Store Connect App Privacy guide, plus an in-app Privacy
   Policy link on the disclaimer banner (PP-96).

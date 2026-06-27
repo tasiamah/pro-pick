@@ -1,4 +1,4 @@
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, screenStyles, spacing, typography } from '../theme';
 
 describe('theme', () => {
   it('exports demo semantic colors', () => {
@@ -43,5 +43,22 @@ describe('theme', () => {
       lineHeight: 20,
     });
     expect(radii.md).toBe(12);
+    expect(typography.micro).toMatchObject({
+      fontSize: 10,
+      lineHeight: 13,
+    });
+    expect(typography.metric).toMatchObject({
+      fontSize: 18,
+      fontWeight: '700',
+      lineHeight: 22,
+    });
+    expect(typography.labelStrong.fontWeight).toBe('600');
+  });
+
+  it('exports shared screen layout styles', () => {
+    expect(screenStyles.scrollContent.gap).toBe(spacing.xl);
+    expect(screenStyles.scrollContent.padding).toBe(spacing.lg);
+    expect(screenStyles.stackContent.gap).toBe(spacing.md);
+    expect(screenStyles.cardList.gap).toBe(spacing.md);
   });
 });

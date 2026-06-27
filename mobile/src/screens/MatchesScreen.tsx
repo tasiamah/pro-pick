@@ -14,7 +14,7 @@ import {
 } from '../components';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import type { MatchesStackParamList } from '../navigation/types';
-import { colors, spacing } from '../theme';
+import { colors, screenStyles, spacing } from '../theme';
 import { addUtcDays, buildDateWindowParams, startOfUtcDay } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import {
@@ -74,8 +74,8 @@ export function MatchesScreen({ navigation }: Props) {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={screenStyles.screenContainer}
+      contentContainerStyle={screenStyles.scrollContent}
       refreshControl={
         <RefreshControl
           refreshing={matchesQuery.isRefetching}
@@ -114,7 +114,7 @@ export function MatchesScreen({ navigation }: Props) {
         isEmpty={filteredMatches.length === 0}
         emptyMessage={emptyMessage}
       >
-        <View style={styles.cardList}>
+        <View style={screenStyles.cardList}>
           {filteredMatches.map((match) => (
             <MatchCardV2
               key={match.id}
@@ -133,19 +133,7 @@ export function MatchesScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    gap: spacing.xl,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
   filters: {
-    gap: spacing.md,
-  },
-  cardList: {
     gap: spacing.md,
   },
 });
