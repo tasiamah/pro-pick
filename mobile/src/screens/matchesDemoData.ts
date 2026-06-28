@@ -1,6 +1,22 @@
 import type { MatchDetail } from '../api/types';
 
-const DEMO_KICKOFF = '2026-12-20T00:00:00Z';
+export function buildDemoKickoff(referenceDate: Date = new Date(), daysAhead = 7): string {
+  const kickoff = new Date(
+    Date.UTC(
+      referenceDate.getUTCFullYear(),
+      referenceDate.getUTCMonth(),
+      referenceDate.getUTCDate() + daysAhead,
+      15,
+      0,
+      0,
+      0,
+    ),
+  );
+
+  return kickoff.toISOString();
+}
+
+const DEMO_KICKOFF = buildDemoKickoff();
 
 export function findDemoMatchById(matchId: number): MatchDetail | null {
   return MATCHES_DEMO_DATA.find((match) => match.id === matchId) ?? null;

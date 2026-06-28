@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 - Match detail modal: zero-edge outcomes no longer show a misleading edge bar
   fill, and demo odds movement appears only after Update Odds is tapped.
+- Match detail routing rejects unsafe integer ids; demo match kickoffs are
+  generated relative to the current date so browse cards stay upcoming.
 
 ### Changed
 - Match detail modal: screenshot-style layout with AI confidence ring, win

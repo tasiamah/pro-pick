@@ -1,6 +1,18 @@
-import { findDemoMatchById, MATCHES_DEMO_DATA } from './matchesDemoData';
+import { buildDemoKickoff, findDemoMatchById, MATCHES_DEMO_DATA } from './matchesDemoData';
 
 describe('matchesDemoData', () => {
+  it('builds demo kickoffs relative to a reference date', () => {
+    expect(buildDemoKickoff(new Date('2026-06-01T12:00:00Z'), 7)).toBe(
+      '2026-06-08T15:00:00.000Z',
+    );
+  });
+
+  it('uses upcoming kickoffs for demo cards', () => {
+    const now = Date.now();
+    for (const match of MATCHES_DEMO_DATA) {
+      expect(new Date(match.kickoff ?? 0).getTime()).toBeGreaterThanOrEqual(now);
+    }
+  });
   it('exports eight demo match cards for the browse grid', () => {
     expect(MATCHES_DEMO_DATA).toHaveLength(8);
     expect(MATCHES_DEMO_DATA[0]?.home_team.name).toBe('Bournemouth');

@@ -31,7 +31,7 @@ export function parseMatchId(value: string): number | null {
   }
 
   const id = Number.parseInt(value, 10);
-  if (id === 0) {
+  if (id === 0 || !Number.isSafeInteger(id)) {
     return null;
   }
 

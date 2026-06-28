@@ -45,6 +45,8 @@ describe('matchDetailUtils', () => {
 
   it('accepts demo match ids', () => {
     expect(parseMatchId('-1')).toBe(-1);
+    expect(parseMatchId(String(Number.MAX_SAFE_INTEGER))).toBe(Number.MAX_SAFE_INTEGER);
+    expect(parseMatchId(String(Number.MAX_SAFE_INTEGER + 1))).toBeNull();
     expect(isDemoMatchId(-1)).toBe(true);
     expect(isDemoMatchId(42)).toBe(false);
   });
