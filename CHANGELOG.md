@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Confidence Trend chart uses native touch scrubbing on iOS (PanResponder) so
   drag across the chart shows crosshair, point, and tooltip without relying on
   web-only mouse events.
+- Risk Distribution doughnut chart: interactive hover/touch with segment explode
+  and tooltip showing risk category and value.
+- Analytics header: removed unrequested subtitle under Analytics Dashboard.
 - Mobile UI/UX polish for demo parity: shared screen layout styles, consistent
   section headers and stat typography, and theme tokens for micro, metric, and
   label-strong text (PP-90).

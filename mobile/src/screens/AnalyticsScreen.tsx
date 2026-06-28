@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { PieChart } from 'react-native-gifted-charts';
 
 import { SectionHeader } from '../components';
 import { colors, radii, screenStyles, spacing, typography } from '../theme';
@@ -13,10 +12,9 @@ import {
   type AnalyticsSummaryStat,
   type ModelPerformanceStat,
   type PredictionOutcomeStat,
-  type RiskDistributionSegment,
 } from './analyticsDemoData';
-import { toRiskDistributionChartData } from './analyticsUtils';
 import { ConfidenceTrendChart } from './ConfidenceTrendChart';
+import { RiskDistributionChart } from './RiskDistributionChart';
 
 type SummaryStatCardProps = {
   stat: AnalyticsSummaryStat;
@@ -40,46 +38,13 @@ function ConfidenceTrendSection({ chartWidth }: ConfidenceTrendSectionProps) {
   return <ConfidenceTrendChart chartWidth={chartWidth} values={ANALYTICS_DEMO_CONFIDENCE_TREND} />;
 }
 
-type RiskDistributionChartProps = {
+type RiskDistributionSectionProps = {
   chartWidth: number;
 };
 
-function RiskDistributionChart({ chartWidth }: RiskDistributionChartProps) {
-  const pieData = toRiskDistributionChartData(ANALYTICS_DEMO_RISK_DISTRIBUTION);
-  const radius = Math.min(Math.floor(chartWidth / 2) - spacing.lg, 96);
-
+function RiskDistributionSection({ chartWidth }: RiskDistributionSectionProps) {
   return (
-    <View style={styles.chartCard}>
-      <View style={styles.pieWrap}>
-        <PieChart
-          data={pieData}
-          donut
-          radius={radius}
-          innerRadius={radius * 0.62}
-          innerCircleColor={colors.surface}
-        />
-      </View>
-      <View style={styles.legendList}>
-        {ANALYTICS_DEMO_RISK_DISTRIBUTION.map((segment) => (
-          <RiskLegendItem key={segment.label} segment={segment} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-type RiskLegendItemProps = {
-  segment: RiskDistributionSegment;
-};
-
-function RiskLegendItem({ segment }: RiskLegendItemProps) {
-  return (
-    <View style={styles.legendRow}>
-      <View style={[styles.legendDot, { backgroundColor: segment.color }]} />
-      <Text style={styles.legendText}>
-        {segment.label}: {segment.value}
-      </Text>
-    </View>
+    <RiskDistributionChart chartWidth={chartWidth} segments={ANALYTICS_DEMO_RISK_DISTRIBUTION} />
   );
 }
 
@@ -132,7 +97,7 @@ export function AnalyticsScreen() {
 
       <View style={screenStyles.section}>
         <SectionHeader title="Risk Distribution" />
-        <RiskDistributionChart chartWidth={chartWidth} />
+        <RiskDistributionSection chartWidth={chartWidth} />
       </View>
 
       <View style={screenStyles.section}>
@@ -183,40 +148,6 @@ const styles = StyleSheet.create({
   summaryValue: {
     ...typography.statValue,
     color: colors.text,
-  },
-  chartCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    overflow: 'hidden',
-    paddingVertical: spacing.lg,
-  },
-  axisLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  pieWrap: {
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  legendList: {
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  legendRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  legendDot: {
-    borderRadius: radii.sm,
-    height: spacing.sm,
-    width: spacing.sm,
-  },
-  legendText: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
   },
   outcomesRow: {
     gap: spacing.md,
