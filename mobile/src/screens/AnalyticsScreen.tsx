@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { LineChart, PieChart } from 'react-native-gifted-charts';
+import { PieChart } from 'react-native-gifted-charts';
 
 import { SectionHeader } from '../components';
 import { colors, radii, screenStyles, spacing, typography } from '../theme';
@@ -15,7 +15,8 @@ import {
   type PredictionOutcomeStat,
   type RiskDistributionSegment,
 } from './analyticsDemoData';
-import { toConfidenceTrendChartData, toRiskDistributionChartData } from './analyticsUtils';
+import { toRiskDistributionChartData } from './analyticsUtils';
+import { ConfidenceTrendChart } from './ConfidenceTrendChart';
 
 type SummaryStatCardProps = {
   stat: AnalyticsSummaryStat;
@@ -31,40 +32,12 @@ function SummaryStatCard({ stat }: SummaryStatCardProps) {
   );
 }
 
-type ConfidenceTrendChartProps = {
+type ConfidenceTrendSectionProps = {
   chartWidth: number;
 };
 
-function ConfidenceTrendChart({ chartWidth }: ConfidenceTrendChartProps) {
-  const chartData = toConfidenceTrendChartData(ANALYTICS_DEMO_CONFIDENCE_TREND);
-
-  return (
-    <View style={styles.chartCard}>
-      <LineChart
-        areaChart
-        curved
-        data={chartData}
-        width={chartWidth}
-        height={200}
-        color={colors.primary}
-        thickness={2}
-        hideDataPoints
-        dataPointsColor={colors.primary}
-        yAxisColor={colors.border}
-        xAxisColor={colors.border}
-        rulesColor={colors.border}
-        yAxisTextStyle={styles.axisLabel}
-        xAxisLabelTextStyle={styles.axisLabel}
-        noOfSections={4}
-        maxValue={100}
-        backgroundColor={colors.surface}
-        startFillColor={colors.primary}
-        startOpacity={0.35}
-        endFillColor={colors.primary}
-        endOpacity={0.05}
-      />
-    </View>
-  );
+function ConfidenceTrendSection({ chartWidth }: ConfidenceTrendSectionProps) {
+  return <ConfidenceTrendChart chartWidth={chartWidth} values={ANALYTICS_DEMO_CONFIDENCE_TREND} />;
 }
 
 type RiskDistributionChartProps = {
@@ -154,7 +127,7 @@ export function AnalyticsScreen() {
 
       <View style={screenStyles.section}>
         <SectionHeader title="Confidence Trend" />
-        <ConfidenceTrendChart chartWidth={chartWidth} />
+        <ConfidenceTrendSection chartWidth={chartWidth} />
       </View>
 
       <View style={screenStyles.section}>
