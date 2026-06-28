@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   section headers and stat typography, and theme tokens for micro, metric, and
   label-strong text (PP-90).
 
+### Fixed
+- Root tab navigation types so Home Details can navigate to the nested Matches
+  tab route without TypeScript errors.
+
 ### Added
 - Privacy policy and App Store Connect App Privacy guide, plus an in-app Privacy
   Policy link on the disclaimer banner (PP-96).
