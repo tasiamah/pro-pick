@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Pressable,
@@ -5,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -12,22 +14,18 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMatch, useValueBets } from '../api/hooks';
 import type { MatchDetail, Odds, Prediction, ValueBet } from '../api/types';
 import {
-  AiPickLabel,
   AlertBanner,
   ConfidenceRing,
-  EdgeBar,
   EmptyState,
   ErrorState,
-  InsightBullet,
   LoadingState,
+  NumberedInsightBullet,
   OddsMarketCard,
   ProbabilityBarChart,
-  SectionHeader,
   ValueStatusBadge,
 } from '../components';
-import { formatKickoff, formatPercent } from '../components/formatters';
+import { formatOdd } from '../components/formatters';
 import {
-  formatPredictedOutcomeLabel,
   getConfidence,
   getRecommendedOutcome,
 } from '../components/matchCard/matchCardUtils';
@@ -36,18 +34,26 @@ import type {
   HomeStackParamList,
   MatchesStackParamList,
 } from '../navigation/types';
-import { colors, radii, screenStyles, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography } from '../theme';
 import { formatMatchTeams } from '../utils/matchDisplay';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
+import { findDemoMatchById } from './matchesDemoData';
+import { shouldUseMatchDetailTwoColumnLayout } from './matchDetailLayoutUtils';
 import {
-  buildMarketAnalysis,
+  buildAllMarketAnalyses,
+  DEMO_ODDS_MOVEMENTS,
   deriveMarketMovements,
-  findValueBetForOutcome,
-  formatStakeReturnLabel,
+  formatEdgeLabel,
+  formatOutcomeAnalysisLabel,
+  formatRecommendedOutcomeHeadline,
+  formatStakeReturnUsd,
   getMatchInsights,
   hasSignificantOddsMovement,
   impliedProbability,
+  isDemoMatchId,
   parseMatchId,
+  resolveEdgeBarWidthPercent,
+  type MarketAnalysis,
   type MarketMovements,
 } from './matchDetailUtils';
 
@@ -56,56 +62,55 @@ type MatchDetailProps =
   | NativeStackScreenProps<MatchesStackParamList, 'MatchDetail'>
   | NativeStackScreenProps<FavoritesStackParamList, 'MatchDetail'>;
 
-type MatchHeaderProps = {
+type MatchDetailModalHeaderProps = {
   match: MatchDetail;
+  onClose: () => void;
 };
 
-function MatchHeader({ match }: MatchHeaderProps) {
+function MatchDetailModalHeader({ match, onClose }: MatchDetailModalHeaderProps) {
   return (
-    <View style={styles.headerCard}>
-      {match.competition_name ? (
-        <Text style={styles.competition}>{match.competition_name}</Text>
-      ) : null}
-      <Text style={styles.teams}>
-        {formatMatchTeams(match.home_team, match.away_team)}
-      </Text>
-      <View style={styles.metaRow}>
-        <Text style={styles.meta}>{formatKickoff(match.kickoff)}</Text>
-        <Text style={styles.status}>{match.status}</Text>
+    <View style={styles.modalHeader}>
+      <View style={styles.modalHeaderCopy}>
+        <Text style={styles.modalTitle}>
+          {formatMatchTeams(match.home_team, match.away_team)}
+        </Text>
+        {match.competition_name ? (
+          <Text style={styles.modalSubtitle}>{match.competition_name}</Text>
+        ) : null}
       </View>
+      <Pressable
+        accessibilityLabel="Close match detail"
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={onClose}
+        style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+      >
+        <Ionicons color={colors.textMuted} name="close" size={24} />
+      </Pressable>
     </View>
   );
 }
 
-type RecommendedPickSectionProps = {
+type AiConfidenceSectionProps = {
   prediction: Prediction;
-  homeName: string;
-  awayName: string;
 };
 
-function RecommendedPickSection({
-  prediction,
-  homeName,
-  awayName,
-}: RecommendedPickSectionProps) {
+function AiConfidenceSection({ prediction }: AiConfidenceSectionProps) {
   const confidencePercent = Math.round(getConfidence(prediction) * 100);
+  const outcome = getRecommendedOutcome(prediction);
 
   return (
     <View style={styles.sectionCard}>
-      <View style={styles.recommendedPickRow}>
-        <ConfidenceRing value={confidencePercent} />
-        <View style={styles.recommendedPickCopy}>
-          <AiPickLabel />
-          <Text style={styles.recommendedPickLabel}>
-            {formatPredictedOutcomeLabel(
-              getRecommendedOutcome(prediction),
-              homeName,
-              awayName,
-            )}
+      <View style={styles.aiConfidenceRow}>
+        <View style={styles.aiConfidenceRingBlock}>
+          <ConfidenceRing value={confidencePercent} />
+          <Text style={styles.aiConfidenceCaption}>AI Confidence</Text>
+        </View>
+        <View style={styles.aiConfidenceCopy}>
+          <Text style={styles.recommendedHeadline}>
+            {formatRecommendedOutcomeHeadline(outcome)}
           </Text>
-          <Text style={styles.confidenceCaption}>
-            {confidencePercent}% model confidence
-          </Text>
+          <Text style={styles.recommendedCaption}>Recommended Pick</Text>
         </View>
       </View>
     </View>
@@ -118,67 +123,129 @@ type KeyInsightsSectionProps = {
 
 function KeyInsightsSection({ insights }: KeyInsightsSectionProps) {
   return (
-    <View style={screenStyles.section}>
-      <SectionHeader title="Key Insights" />
+    <View style={styles.sectionBlock}>
+      <Text style={styles.sectionTitle}>Key Insights</Text>
       <View style={styles.insightsList}>
         {insights.map((insight, index) => (
-          <InsightBullet key={`${index}-${insight}`} text={insight} />
+          <NumberedInsightBullet index={index + 1} key={`${index}-${insight}`} text={insight} />
         ))}
       </View>
     </View>
   );
 }
 
-type LiveOddsSectionProps = {
+type LiveMarketDataSectionProps = {
   odds: Odds;
   movements: MarketMovements | null;
   onUpdateOdds: () => void;
   isUpdating: boolean;
   showMovementAlert: boolean;
+  oddsUpdatedLabel: string;
 };
 
-function LiveOddsSection({
+function LiveMarketDataSection({
   odds,
   movements,
   onUpdateOdds,
   isUpdating,
   showMovementAlert,
-}: LiveOddsSectionProps) {
+  oddsUpdatedLabel,
+}: LiveMarketDataSectionProps) {
   return (
-    <View style={screenStyles.section}>
-      <SectionHeader subtitle="Home, draw, and away prices" title="Live Odds" />
-      <View style={styles.oddsRow}>
-        <OddsMarketCard
-          label="Home Win"
-          movement={movements?.home}
-          price={odds.home}
-        />
-        <OddsMarketCard label="Draw" movement={movements?.draw} price={odds.draw} />
-        <OddsMarketCard
-          label="Away Win"
-          movement={movements?.away}
-          price={odds.away}
-        />
+    <View style={styles.sectionBlock}>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>Live Market Data</Text>
+        <Pressable
+          accessibilityLabel="Update odds"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isUpdating }}
+          disabled={isUpdating}
+          onPress={onUpdateOdds}
+          style={({ pressed }) => [
+            styles.updateButton,
+            isUpdating && styles.updateButtonDisabled,
+            pressed && !isUpdating && styles.pressed,
+          ]}
+        >
+          <Ionicons color={colors.text} name="sync-outline" size={16} />
+          <Text style={styles.updateButtonText}>
+            {isUpdating ? 'Updating…' : 'Update Odds'}
+          </Text>
+        </Pressable>
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Update odds"
-        accessibilityState={{ disabled: isUpdating }}
-        disabled={isUpdating}
-        onPress={onUpdateOdds}
-        style={({ pressed }) => [
-          styles.updateButton,
-          isUpdating && styles.updateButtonDisabled,
-          pressed && !isUpdating && styles.pressed,
-        ]}
-      >
-        <Text style={styles.updateButtonText}>
-          {isUpdating ? 'Updating…' : 'Update Odds'}
-        </Text>
-      </Pressable>
+
+      <View style={styles.liveOddsHeader}>
+        <Text style={styles.liveOddsLabel}>LIVE ODDS</Text>
+        <View style={styles.liveOddsMeta}>
+          <Ionicons color={colors.textMuted} name="time-outline" size={14} />
+          <Text style={styles.liveOddsMetaText}>{oddsUpdatedLabel}</Text>
+        </View>
+      </View>
+
+      <View style={styles.oddsRow}>
+        <OddsMarketCard label="Home Win" movement={movements?.home} price={odds.home} />
+        <OddsMarketCard label="Draw" movement={movements?.draw} price={odds.draw} />
+        <OddsMarketCard label="Away Win" movement={movements?.away} price={odds.away} />
+      </View>
+
+      <Text style={styles.oddsSource}>Source: {odds.bookmaker.toLowerCase()}</Text>
+
       {showMovementAlert ? (
         <AlertBanner message="Significant Odds Movement Detected" />
       ) : null}
+    </View>
+  );
+}
+
+type MarketAnalysisOutcomeCardProps = {
+  analysis: MarketAnalysis;
+};
+
+function MarketAnalysisOutcomeCard({ analysis }: MarketAnalysisOutcomeCardProps) {
+  const edgeColor = analysis.edge >= 0 ? colors.win : colors.loss;
+  const edgeWidth = resolveEdgeBarWidthPercent(analysis.edge);
+
+  return (
+    <View style={styles.analysisCard}>
+      <View style={styles.analysisCardHeader}>
+        <Text style={styles.analysisOutcomeLabel}>
+          {formatOutcomeAnalysisLabel(analysis.outcome)}
+        </Text>
+        <ValueStatusBadge status={analysis.status} />
+      </View>
+
+      <View style={styles.analysisMetricsRow}>
+        <View style={styles.analysisMetric}>
+          <Text style={styles.analysisMetricLabel}>AI Probability</Text>
+          <Text style={[styles.analysisMetricValue, styles.metricGreen]}>
+            {formatPercent(analysis.modelProb, 1)}
+          </Text>
+        </View>
+        <View style={styles.analysisMetric}>
+          <Text style={styles.analysisMetricLabel}>Market Implied</Text>
+          <Text style={[styles.analysisMetricValue, styles.metricBlue]}>
+            {formatPercent(impliedProbability(analysis.odd), 1)}
+          </Text>
+        </View>
+        <View style={styles.analysisMetric}>
+          <Text style={styles.analysisMetricLabel}>Odds</Text>
+          <Text style={styles.analysisMetricValue}>{formatOdd(analysis.odd)}</Text>
+        </View>
+      </View>
+
+      <Text style={styles.stakeReturn}>{formatStakeReturnUsd(analysis.odd)}</Text>
+
+      <View style={styles.edgeTrack}>
+        <View
+          style={[
+            styles.edgeFill,
+            { backgroundColor: edgeColor, width: `${edgeWidth}%` },
+          ]}
+        />
+      </View>
+      <Text style={[styles.edgeLabel, { color: edgeColor }]}>
+        {formatEdgeLabel(analysis.edge)}
+      </Text>
     </View>
   );
 }
@@ -189,54 +256,51 @@ type MarketAnalysisSectionProps = {
   valueBets: ValueBet[];
 };
 
-function MarketAnalysisSection({
-  prediction,
-  odds,
-  valueBets,
-}: MarketAnalysisSectionProps) {
-  const outcome = getRecommendedOutcome(prediction);
-  const valueBet = findValueBetForOutcome(valueBets, outcome);
-  const analysis = buildMarketAnalysis(prediction, odds, valueBet);
+function MarketAnalysisSection({ prediction, odds, valueBets }: MarketAnalysisSectionProps) {
+  const analyses = buildAllMarketAnalyses(prediction, odds, valueBets);
 
   return (
-    <View style={screenStyles.section}>
-      <SectionHeader
-        subtitle="Model probability versus market pricing"
-        title="AI vs Market Analysis"
-      />
-      <View style={styles.sectionCard}>
-        <ValueStatusBadge status={analysis.status} />
-        <View style={styles.analysisStats}>
-          <Text style={styles.analysisStat}>
-            Model {formatPercent(analysis.modelProb)}
-          </Text>
-          <Text style={styles.analysisStat}>
-            Market {formatPercent(impliedProbability(analysis.odd))}
-          </Text>
-        </View>
-        <EdgeBar edge={analysis.edge} />
-        <Text style={styles.stakeReturn}>
-          {formatStakeReturnLabel(analysis.recommendedStake ?? 0, analysis.odd)}
-        </Text>
+    <View style={styles.sectionBlock}>
+      <Text style={styles.sectionEyebrow}>AI VS MARKET ANALYSIS</Text>
+      <View style={styles.analysisList}>
+        {analyses.map((analysis) => (
+          <MarketAnalysisOutcomeCard analysis={analysis} key={analysis.outcome} />
+        ))}
       </View>
     </View>
   );
 }
 
-export function MatchDetailScreen({ route }: MatchDetailProps) {
+function formatPercent(value: number, decimals = 0): string {
+  if (!Number.isFinite(value)) {
+    return '—';
+  }
+
+  if (decimals > 0) {
+    return `${(value * 100).toFixed(decimals)}%`;
+  }
+
+  return `${Math.round(value * 100)}%`;
+}
+
+export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
+  const { width } = useWindowDimensions();
+  const twoColumn = shouldUseMatchDetailTwoColumnLayout(width);
   const matchId = parseMatchId(route.params.matchId);
-  const matchQuery = useMatch(matchId ?? 0);
+  const isDemo = matchId != null && isDemoMatchId(matchId);
+  const demoMatch = isDemo && matchId != null ? findDemoMatchById(matchId) : null;
+
+  const matchQuery = useMatch(isDemo ? 0 : (matchId ?? 0));
   const valueBetsQuery = useValueBets(
     { match_id: matchId ?? undefined },
-    { enabled: matchId != null },
+    { enabled: matchId != null && !isDemo },
   );
+
   const [oddsBaseline, setOddsBaseline] = useState<Odds | null>(null);
-  const [marketMovements, setMarketMovements] = useState<MarketMovements | null>(
-    null,
-  );
+  const [marketMovements, setMarketMovements] = useState<MarketMovements | null>(null);
   const [isUpdatingOdds, setIsUpdatingOdds] = useState(false);
 
-  const match = matchQuery.data;
+  const match = demoMatch ?? matchQuery.data;
   const primaryOdds = match?.odds?.[0] ?? null;
 
   const insights = useMemo(
@@ -244,21 +308,38 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
     [match?.prediction],
   );
 
-  const showMovementAlert = hasSignificantOddsMovement(marketMovements);
-  const isRefreshing = matchQuery.isRefetching || valueBetsQuery.isRefetching;
+  const activeMovements = marketMovements;
+  const showMovementAlert = hasSignificantOddsMovement(activeMovements);
+  const isRefreshing = !isDemo && (matchQuery.isRefetching || valueBetsQuery.isRefetching);
+
+  const onClose = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
 
   const onRefresh = useCallback(() => {
+    if (isDemo) {
+      return;
+    }
+
     setMarketMovements(null);
     setOddsBaseline(null);
     void matchQuery.refetch();
     void valueBetsQuery.refetch();
-  }, [matchQuery, valueBetsQuery]);
+  }, [isDemo, matchQuery, valueBetsQuery]);
 
   const onRetry = useCallback(() => {
     onRefresh();
   }, [onRefresh]);
 
   const onUpdateOdds = useCallback(async () => {
+    if (isDemo) {
+      setIsUpdatingOdds(true);
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      setMarketMovements(DEMO_ODDS_MOVEMENTS);
+      setIsUpdatingOdds(false);
+      return;
+    }
+
     const baseline = oddsBaseline ?? primaryOdds;
     if (!baseline) {
       return;
@@ -275,17 +356,17 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
     } finally {
       setIsUpdatingOdds(false);
     }
-  }, [matchQuery, oddsBaseline, primaryOdds]);
+  }, [isDemo, matchQuery, oddsBaseline, primaryOdds]);
 
   if (matchId == null) {
-    return <ErrorState message="Invalid match" />;
+    return <ErrorState message="Invalid match" onRetry={onClose} />;
   }
 
-  if (isInitialQueryLoad(matchQuery.isLoading, matchQuery.data)) {
+  if (!isDemo && isInitialQueryLoad(matchQuery.isLoading, matchQuery.data)) {
     return <LoadingState message="Loading match…" />;
   }
 
-  if (queryErrorForDisplay(matchQuery.error, matchQuery.data)) {
+  if (!isDemo && queryErrorForDisplay(matchQuery.error, matchQuery.data)) {
     return <ErrorState message="Could not load match" onRetry={onRetry} />;
   }
 
@@ -293,162 +374,294 @@ export function MatchDetailScreen({ route }: MatchDetailProps) {
     return <EmptyState message="Match not found" />;
   }
 
-  const homeName = match.home_team.name;
-  const awayName = match.away_team.name;
   const prediction = match.prediction;
+  const oddsUpdatedLabel = isDemo ? 'about 4 hours ago' : 'just now';
 
   return (
     <ScrollView
-      style={screenStyles.screenContainer}
-      contentContainerStyle={screenStyles.scrollContent}
+      contentContainerStyle={styles.scrollContent}
       refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={onRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-        />
-      }
-    >
-      <MatchHeader match={match} />
-
-      {prediction ? (
-        <>
-          <RecommendedPickSection
-            awayName={awayName}
-            homeName={homeName}
-            prediction={prediction}
+        isDemo ? undefined : (
+          <RefreshControl
+            colors={[colors.primary]}
+            onRefresh={onRefresh}
+            refreshing={isRefreshing}
+            tintColor={colors.primary}
           />
-          <View style={screenStyles.section}>
-            <SectionHeader title="Win Probabilities" />
-            <View style={styles.sectionCard}>
-              <ProbabilityBarChart
-                away={prediction.prob_away}
-                draw={prediction.prob_draw}
-                home={prediction.prob_home}
-              />
-            </View>
+        )
+      }
+      style={styles.screen}
+    >
+      <View style={[styles.modalPanel, twoColumn && styles.modalPanelWide]}>
+        <MatchDetailModalHeader match={match} onClose={onClose} />
+
+        <View style={[styles.contentGrid, twoColumn && styles.contentGridTwoColumn]}>
+          <View style={styles.leftColumn}>
+            {prediction ? (
+              <>
+                <AiConfidenceSection prediction={prediction} />
+                <View style={styles.sectionBlock}>
+                  <Text style={styles.sectionTitle}>Win Probabilities</Text>
+                  <View style={styles.sectionCard}>
+                    <ProbabilityBarChart
+                      away={prediction.prob_away}
+                      draw={prediction.prob_draw}
+                      home={prediction.prob_home}
+                    />
+                  </View>
+                </View>
+              </>
+            ) : (
+              <EmptyState message="No prediction available" />
+            )}
+
+            {insights.length > 0 ? <KeyInsightsSection insights={insights} /> : null}
           </View>
-        </>
-      ) : (
-        <EmptyState message="No prediction available" />
-      )}
 
-      {insights.length > 0 ? <KeyInsightsSection insights={insights} /> : null}
+          <View style={styles.rightColumn}>
+            {primaryOdds ? (
+              <LiveMarketDataSection
+                isUpdating={isUpdatingOdds}
+                movements={activeMovements}
+                odds={primaryOdds}
+                oddsUpdatedLabel={oddsUpdatedLabel}
+                onUpdateOdds={() => void onUpdateOdds()}
+                showMovementAlert={showMovementAlert}
+              />
+            ) : (
+              <EmptyState message="No odds available" />
+            )}
 
-      {primaryOdds ? (
-        <LiveOddsSection
-          isUpdating={isUpdatingOdds}
-          movements={marketMovements}
-          odds={primaryOdds}
-          onUpdateOdds={() => void onUpdateOdds()}
-          showMovementAlert={showMovementAlert}
-        />
-      ) : (
-        <EmptyState message="No odds available" />
-      )}
-
-      {prediction && primaryOdds ? (
-        <MarketAnalysisSection
-          odds={primaryOdds}
-          prediction={prediction}
-          valueBets={valueBetsQuery.data ?? []}
-        />
-      ) : null}
+            {prediction && primaryOdds ? (
+              <MarketAnalysisSection
+                odds={primaryOdds}
+                prediction={prediction}
+                valueBets={valueBetsQuery.data ?? []}
+              />
+            ) : null}
+          </View>
+        </View>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  modalPanel: {
+    gap: spacing.lg,
+    width: '100%',
+  },
+  modalPanelWide: {
+    alignSelf: 'center',
+    maxWidth: 1120,
+  },
+  modalHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  modalHeaderCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  modalTitle: {
+    ...typography.titleLarge,
+    color: colors.text,
+  },
+  modalSubtitle: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
+  closeButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xs,
+  },
+  contentGrid: {
+    gap: spacing.xl,
+  },
+  contentGridTwoColumn: {
+    flexDirection: 'row',
+  },
+  leftColumn: {
+    flex: 1,
+    gap: spacing.xl,
+  },
+  rightColumn: {
+    flex: 1,
+    gap: spacing.xl,
+  },
+  sectionBlock: {
+    gap: spacing.md,
+  },
+  sectionTitle: {
+    ...typography.bodySemibold,
+    color: colors.text,
+  },
+  sectionEyebrow: {
+    ...typography.badge,
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+  },
   sectionCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceElevated,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
   },
-  headerCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    padding: spacing.lg,
-  },
-  competition: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
-  teams: {
-    ...typography.title,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  meta: {
-    ...typography.label,
-    color: colors.textMuted,
-  },
-  status: {
-    ...typography.label,
-    color: colors.primary,
-    textTransform: 'capitalize',
-  },
-  recommendedPickRow: {
+  aiConfidenceRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.lg,
   },
-  recommendedPickCopy: {
+  aiConfidenceRingBlock: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  aiConfidenceCaption: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  aiConfidenceCopy: {
     flex: 1,
     gap: spacing.xs,
   },
-  recommendedPickLabel: {
-    ...typography.bodySemibold,
-    color: colors.text,
+  recommendedHeadline: {
+    ...typography.titleLarge,
+    color: colors.primary,
+    fontSize: 28,
+    lineHeight: 34,
   },
-  confidenceCaption: {
+  recommendedCaption: {
     ...typography.caption,
     color: colors.textMuted,
   },
   insightsList: {
     gap: spacing.sm,
   },
-  oddsRow: {
+  sectionHeaderRow: {
+    alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.md,
+    justifyContent: 'space-between',
   },
   updateButton: {
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    backgroundColor: colors.marketBlue,
+    borderRadius: radii.sm,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   updateButtonDisabled: {
     opacity: 0.6,
   },
   updateButtonText: {
-    ...typography.bodySemibold,
-    color: colors.background,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  analysisStats: {
-    flexDirection: 'row',
-    gap: spacing.lg,
-  },
-  analysisStat: {
     ...typography.label,
+    color: colors.text,
+  },
+  liveOddsHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  liveOddsLabel: {
+    ...typography.badge,
     color: colors.textMuted,
+    letterSpacing: 0.8,
+  },
+  liveOddsMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  liveOddsMetaText: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  oddsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  oddsSource: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  analysisList: {
+    gap: spacing.md,
+  },
+  analysisCard: {
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  analysisCardHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  analysisOutcomeLabel: {
+    ...typography.bodySemibold,
+    color: colors.text,
+  },
+  analysisMetricsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  analysisMetric: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  analysisMetricLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  analysisMetricValue: {
+    ...typography.bodySemibold,
+    color: colors.text,
+  },
+  metricGreen: {
+    color: colors.primary,
+  },
+  metricBlue: {
+    color: colors.marketBlue,
   },
   stakeReturn: {
     ...typography.bodySmall,
     color: colors.text,
+  },
+  edgeTrack: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.sm,
+    height: spacing.sm,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  edgeFill: {
+    borderRadius: radii.sm,
+    height: '100%',
+  },
+  edgeLabel: {
+    ...typography.caption,
+    alignSelf: 'flex-end',
+  },
+  pressed: {
+    opacity: 0.85,
   },
 });

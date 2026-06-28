@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { matchDetailScreenOptions } from './matchDetailScreenOptions';
 import { screenTitles } from './screenTitles';
 import { stackScreenOptions } from './stackScreenOptions';
 import type { FavoritesStackParamList } from './types';
@@ -19,7 +20,7 @@ export function FavoritesStackNavigator() {
       <Stack.Screen
         name="MatchDetail"
         component={MatchDetailScreen}
-        options={{ title: screenTitles.matchDetail }}
+        options={matchDetailScreenOptions}
       />
     </Stack.Navigator>
   );

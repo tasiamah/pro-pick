@@ -9,6 +9,7 @@ export {
   FilterChipRow,
   FormIndicator,
   InsightBullet,
+  NumberedInsightBullet,
   OddsMarketCard,
   OddsTierBadge,
   ProbabilityBarChart,

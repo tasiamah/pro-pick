@@ -17,12 +17,14 @@ import type { MatchesStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
 import { addUtcDays, buildDateWindowParams, startOfUtcDay } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
+import { MATCHES_DEMO_DATA } from './matchesDemoData';
 import {
   filterMatchesForBrowse,
   getMatchesEmptyMessage,
   type MatchOddsTierFilter,
   type MatchStatusFilter,
 } from './matchesFilterUtils';
+import { resolveMatchesBrowseSource } from './matchesScreenUtils';
 
 type Props = NativeStackScreenProps<MatchesStackParamList, 'Matches'>;
 
@@ -42,15 +44,19 @@ export function MatchesScreen({ navigation }: Props) {
   }, []);
 
   const matchesQuery = useMatches(matchListParams);
+  const browseSource = useMemo(
+    () => resolveMatchesBrowseSource(matchesQuery.data, MATCHES_DEMO_DATA),
+    [matchesQuery.data],
+  );
   const filteredMatches = useMemo(
     () =>
       filterMatchesForBrowse(
-        matchesQuery.data ?? [],
+        browseSource.matches,
         statusFilter,
         oddsTierFilter,
         debouncedSearchQuery,
       ),
-    [debouncedSearchQuery, matchesQuery.data, oddsTierFilter, statusFilter],
+    [browseSource.matches, debouncedSearchQuery, oddsTierFilter, statusFilter],
   );
 
   const emptyMessage = useMemo(
@@ -114,17 +120,18 @@ export function MatchesScreen({ navigation }: Props) {
         isEmpty={filteredMatches.length === 0}
         emptyMessage={emptyMessage}
       >
-        <View style={screenStyles.cardList}>
+        <View style={styles.cardGrid}>
           {filteredMatches.map((match) => (
-            <MatchCardV2
-              key={match.id}
-              match={match}
-              odds={match.odds}
-              prediction={match.prediction}
-              onDetailsPress={() =>
-                navigation.navigate('MatchDetail', { matchId: String(match.id) })
-              }
-            />
+            <View key={match.id} style={styles.cardGridItem}>
+              <MatchCardV2
+                match={match}
+                odds={match.odds}
+                prediction={match.prediction}
+                onDetailsPress={() => {
+                  navigation.navigate('MatchDetail', { matchId: String(match.id) });
+                }}
+              />
+            </View>
           ))}
         </View>
       </AsyncState>
@@ -135,5 +142,14 @@ export function MatchesScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   filters: {
     gap: spacing.md,
+  },
+  cardGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  cardGridItem: {
+    marginBottom: spacing.md,
+    width: '48%',
   },
 });

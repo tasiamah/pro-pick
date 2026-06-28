@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Match, Odds, Prediction, Team } from '../../api/types';
 import {
@@ -80,6 +81,7 @@ export function MatchCardV2({
   onPress,
   onDetailsPress,
 }: MatchCardV2Props) {
+  const [hovered, setHovered] = useState(false);
   const primaryOdds = odds?.[0];
   const showAiBlock = prediction != null && primaryOdds != null;
   const homeName = getTeamName(match.home_team, 'Home');
@@ -91,8 +93,16 @@ export function MatchCardV2({
       ? classifyOddsTier(getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)))
       : null;
 
+  const hoverHandlers =
+    Platform.OS === 'web'
+      ? ({
+          onMouseEnter: () => setHovered(true),
+          onMouseLeave: () => setHovered(false),
+        } as object)
+      : undefined;
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, hovered && styles.cardHovered]} {...hoverHandlers}>
       <View style={styles.headerRow}>
         <Text numberOfLines={1} style={styles.league}>
           {match.competition_name ?? 'League'}
@@ -148,7 +158,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
+    flex: 1,
     padding: spacing.lg,
+  },
+  cardHovered: {
+    borderColor: colors.primary,
   },
   headerRow: {
     alignItems: 'center',

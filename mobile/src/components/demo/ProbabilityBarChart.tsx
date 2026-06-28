@@ -10,7 +10,8 @@ type ProbabilityBarChartProps = {
   away: number;
 };
 
-const BAR_HEIGHT = 96;
+const BAR_HEIGHT = 120;
+const GRID_LINES = [0, 0.25, 0.5, 0.75, 1];
 
 type BarProps = {
   color: string;
@@ -20,7 +21,8 @@ type BarProps = {
 
 function ProbabilityBar({ color, label, value }: BarProps) {
   const clamped = clampUnitInterval(value);
-  const height = clamped > 0 ? Math.max(clamped * BAR_HEIGHT, spacing.xs) : 0;
+  const height =
+    clamped > 0 ? Math.min(Math.max(clamped * BAR_HEIGHT, spacing.xs), BAR_HEIGHT) : 0;
 
   return (
     <View style={styles.barColumn}>
@@ -36,15 +38,51 @@ function ProbabilityBar({ color, label, value }: BarProps) {
 export function ProbabilityBarChart({ home, draw, away }: ProbabilityBarChartProps) {
   return (
     <View style={styles.container}>
-      <ProbabilityBar color={colors.chartHome} label="Home" value={home} />
-      <ProbabilityBar color={colors.chartDraw} label="Draw" value={draw} />
-      <ProbabilityBar color={colors.chartAway} label="Away" value={away} />
+      <View pointerEvents="none" style={styles.gridColumn}>
+        {GRID_LINES.map((line) => (
+          <View key={line} style={styles.gridRow}>
+            <Text style={styles.gridLabel}>{formatPercent(line)}</Text>
+            <View style={styles.gridLine} />
+          </View>
+        ))}
+      </View>
+      <View style={styles.barsRow}>
+        <ProbabilityBar color={colors.chartHome} label="Home Win" value={home} />
+        <ProbabilityBar color={colors.chartDraw} label="Draw" value={draw} />
+        <ProbabilityBar color={colors.chartAway} label="Away Win" value={away} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  gridColumn: {
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xl + spacing.sm,
+    width: 44,
+  },
+  gridRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  gridLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+    width: 32,
+  },
+  gridLine: {
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    borderTopWidth: 1,
+    flex: 1,
+  },
+  barsRow: {
+    flex: 1,
     flexDirection: 'row',
     gap: spacing.md,
     justifyContent: 'space-between',
@@ -67,6 +105,7 @@ const styles = StyleSheet.create({
   barLabel: {
     ...typography.caption,
     color: colors.textMuted,
+    textAlign: 'center',
   },
   barValue: {
     ...typography.label,
