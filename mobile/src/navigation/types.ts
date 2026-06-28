@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type MatchDetailParams = {
   matchId: string;
 };
@@ -18,9 +20,9 @@ export type FavoritesStackParamList = {
 };
 
 export type RootTabParamList = {
-  HomeTab: undefined;
-  MatchesTab: undefined;
-  FavoritesTab: undefined;
+  HomeTab: NavigatorScreenParams<HomeStackParamList> | undefined;
+  MatchesTab: NavigatorScreenParams<MatchesStackParamList> | undefined;
+  FavoritesTab: NavigatorScreenParams<FavoritesStackParamList> | undefined;
   AnalyticsTab: undefined;
 };
 
