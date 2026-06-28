@@ -7,6 +7,7 @@ export const colors = {
   border: '#1f2937',
   primary: '#00ff88',
   primaryGlow: 'rgba(0, 255, 136, 0.35)',
+  primaryMuted: 'rgba(0, 255, 136, 0.1)',
   text: '#ffffff',
   textMuted: '#9ca3af',
   win: '#22c55e',

@@ -11,6 +11,7 @@ import {
   OddsTierBadge,
 } from '../demo';
 import { buildFavoriteTeamIds, useFavoritesStore } from '../../store';
+import { MATCH_DETAILS_FOOTER } from '../../constants/matchCardDetails';
 import { colors, radii, spacing, typography } from '../../theme';
 import { getTeamName } from '../../utils/matchDisplay';
 import { formatKickoff } from '../formatters';
@@ -204,6 +205,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   detailsLinkWrap: {
+    alignItems: 'center',
+    ...MATCH_DETAILS_FOOTER,
+    borderBottomLeftRadius: radii.md,
+    borderBottomRightRadius: radii.md,
+    marginBottom: -spacing.lg,
+    marginHorizontal: -spacing.lg,
     marginTop: spacing.md,
   },
   pressed: {
