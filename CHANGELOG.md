@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
-- Home match card Details link: centered demo-style footer bar and navigation to
-  the Matches tab (PP-90 demo parity).
+- Home match card Details link: centered, lighter demo-style footer bar and
+  navigation to the Matches tab (PP-90 demo parity).
 - Mobile UI/UX polish for demo parity: shared screen layout styles, consistent
   section headers and stat typography, and theme tokens for micro, metric, and
   label-strong text (PP-90).

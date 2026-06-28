@@ -205,13 +205,13 @@ const styles = StyleSheet.create({
   },
   detailsLinkWrap: {
     alignItems: 'center',
-    backgroundColor: colors.primaryGlow,
+    backgroundColor: colors.primaryMuted,
     borderBottomLeftRadius: radii.md,
     borderBottomRightRadius: radii.md,
     marginBottom: -spacing.lg,
     marginHorizontal: -spacing.lg,
     marginTop: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   pressed: {
     opacity: 0.85,

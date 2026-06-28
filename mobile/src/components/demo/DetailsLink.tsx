@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   text: {
-    ...typography.bodySemibold,
+    ...typography.label,
     color: colors.primary,
     textAlign: 'center',
   },
