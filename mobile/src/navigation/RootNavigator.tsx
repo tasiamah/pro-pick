@@ -9,7 +9,7 @@ import { FavoritesStackNavigator } from './FavoritesStackNavigator';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { MatchesStackNavigator } from './MatchesStackNavigator';
 import { StackHeaderTitle } from './StackHeaderTitle';
-import { screenSubtitles, screenTitles } from './screenTitles';
+import { screenTitles } from './screenTitles';
 import { stackScreenOptions } from './stackScreenOptions';
 import { tabBarScreenOptions } from './tabBarOptions';
 import type { RootTabParamList } from './types';
@@ -75,10 +75,7 @@ export function RootNavigator() {
           headerTintColor: stackScreenOptions.headerTintColor,
           headerShadowVisible: false,
           headerTitle: () => (
-            <StackHeaderTitle
-              subtitle={screenSubtitles.analytics}
-              title={screenTitles.analytics}
-            />
+            <StackHeaderTitle title={screenTitles.analytics} />
           ),
           tabBarIcon: ({ focused }) => (
             <TabBarIcon name="bar-chart-outline" focused={focused} />
