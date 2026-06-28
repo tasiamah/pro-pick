@@ -2,7 +2,7 @@ export const screenTitles = {
   home: 'ProPick',
   matches: 'Match Predictions',
   favorites: 'Favorites',
-  analytics: 'ProPick',
+  analytics: 'Analytics Dashboard',
   matchDetail: 'ProPick',
   about: 'About',
   privacyPolicy: 'Privacy Policy',
@@ -11,4 +11,5 @@ export const screenTitles = {
 export const screenSubtitles = {
   home: 'AI Football Insights',
   matches: 'AI-powered insights with live odds',
+  analytics: 'Deep insights into AI model performance',
 } as const;

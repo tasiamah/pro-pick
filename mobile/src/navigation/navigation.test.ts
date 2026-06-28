@@ -28,6 +28,6 @@ describe('navigation options', () => {
     expect(screenTitles.home).toBe('ProPick');
     expect(screenTitles.matches).toBe('Match Predictions');
     expect(screenTitles.favorites).toBe('Favorites');
-    expect(screenTitles.analytics).toBe('ProPick');
+    expect(screenTitles.analytics).toBe('Analytics Dashboard');
   });
 });

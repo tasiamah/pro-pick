@@ -18,6 +18,22 @@ export function formatTrendLabel(date: string): string {
   });
 }
 
+export function toConfidenceTrendChartData(values: number[]): LineChartPoint[] {
+  return values.map((value, index) => ({
+    value,
+    label: String(index + 1),
+  }));
+}
+
+export function toRiskDistributionChartData(
+  segments: { value: number; color: string }[],
+): { value: number; color: string }[] {
+  return segments.map((segment) => ({
+    value: segment.value,
+    color: segment.color,
+  }));
+}
+
 export function toRoiTrendChartData(
   points: RoiTrendPoint[] | null | undefined,
 ): LineChartPoint[] {

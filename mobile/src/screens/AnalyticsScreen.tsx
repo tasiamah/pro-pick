@@ -1,85 +1,54 @@
-import { useCallback } from 'react';
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
-import { LineChart } from 'react-native-gifted-charts';
+import { Ionicons } from '@expo/vector-icons';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { LineChart, PieChart } from 'react-native-gifted-charts';
 
-import { useAnalytics } from '../api/hooks';
-import type { Analytics } from '../api/types';
-import { EmptyState, ErrorState, LoadingState, SectionHeader } from '../components';
-import { formatPercent } from '../components/formatters';
+import { SectionHeader } from '../components';
 import { colors, radii, screenStyles, spacing, typography } from '../theme';
-import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
+import {
+  ANALYTICS_DEMO_CONFIDENCE_TREND,
+  ANALYTICS_DEMO_MODEL_PERFORMANCE,
+  ANALYTICS_DEMO_PREDICTION_OUTCOMES,
+  ANALYTICS_DEMO_RISK_DISTRIBUTION,
+  ANALYTICS_DEMO_SUMMARY,
+  type AnalyticsSummaryStat,
+  type ModelPerformanceStat,
+  type PredictionOutcomeStat,
+  type RiskDistributionSegment,
+} from './analyticsDemoData';
+import { toConfidenceTrendChartData, toRiskDistributionChartData } from './analyticsUtils';
 
-import { toRoiTrendChartData } from './analyticsUtils';
-
-function formatNullablePercent(value: number | null): string {
-  return value == null ? '—' : formatPercent(value);
-}
-
-type StatItemProps = {
-  label: string;
-  value: string;
+type SummaryStatCardProps = {
+  stat: AnalyticsSummaryStat;
 };
 
-function StatItem({ label, value }: StatItemProps) {
+function SummaryStatCard({ stat }: SummaryStatCardProps) {
   return (
-    <View style={styles.statCard}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
+    <View style={styles.summaryCard}>
+      <Ionicons name={stat.icon} size={20} color={stat.iconColor} />
+      <Text style={styles.summaryLabel}>{stat.label}</Text>
+      <Text style={styles.summaryValue}>{stat.value}</Text>
     </View>
   );
 }
 
-type StatsRowProps = {
-  analytics: Analytics;
-};
-
-function StatsRow({ analytics }: StatsRowProps) {
-  return (
-    <View style={styles.statsGrid}>
-      <StatItem label="Accuracy" value={formatNullablePercent(analytics.accuracy)} />
-      <StatItem label="ROI" value={formatNullablePercent(analytics.roi)} />
-      <StatItem
-        label="Value bets"
-        value={String(analytics.total_value_bets)}
-      />
-      <StatItem
-        label="Settled"
-        value={String(analytics.settled_value_bets)}
-      />
-    </View>
-  );
-}
-
-type RoiTrendChartProps = {
-  analytics: Analytics;
+type ConfidenceTrendChartProps = {
   chartWidth: number;
 };
 
-function RoiTrendChart({ analytics, chartWidth }: RoiTrendChartProps) {
-  const chartData = toRoiTrendChartData(analytics.roi_trend);
-
-  if (chartData.length === 0) {
-    return (
-      <EmptyState message="No settled value bets yet to show ROI trends." />
-    );
-  }
+function ConfidenceTrendChart({ chartWidth }: ConfidenceTrendChartProps) {
+  const chartData = toConfidenceTrendChartData(ANALYTICS_DEMO_CONFIDENCE_TREND);
 
   return (
     <View style={styles.chartCard}>
       <LineChart
+        areaChart
+        curved
         data={chartData}
         width={chartWidth}
-        height={220}
+        height={200}
         color={colors.primary}
         thickness={2}
-        hideDataPoints={chartData.length > 12}
+        hideDataPoints
         dataPointsColor={colors.primary}
         yAxisColor={colors.border}
         xAxisColor={colors.border}
@@ -87,10 +56,83 @@ function RoiTrendChart({ analytics, chartWidth }: RoiTrendChartProps) {
         yAxisTextStyle={styles.axisLabel}
         xAxisLabelTextStyle={styles.axisLabel}
         noOfSections={4}
-        yAxisLabelSuffix="%"
+        maxValue={100}
         backgroundColor={colors.surface}
-        curved
+        startFillColor={colors.primary}
+        startOpacity={0.35}
+        endFillColor={colors.primary}
+        endOpacity={0.05}
       />
+    </View>
+  );
+}
+
+type RiskDistributionChartProps = {
+  chartWidth: number;
+};
+
+function RiskDistributionChart({ chartWidth }: RiskDistributionChartProps) {
+  const pieData = toRiskDistributionChartData(ANALYTICS_DEMO_RISK_DISTRIBUTION);
+  const radius = Math.min(Math.floor(chartWidth / 2) - spacing.lg, 96);
+
+  return (
+    <View style={styles.chartCard}>
+      <View style={styles.pieWrap}>
+        <PieChart
+          data={pieData}
+          donut
+          radius={radius}
+          innerRadius={radius * 0.62}
+          innerCircleColor={colors.surface}
+        />
+      </View>
+      <View style={styles.legendList}>
+        {ANALYTICS_DEMO_RISK_DISTRIBUTION.map((segment) => (
+          <RiskLegendItem key={segment.label} segment={segment} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+type RiskLegendItemProps = {
+  segment: RiskDistributionSegment;
+};
+
+function RiskLegendItem({ segment }: RiskLegendItemProps) {
+  return (
+    <View style={styles.legendRow}>
+      <View style={[styles.legendDot, { backgroundColor: segment.color }]} />
+      <Text style={styles.legendText}>
+        {segment.label}: {segment.value}
+      </Text>
+    </View>
+  );
+}
+
+type OutcomeCardProps = {
+  outcome: PredictionOutcomeStat;
+};
+
+function OutcomeCard({ outcome }: OutcomeCardProps) {
+  return (
+    <View style={styles.outcomeCard}>
+      <Text style={styles.outcomeValue}>{outcome.value}</Text>
+      <Text style={styles.outcomeLabel}>{outcome.label}</Text>
+    </View>
+  );
+}
+
+type PerformanceColumnProps = {
+  stat: ModelPerformanceStat;
+};
+
+function PerformanceColumn({ stat }: PerformanceColumnProps) {
+  return (
+    <View style={styles.performanceColumn}>
+      <Text style={styles.performanceLabel}>{stat.label}</Text>
+      <Text style={[styles.performanceValue, { color: stat.valueColor }]}>{stat.value}</Text>
+      <Text style={styles.performanceCaption}>{stat.caption}</Text>
     </View>
   );
 }
@@ -98,73 +140,76 @@ function RoiTrendChart({ analytics, chartWidth }: RoiTrendChartProps) {
 export function AnalyticsScreen() {
   const { width } = useWindowDimensions();
   const chartWidth = Math.max(width - spacing.lg * 4, 240);
-  const analyticsQuery = useAnalytics();
-
-  const onRefresh = useCallback(() => {
-    void analyticsQuery.refetch();
-  }, [analyticsQuery]);
-
-  if (isInitialQueryLoad(analyticsQuery.isLoading, analyticsQuery.data)) {
-    return <LoadingState message="Loading analytics…" />;
-  }
-
-  if (queryErrorForDisplay(analyticsQuery.error, analyticsQuery.data)) {
-    return (
-      <ErrorState message="Could not load analytics" onRetry={onRefresh} />
-    );
-  }
-
-  const analytics = analyticsQuery.data;
-  if (!analytics) {
-    return <EmptyState message="No analytics data available" />;
-  }
 
   return (
     <ScrollView
       style={screenStyles.screenContainer}
       contentContainerStyle={screenStyles.scrollContent}
-      refreshControl={
-        <RefreshControl
-          refreshing={analyticsQuery.isRefetching}
-          onRefresh={onRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-        />
-      }
     >
-      <StatsRow analytics={analytics} />
+      <View style={styles.summaryGrid}>
+        {ANALYTICS_DEMO_SUMMARY.map((stat) => (
+          <SummaryStatCard key={stat.label} stat={stat} />
+        ))}
+      </View>
 
       <View style={screenStyles.section}>
-        <SectionHeader title="ROI trend" />
-        <RoiTrendChart analytics={analytics} chartWidth={chartWidth} />
+        <SectionHeader title="Confidence Trend" />
+        <ConfidenceTrendChart chartWidth={chartWidth} />
+      </View>
+
+      <View style={screenStyles.section}>
+        <SectionHeader title="Risk Distribution" />
+        <RiskDistributionChart chartWidth={chartWidth} />
+      </View>
+
+      <View style={screenStyles.section}>
+        <SectionHeader title="Prediction Outcomes" />
+        <ScrollView
+          horizontal
+          contentContainerStyle={styles.outcomesRow}
+          showsHorizontalScrollIndicator={false}
+        >
+          {ANALYTICS_DEMO_PREDICTION_OUTCOMES.map((outcome) => (
+            <OutcomeCard key={outcome.label} outcome={outcome} />
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={screenStyles.section}>
+        <SectionHeader title="AI Model Performance" />
+        <View style={styles.performanceCard}>
+          {ANALYTICS_DEMO_MODEL_PERFORMANCE.map((stat) => (
+            <PerformanceColumn key={stat.label} stat={stat} />
+          ))}
+        </View>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  statsGrid: {
+  summaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.md,
   },
-  statCard: {
+  summaryCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexBasis: '47%',
     flexGrow: 1,
+    gap: spacing.sm,
     padding: spacing.lg,
   },
-  statLabel: {
-    ...typography.badge,
+  summaryLabel: {
+    ...typography.caption,
     color: colors.textMuted,
-    marginBottom: spacing.xs,
   },
-  statValue: {
+  summaryValue: {
     ...typography.statValue,
-    color: colors.primary,
+    color: colors.text,
   },
   chartCard: {
     backgroundColor: colors.surface,
@@ -175,6 +220,77 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   axisLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  pieWrap: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  legendList: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  legendRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  legendDot: {
+    borderRadius: radii.sm,
+    height: spacing.sm,
+    width: spacing.sm,
+  },
+  legendText: {
+    ...typography.bodySmall,
+    color: colors.textMuted,
+  },
+  outcomesRow: {
+    gap: spacing.md,
+    paddingRight: spacing.lg,
+  },
+  outcomeCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    minWidth: 112,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  outcomeValue: {
+    ...typography.titleLarge,
+    color: colors.text,
+  },
+  outcomeLabel: {
+    ...typography.badge,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  performanceCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  performanceColumn: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  performanceLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  performanceValue: {
+    ...typography.title,
+    color: colors.text,
+  },
+  performanceCaption: {
     ...typography.caption,
     color: colors.textMuted,
   },

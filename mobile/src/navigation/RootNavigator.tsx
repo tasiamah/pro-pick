@@ -8,8 +8,10 @@ import { colors, spacing } from '../theme';
 import { FavoritesStackNavigator } from './FavoritesStackNavigator';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { MatchesStackNavigator } from './MatchesStackNavigator';
-import { screenTitles } from './screenTitles';
-import { tabBarScreenOptions, tabStackHeaderOptions } from './tabBarOptions';
+import { StackHeaderTitle } from './StackHeaderTitle';
+import { screenSubtitles, screenTitles } from './screenTitles';
+import { stackScreenOptions } from './stackScreenOptions';
+import { tabBarScreenOptions } from './tabBarOptions';
 import type { RootTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -68,7 +70,16 @@ export function RootNavigator() {
         component={AnalyticsScreen}
         options={{
           title: 'Analytics',
-          ...tabStackHeaderOptions(screenTitles.analytics),
+          headerShown: true,
+          headerStyle: stackScreenOptions.headerStyle,
+          headerTintColor: stackScreenOptions.headerTintColor,
+          headerShadowVisible: false,
+          headerTitle: () => (
+            <StackHeaderTitle
+              subtitle={screenSubtitles.analytics}
+              title={screenTitles.analytics}
+            />
+          ),
           tabBarIcon: ({ focused }) => (
             <TabBarIcon name="bar-chart-outline" focused={focused} />
           ),
