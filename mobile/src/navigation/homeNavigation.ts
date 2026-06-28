@@ -1,5 +1,11 @@
-import type { NavigationProp, ParamListBase } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
 
-export function navigateHomeDetailsToMatchesTab(navigation: NavigationProp<ParamListBase>) {
-  navigation.getParent()?.navigate('MatchesTab', { screen: 'Matches' });
+import type { HomeStackParamList, RootTabParamList } from './types';
+
+export function navigateHomeDetailsToMatchesTab(
+  navigation: NavigationProp<HomeStackParamList>,
+) {
+  navigation
+    .getParent<NavigationProp<RootTabParamList>>()
+    ?.navigate('MatchesTab', { screen: 'Matches' });
 }
