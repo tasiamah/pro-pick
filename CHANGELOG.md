@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   and tooltip showing the nearest data label and value.
 - Confidence Trend chart hover now tracks mouse movement on web instead of
   requiring click-and-drag from gifted-charts pointerConfig.
+- Confidence Trend chart uses native touch scrubbing on iOS (PanResponder) so
+  drag across the chart shows crosshair, point, and tooltip without relying on
+  web-only mouse events.
 - Mobile UI/UX polish for demo parity: shared screen layout styles, consistent
   section headers and stat typography, and theme tokens for micro, metric, and
   label-strong text (PP-90).

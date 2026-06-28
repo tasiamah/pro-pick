@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
+  PanResponder,
   Platform,
   StyleSheet,
   Text,
@@ -30,13 +31,13 @@ type ConfidenceTrendChartProps = {
   values: number[];
 };
 
-type PointerMoveEvent = GestureResponderEvent & {
+type PointerEvent = GestureResponderEvent & {
   nativeEvent: GestureResponderEvent['nativeEvent'] & {
     offsetX?: number;
   };
 };
 
-function getPointerX(event: PointerMoveEvent, boundsWidth: number): number | null {
+function getPointerX(event: PointerEvent, boundsWidth: number): number | null {
   const locationX = event.nativeEvent.locationX;
   if (typeof locationX !== 'number' || Number.isNaN(locationX)) {
     return null;
@@ -46,7 +47,7 @@ function getPointerX(event: PointerMoveEvent, boundsWidth: number): number | nul
 }
 
 function getWebHoverHandlers(
-  onMove: (event: PointerMoveEvent) => void,
+  onMove: (event: PointerEvent) => void,
   onLeave: () => void,
 ) {
   if (Platform.OS !== 'web') {
@@ -62,6 +63,7 @@ function getWebHoverHandlers(
 export function ConfidenceTrendChart({ chartWidth, values }: ConfidenceTrendChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [boundsWidth, setBoundsWidth] = useState(chartWidth);
+
   const geometry = useMemo(
     () => buildConfidenceTrendGeometry(values, chartWidth),
     [chartWidth, values],
@@ -88,13 +90,13 @@ export function ConfidenceTrendChart({ chartWidth, values }: ConfidenceTrendChar
   );
 
   const handlePointerMove = useCallback(
-    (event: PointerMoveEvent) => {
+    (event: PointerEvent) => {
       updateActiveIndex(getPointerX(event, boundsWidth));
     },
     [boundsWidth, updateActiveIndex],
   );
 
-  const handlePointerLeave = useCallback(() => {
+  const handlePointerRelease = useCallback(() => {
     setActiveIndex(null);
   }, []);
 
@@ -102,15 +104,30 @@ export function ConfidenceTrendChart({ chartWidth, values }: ConfidenceTrendChar
     setBoundsWidth(event.nativeEvent.layout.width);
   }, []);
 
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderGrant: handlePointerMove,
+        onPanResponderMove: handlePointerMove,
+        onPanResponderRelease: handlePointerRelease,
+        onPanResponderTerminate: handlePointerRelease,
+      }),
+    [handlePointerMove, handlePointerRelease],
+  );
+
+  const nativeTouchHandlers = Platform.OS === 'web' ? {} : panResponder.panHandlers;
+
   return (
     <View style={styles.chartCard}>
       <View
         style={styles.chartSurface}
         onLayout={handleLayout}
-        {...getWebHoverHandlers(handlePointerMove, handlePointerLeave)}
-        onTouchMove={handlePointerMove}
-        onTouchEnd={handlePointerLeave}
-        onTouchCancel={handlePointerLeave}
+        {...nativeTouchHandlers}
+        {...getWebHoverHandlers(handlePointerMove, handlePointerRelease)}
       >
         <View style={styles.yAxisLabels} pointerEvents="none">
           {yAxisLabels.map((label) => (
