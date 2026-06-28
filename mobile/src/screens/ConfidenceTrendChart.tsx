@@ -8,7 +8,7 @@ import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
 } from 'react-native';
-import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { colors, radii, spacing, typography } from '../theme';
 
@@ -31,33 +31,73 @@ type ConfidenceTrendChartProps = {
   values: number[];
 };
 
-type PointerEvent = GestureResponderEvent & {
-  nativeEvent: GestureResponderEvent['nativeEvent'] & {
-    offsetX?: number;
-  };
-};
+type PointerEvent = GestureResponderEvent;
 
 function getPointerX(event: PointerEvent, boundsWidth: number): number | null {
-  const locationX = event.nativeEvent.locationX;
-  if (typeof locationX !== 'number' || Number.isNaN(locationX)) {
+  const nativeEvent = event.nativeEvent as GestureResponderEvent['nativeEvent'] & {
+    offsetX?: number;
+  };
+  const rawX =
+    typeof nativeEvent.locationX === 'number'
+      ? nativeEvent.locationX
+      : nativeEvent.offsetX;
+
+  if (typeof rawX !== 'number' || Number.isNaN(rawX)) {
     return null;
   }
 
-  return Math.max(0, Math.min(locationX, boundsWidth));
+  return Math.max(0, Math.min(rawX, boundsWidth));
 }
 
-function getWebHoverHandlers(
-  onMove: (event: PointerEvent) => void,
-  onLeave: () => void,
-) {
-  if (Platform.OS !== 'web') {
-    return {};
+type ChartInteractionOverlayProps = {
+  height: number;
+  width: number;
+  onMove: (event: PointerEvent) => void;
+  onRelease: () => void;
+};
+
+function ChartInteractionOverlay({
+  height,
+  width,
+  onMove,
+  onRelease,
+}: ChartInteractionOverlayProps) {
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderGrant: onMove,
+        onPanResponderMove: onMove,
+        onPanResponderRelease: onRelease,
+        onPanResponderTerminate: onRelease,
+      }),
+    [onMove, onRelease],
+  );
+
+  if (Platform.OS === 'web') {
+    return (
+      <View
+        style={[styles.interactionLayer, styles.interactionLayerWeb, { height, width }]}
+        // React Native Web mouse/pointer events for hover scrubbing in dev preview.
+        {...({
+          onMouseMove: onMove,
+          onMouseLeave: onRelease,
+          onPointerMove: onMove,
+          onPointerLeave: onRelease,
+        } as object)}
+      />
+    );
   }
 
-  return {
-    onMouseMove: onMove,
-    onMouseLeave: onLeave,
-  };
+  return (
+    <View
+      style={[styles.interactionLayer, { height, width }]}
+      {...panResponder.panHandlers}
+    />
+  );
 }
 
 export function ConfidenceTrendChart({ chartWidth, values }: ConfidenceTrendChartProps) {
@@ -104,111 +144,100 @@ export function ConfidenceTrendChart({ chartWidth, values }: ConfidenceTrendChar
     setBoundsWidth(event.nativeEvent.layout.width);
   }, []);
 
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onStartShouldSetPanResponderCapture: () => true,
-        onMoveShouldSetPanResponderCapture: () => true,
-        onPanResponderGrant: handlePointerMove,
-        onPanResponderMove: handlePointerMove,
-        onPanResponderRelease: handlePointerRelease,
-        onPanResponderTerminate: handlePointerRelease,
-      }),
-    [handlePointerMove, handlePointerRelease],
-  );
-
-  const nativeTouchHandlers = Platform.OS === 'web' ? {} : panResponder.panHandlers;
-
   return (
     <View style={styles.chartCard}>
-      <View
-        style={styles.chartSurface}
-        onLayout={handleLayout}
-        {...nativeTouchHandlers}
-        {...getWebHoverHandlers(handlePointerMove, handlePointerRelease)}
-      >
-        <View style={styles.yAxisLabels} pointerEvents="none">
-          {yAxisLabels.map((label) => (
-            <Text
-              key={label}
-              style={[
-                styles.axisLabel,
-                { top: yForAxisLabel(label, geometry) - spacing.sm },
-              ]}
-            >
-              {label}
-            </Text>
-          ))}
+      <View style={styles.chartSurface} onLayout={handleLayout}>
+        <View pointerEvents="none" style={styles.chartContent}>
+          <View style={styles.yAxisLabels}>
+            {yAxisLabels.map((label) => (
+              <Text
+                key={label}
+                style={[
+                  styles.axisLabel,
+                  { top: yForAxisLabel(label, geometry) - spacing.sm },
+                ]}
+              >
+                {label}
+              </Text>
+            ))}
+          </View>
+
+          <Svg width={chartWidth} height={CONFIDENCE_CHART_HEIGHT}>
+            <Defs>
+              <LinearGradient id="confidenceAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0%" stopColor={colors.primary} stopOpacity={0.35} />
+                <Stop offset="100%" stopColor={colors.primary} stopOpacity={0.05} />
+              </LinearGradient>
+            </Defs>
+
+            {yAxisLabels.map((label) => {
+              const y = yForAxisLabel(label, geometry);
+              return (
+                <Line
+                  key={`grid-${label}`}
+                  x1={geometry.yAxisWidth}
+                  y1={y}
+                  x2={chartWidth - CONFIDENCE_CHART_RIGHT_PADDING}
+                  y2={y}
+                  stroke={colors.border}
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                />
+              );
+            })}
+
+            <Path d={areaPath} fill="url(#confidenceAreaGradient)" />
+            <Path
+              d={linePath}
+              fill="none"
+              stroke={colors.primary}
+              strokeLinecap="round"
+              strokeWidth={2}
+            />
+
+            {activePoint ? (
+              <>
+                <Line
+                  x1={activePoint.x}
+                  y1={geometry.topPadding}
+                  x2={activePoint.x}
+                  y2={geometry.baselineY}
+                  stroke={colors.text}
+                  strokeWidth={1}
+                />
+                <Circle
+                  cx={activePoint.x}
+                  cy={activePoint.y}
+                  r={6}
+                  fill={colors.text}
+                  stroke={colors.primary}
+                  strokeWidth={2}
+                />
+              </>
+            ) : null}
+          </Svg>
+
+          <View style={styles.xAxisLabels}>
+            {geometry.points.map((point) => (
+              <Text
+                key={point.label}
+                style={[
+                  styles.xAxisLabel,
+                  { left: point.x - spacing.sm, top: geometry.baselineY + spacing.xs },
+                ]}
+              >
+                {point.label}
+              </Text>
+            ))}
+          </View>
         </View>
 
-        <Svg width={chartWidth} height={CONFIDENCE_CHART_HEIGHT} pointerEvents="none">
-          <Defs>
-            <LinearGradient id="confidenceAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={colors.primary} stopOpacity={0.35} />
-              <Stop offset="100%" stopColor={colors.primary} stopOpacity={0.05} />
-            </LinearGradient>
-          </Defs>
-
-          {yAxisLabels.map((label) => {
-            const y = yForAxisLabel(label, geometry);
-            return (
-              <Line
-                key={`grid-${label}`}
-                x1={geometry.yAxisWidth}
-                y1={y}
-                x2={chartWidth - CONFIDENCE_CHART_RIGHT_PADDING}
-                y2={y}
-                stroke={colors.border}
-                strokeDasharray="4 4"
-                strokeWidth={1}
-              />
-            );
-          })}
-
-          <Path d={areaPath} fill="url(#confidenceAreaGradient)" />
-          <Path
-            d={linePath}
-            fill="none"
-            stroke={colors.primary}
-            strokeLinecap="round"
-            strokeWidth={2}
-          />
-
-          {activePoint ? (
-            <>
-              <Line
-                x1={activePoint.x}
-                y1={geometry.topPadding}
-                x2={activePoint.x}
-                y2={geometry.baselineY}
-                stroke={colors.text}
-                strokeWidth={1}
-              />
-              <Path
-                d={`M ${activePoint.x} ${activePoint.y} m -6,0 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0`}
-                fill={colors.text}
-                stroke={colors.primary}
-                strokeWidth={2}
-              />
-            </>
-          ) : null}
-        </Svg>
-
-        <View style={styles.xAxisLabels} pointerEvents="none">
-          {geometry.points.map((point) => (
-            <Text
-              key={point.label}
-              style={[
-                styles.xAxisLabel,
-                { left: point.x - spacing.sm, top: geometry.baselineY + spacing.xs },
-              ]}
-            >
-              {point.label}
-            </Text>
-          ))}
-        </View>
+        <ChartInteractionOverlay
+          height={CONFIDENCE_CHART_HEIGHT}
+          width={boundsWidth}
+          onMove={handlePointerMove}
+          onRelease={handlePointerRelease}
+        />
 
         {activePoint ? (
           <View
@@ -244,6 +273,18 @@ const styles = StyleSheet.create({
   chartSurface: {
     minHeight: CONFIDENCE_CHART_HEIGHT,
     position: 'relative',
+  },
+  chartContent: {
+    position: 'relative',
+  },
+  interactionLayer: {
+    left: 0,
+    position: 'absolute',
+    top: 0,
+    zIndex: 10,
+  },
+  interactionLayerWeb: {
+    backgroundColor: 'transparent',
     ...(Platform.OS === 'web' ? ({ cursor: 'crosshair' } as object) : null),
   },
   yAxisLabels: {
@@ -278,7 +319,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     position: 'absolute',
-    zIndex: 2,
+    zIndex: 11,
   },
   tooltipLabel: {
     ...typography.bodySemibold,
