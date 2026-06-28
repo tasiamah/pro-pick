@@ -21,11 +21,14 @@ export function DetailsLink({ onPress }: DetailsLinkProps) {
 
 const styles = StyleSheet.create({
   link: {
-    alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   text: {
     ...typography.bodySemibold,
     color: colors.primary,
+    textAlign: 'center',
   },
   pressed: {
     opacity: 0.85,

@@ -74,6 +74,17 @@ export function HomeScreen({ navigation }: Props) {
     onRefresh();
   }, [onRefresh]);
 
+  const openMatchesTab = useCallback(() => {
+    navigation.getParent()?.navigate('MatchesTab', { screen: 'Matches' });
+  }, [navigation]);
+
+  const openMatchDetail = useCallback(
+    (matchId: number) => {
+      navigation.push('MatchDetail', { matchId: String(matchId) });
+    },
+    [navigation],
+  );
+
   if (isInitialLoading) {
     return <LoadingState message="Loading dashboard…" />;
   }
@@ -125,9 +136,7 @@ export function HomeScreen({ navigation }: Props) {
                 match={match}
                 odds={match.odds}
                 prediction={match.prediction}
-                onDetailsPress={() =>
-                  navigation.navigate('MatchDetail', { matchId: String(match.id) })
-                }
+                onDetailsPress={openMatchesTab}
               />
             ))}
           </View>
@@ -150,11 +159,7 @@ export function HomeScreen({ navigation }: Props) {
               <ValueBetCard
                 key={valueBet.id}
                 valueBet={valueBet}
-                onPress={() =>
-                  navigation.navigate('MatchDetail', {
-                    matchId: String(valueBet.match_id),
-                  })
-                }
+                onPress={() => openMatchDetail(valueBet.match_id)}
               />
             ))}
           </View>

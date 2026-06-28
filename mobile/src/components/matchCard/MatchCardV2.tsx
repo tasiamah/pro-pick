@@ -204,7 +204,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   detailsLinkWrap: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryGlow,
+    borderBottomLeftRadius: radii.md,
+    borderBottomRightRadius: radii.md,
+    marginBottom: -spacing.lg,
+    marginHorizontal: -spacing.lg,
     marginTop: spacing.md,
+    paddingVertical: spacing.md,
   },
   pressed: {
     opacity: 0.85,
