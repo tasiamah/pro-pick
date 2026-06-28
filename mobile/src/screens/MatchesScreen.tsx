@@ -146,9 +146,10 @@ const styles = StyleSheet.create({
   cardGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    justifyContent: 'space-between',
   },
   cardGridItem: {
+    marginBottom: spacing.md,
     width: '48%',
   },
 });

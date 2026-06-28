@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   fill, and demo odds movement appears only after Update Odds is tapped.
 - Match detail routing rejects unsafe integer ids; demo match kickoffs are
   generated relative to the current date so browse cards stay upcoming.
+- Matches browse grid keeps two columns on phone widths by using
+  `space-between` spacing instead of horizontal gap with 48% columns.
 
 ### Changed
 - Match detail modal: screenshot-style layout with AI confidence ring, win

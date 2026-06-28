@@ -46,7 +46,6 @@ import {
   formatEdgeLabel,
   formatOutcomeAnalysisLabel,
   formatRecommendedOutcomeHeadline,
-  formatStakeReturnLabel,
   formatStakeReturnUsd,
   getMatchInsights,
   hasSignificantOddsMovement,
