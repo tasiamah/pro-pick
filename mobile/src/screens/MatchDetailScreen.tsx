@@ -46,12 +46,14 @@ import {
   formatEdgeLabel,
   formatOutcomeAnalysisLabel,
   formatRecommendedOutcomeHeadline,
+  formatStakeReturnLabel,
   formatStakeReturnUsd,
   getMatchInsights,
   hasSignificantOddsMovement,
   impliedProbability,
   isDemoMatchId,
   parseMatchId,
+  resolveEdgeBarWidthPercent,
   type MarketAnalysis,
   type MarketMovements,
 } from './matchDetailUtils';
@@ -202,7 +204,7 @@ type MarketAnalysisOutcomeCardProps = {
 
 function MarketAnalysisOutcomeCard({ analysis }: MarketAnalysisOutcomeCardProps) {
   const edgeColor = analysis.edge >= 0 ? colors.win : colors.loss;
-  const edgeWidth = Math.min(100, Math.max(8, Math.abs(analysis.edge) * 100));
+  const edgeWidth = resolveEdgeBarWidthPercent(analysis.edge);
 
   return (
     <View style={styles.analysisCard}>
@@ -307,8 +309,7 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
     [match?.prediction],
   );
 
-  const activeMovements =
-    marketMovements ?? (isDemo ? DEMO_ODDS_MOVEMENTS : null);
+  const activeMovements = marketMovements;
   const showMovementAlert = hasSignificantOddsMovement(activeMovements);
   const isRefreshing = !isDemo && (matchQuery.isRefetching || valueBetsQuery.isRefetching);
 

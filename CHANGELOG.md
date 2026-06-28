@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Match detail modal: zero-edge outcomes no longer show a misleading edge bar
+  fill, and demo odds movement appears only after Update Odds is tapped.
+
 ### Changed
 - Match detail modal: screenshot-style layout with AI confidence ring, win
   probability chart, numbered key insights, live market data, and per-outcome

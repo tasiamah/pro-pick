@@ -256,6 +256,14 @@ export function formatEdgeLabel(edge: number): string {
   return `Edge: ${prefix}${percent.toFixed(1)}%`;
 }
 
+export function resolveEdgeBarWidthPercent(edge: number): number {
+  if (!Number.isFinite(edge) || edge === 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.max(8, Math.abs(edge) * 100));
+}
+
 export const DEMO_ODDS_MOVEMENTS: MarketMovements = {
   home: 'down',
   draw: 'down',

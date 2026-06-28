@@ -14,6 +14,7 @@ import {
   hasSignificantOddsMovement,
   isDemoMatchId,
   parseMatchId,
+  resolveEdgeBarWidthPercent,
 } from './matchDetailUtils';
 
 const baseOdds: Odds = {
@@ -152,5 +153,11 @@ describe('matchDetailUtils', () => {
   it('formats edge labels', () => {
     expect(formatEdgeLabel(0.052)).toBe('Edge: +5.2%');
     expect(formatEdgeLabel(-0.031)).toBe('Edge: -3.1%');
+  });
+
+  it('resolves edge bar width without a fill for zero edge', () => {
+    expect(resolveEdgeBarWidthPercent(0)).toBe(0);
+    expect(resolveEdgeBarWidthPercent(0.03)).toBe(8);
+    expect(resolveEdgeBarWidthPercent(0.12)).toBe(12);
   });
 });
