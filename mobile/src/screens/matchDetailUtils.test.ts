@@ -1,13 +1,18 @@
 import type { Odds, Prediction, ValueBet } from '../api/types';
 
 import {
+  buildAllMarketAnalyses,
   buildMarketAnalysis,
   classifyValueStatus,
   deriveMarketMovements,
   deriveOddsMovement,
+  formatEdgeLabel,
+  formatRecommendedOutcomeHeadline,
   formatStakeReturnLabel,
+  formatStakeReturnUsd,
   getMatchInsights,
   hasSignificantOddsMovement,
+  isDemoMatchId,
   parseMatchId,
 } from './matchDetailUtils';
 
@@ -35,7 +40,12 @@ describe('matchDetailUtils', () => {
     expect(parseMatchId('sample-home')).toBeNull();
     expect(parseMatchId('42abc')).toBeNull();
     expect(parseMatchId('0')).toBeNull();
-    expect(parseMatchId('-1')).toBeNull();
+  });
+
+  it('accepts demo match ids', () => {
+    expect(parseMatchId('-1')).toBe(-1);
+    expect(isDemoMatchId(-1)).toBe(true);
+    expect(isDemoMatchId(42)).toBe(false);
   });
 
   it('derives odds movement with epsilon tolerance', () => {
@@ -120,8 +130,27 @@ describe('matchDetailUtils', () => {
     expect(getMatchInsights(null)).toEqual([]);
   });
 
+  it('builds market analysis for every outcome', () => {
+    const analyses = buildAllMarketAnalyses(basePrediction, baseOdds, []);
+    expect(analyses).toHaveLength(3);
+    expect(analyses.map((entry) => entry.outcome)).toEqual(['home', 'draw', 'away']);
+  });
+
+  it('formats recommended outcome headlines', () => {
+    expect(formatRecommendedOutcomeHeadline('home')).toBe('HOME WIN');
+    expect(formatRecommendedOutcomeHeadline('draw')).toBe('DRAW');
+    expect(formatRecommendedOutcomeHeadline('away')).toBe('AWAY WIN');
+  });
+
   it('formats stake return labels', () => {
     expect(formatStakeReturnLabel(0.03, 1.85)).toBe('3% stake · 1.85x return');
     expect(formatStakeReturnLabel(0, 1.85)).toBe('Stake return unavailable');
+    expect(formatStakeReturnUsd(1.85)).toBe('$100 stake returns: $185.00');
+    expect(formatStakeReturnUsd(0)).toBe('$100 stake returns: $0.00');
+  });
+
+  it('formats edge labels', () => {
+    expect(formatEdgeLabel(0.052)).toBe('Edge: +5.2%');
+    expect(formatEdgeLabel(-0.031)).toBe('Edge: -3.1%');
   });
 });

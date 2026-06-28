@@ -10,6 +10,7 @@ export { FilterChipRow } from './FilterChipRow';
 export { FormIndicator } from './FormIndicator';
 export { HeroStat } from './HeroStat';
 export { InsightBullet } from './InsightBullet';
+export { NumberedInsightBullet } from './NumberedInsightBullet';
 export { OddsMarketCard } from './OddsMarketCard';
 export { OddsTierBadge } from './OddsTierBadge';
 export { ProbabilityBarChart } from './ProbabilityBarChart';

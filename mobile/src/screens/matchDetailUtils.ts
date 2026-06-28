@@ -26,16 +26,20 @@ export type MarketAnalysis = {
 };
 
 export function parseMatchId(value: string): number | null {
-  if (!/^\d+$/.test(value)) {
+  if (!/^-?\d+$/.test(value)) {
     return null;
   }
 
   const id = Number.parseInt(value, 10);
-  if (id <= 0) {
+  if (id === 0) {
     return null;
   }
 
   return id;
+}
+
+export function isDemoMatchId(matchId: number): boolean {
+  return matchId < 0;
 }
 
 export function deriveOddsMovement(
@@ -117,18 +121,54 @@ export function findValueBetForOutcome(
   return valueBets.find((bet) => bet.outcome.toLowerCase() === outcome) ?? null;
 }
 
-export function buildMarketAnalysis(
+function getModelProbability(
+  prediction: Prediction,
+  outcome: RecommendedOutcome,
+): number {
+  if (outcome === 'home') {
+    return prediction.prob_home;
+  }
+
+  if (outcome === 'draw') {
+    return prediction.prob_draw;
+  }
+
+  return prediction.prob_away;
+}
+
+export function formatOutcomeAnalysisLabel(outcome: RecommendedOutcome): string {
+  if (outcome === 'home') {
+    return 'Home Win';
+  }
+
+  if (outcome === 'away') {
+    return 'Away Win';
+  }
+
+  return 'Draw';
+}
+
+export function formatRecommendedOutcomeHeadline(
+  outcome: RecommendedOutcome,
+): string {
+  if (outcome === 'home') {
+    return 'HOME WIN';
+  }
+
+  if (outcome === 'away') {
+    return 'AWAY WIN';
+  }
+
+  return 'DRAW';
+}
+
+export function buildMarketAnalysisForOutcome(
   prediction: Prediction,
   odds: Odds,
+  outcome: RecommendedOutcome,
   valueBet: ValueBet | null,
 ): MarketAnalysis {
-  const outcome = getRecommendedOutcome(prediction);
-  const modelProb =
-    outcome === 'home'
-      ? prediction.prob_home
-      : outcome === 'draw'
-        ? prediction.prob_draw
-        : prediction.prob_away;
+  const modelProb = getModelProbability(prediction, outcome);
   const odd = valueBet?.odd ?? getOddForOutcome(odds, outcome);
   const edge = valueBet?.edge ?? computeEdge(modelProb, odd);
   const status = valueBet ? 'value' : classifyValueStatus(edge);
@@ -141,6 +181,36 @@ export function buildMarketAnalysis(
     recommendedStake: valueBet?.recommended_stake ?? null,
     status,
   };
+}
+
+export function buildMarketAnalysis(
+  prediction: Prediction,
+  odds: Odds,
+  valueBet: ValueBet | null,
+): MarketAnalysis {
+  return buildMarketAnalysisForOutcome(
+    prediction,
+    odds,
+    getRecommendedOutcome(prediction),
+    valueBet,
+  );
+}
+
+export function buildAllMarketAnalyses(
+  prediction: Prediction,
+  odds: Odds,
+  valueBets: ValueBet[],
+): MarketAnalysis[] {
+  const outcomes: RecommendedOutcome[] = ['home', 'draw', 'away'];
+
+  return outcomes.map((outcome) =>
+    buildMarketAnalysisForOutcome(
+      prediction,
+      odds,
+      outcome,
+      findValueBetForOutcome(valueBets, outcome),
+    ),
+  );
 }
 
 export function getMatchInsights(prediction: Prediction | null): string[] {
@@ -167,3 +237,27 @@ export function formatStakeReturnLabel(stake: number, odd: number): string {
 
   return `${Math.round(stake * 100)}% stake · ${odd.toFixed(2)}x return`;
 }
+
+export function formatStakeReturnUsd(odd: number, stake = 100): string {
+  if (!Number.isFinite(odd) || odd <= 0) {
+    return `$${stake} stake returns: $0.00`;
+  }
+
+  return `$${stake} stake returns: $${(stake * odd).toFixed(2)}`;
+}
+
+export function formatEdgeLabel(edge: number): string {
+  if (!Number.isFinite(edge)) {
+    return 'Edge: —';
+  }
+
+  const percent = edge * 100;
+  const prefix = percent > 0 ? '+' : '';
+  return `Edge: ${prefix}${percent.toFixed(1)}%`;
+}
+
+export const DEMO_ODDS_MOVEMENTS: MarketMovements = {
+  home: 'down',
+  draw: 'down',
+  away: 'down',
+};

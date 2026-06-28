@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- Match detail modal: screenshot-style layout with AI confidence ring, win
+  probability chart, numbered key insights, live market data, and per-outcome
+  AI vs market analysis cards. Opens as a modal with close button; demo match
+  cards use static data without API calls.
+- Matches tab browse grid: two-column card layout with static demo matches when
+  the API list is empty, plus green border hover on web.
 - Home match card Details link: centered, lighter demo-style footer bar and
   navigation to the Matches tab (PP-90 demo parity). Shared footer/link tokens
   and regression tests prevent accidental revert when switching branches.

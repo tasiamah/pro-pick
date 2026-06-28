@@ -27,6 +27,24 @@ function MovementIcon({ movement }: { movement?: OddsMovement | null }) {
   return null;
 }
 
+function MovementLabel({ movement }: { movement?: OddsMovement | null }) {
+  if (movement == null) {
+    return null;
+  }
+
+  return (
+    <Text
+      style={[
+        styles.movementLabel,
+        movement === 'up' && styles.movementUp,
+        movement === 'down' && styles.movementDown,
+      ]}
+    >
+      {movement}
+    </Text>
+  );
+}
+
 export function OddsMarketCard({ label, price, movement }: OddsMarketCardProps) {
   return (
     <View style={styles.card}>
@@ -35,6 +53,7 @@ export function OddsMarketCard({ label, price, movement }: OddsMarketCardProps) 
         <Text style={styles.price}>{formatOdd(price)}</Text>
         <MovementIcon movement={movement} />
       </View>
+      <MovementLabel movement={movement} />
     </View>
   );
 }
@@ -61,5 +80,16 @@ const styles = StyleSheet.create({
   price: {
     ...typography.bodySemibold,
     color: colors.text,
+  },
+  movementLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textTransform: 'lowercase',
+  },
+  movementUp: {
+    color: colors.win,
+  },
+  movementDown: {
+    color: colors.loss,
   },
 });
