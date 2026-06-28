@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Analytics dashboard demo UI: summary stats, confidence trend, risk distribution,
   prediction outcomes, and AI model performance sections with static mock data
   until the analytics API is extended.
+- Confidence Trend chart: interactive hover with crosshair, highlighted point,
+  and tooltip showing the nearest data label and value.
 - Mobile UI/UX polish for demo parity: shared screen layout styles, consistent
   section headers and stat typography, and theme tokens for micro, metric, and
   label-strong text (PP-90).
