@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, typography } from '../../theme';
+import { MATCH_DETAILS_LINK_TEXT } from '../../constants/matchCardDetails';
 
 type DetailsLinkProps = {
   onPress: () => void;
@@ -25,11 +25,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
   },
-  text: {
-    ...typography.label,
-    color: colors.primary,
-    textAlign: 'center',
-  },
+  text: MATCH_DETAILS_LINK_TEXT,
   pressed: {
     opacity: 0.85,
   },

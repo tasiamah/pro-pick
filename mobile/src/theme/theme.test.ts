@@ -10,6 +10,7 @@ describe('theme', () => {
     expect(colors.oddsHigh).toBe('#f97316');
     expect(colors.surfaceElevated).toBe('#1a2332');
     expect(colors.primaryGlow).toBe('rgba(0, 255, 136, 0.35)');
+    expect(colors.primaryMuted).toBe('rgba(0, 255, 136, 0.1)');
     expect(colors.alertWarning).toBe('#f59e0b');
     expect(colors.chartHome).toBe('#00ff88');
     expect(colors.chartDraw).toBe('#6b7280');
