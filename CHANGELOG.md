@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `seed_demo --purge` command (backed by a `purge_demo_seed` service) that
+  removes the demo dataset (competitions, teams, matches, predictions, odds, and
+  value bets identified by their negative external ids) from a database, so
+  seeded demo fixtures like Bournemouth vs Luton can be cleared from any
+  environment (`app/services/demo_seed.py`, PP-108).
+
 ### Fixed
 - Mobile app no longer shows placeholder demo fixtures (e.g. Bournemouth vs
   Luton) or hardcoded analytics now that the backend serves real data: the

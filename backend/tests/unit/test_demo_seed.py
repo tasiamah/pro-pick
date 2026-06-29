@@ -7,10 +7,11 @@ from sqlalchemy import create_engine, func, or_, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base
-from app.models import Match, Odds, Prediction, Team, ValueBet
+from app.models import Competition, Match, Odds, Prediction, Team, ValueBet
 from app.services.demo_seed import (
     DEMO_FEATURED_MATCH_EXTERNAL_ID,
     DEMO_MODEL_VERSION,
+    purge_demo_seed,
     run_demo_seed,
 )
 
@@ -86,3 +87,57 @@ def test_run_demo_seed_creates_bournemouth_vs_luton_fixture(
         )
     ).all()
     assert form_matches
+
+
+def test_purge_demo_seed_removes_demo_data_only(db_session: Session) -> None:
+    now = datetime(2026, 6, 26, 12, 0)
+    run_demo_seed(db_session, now=now)
+
+    real_competition = Competition(
+        external_id=2001, name="La Liga", country="Spain", season="2025/26"
+    )
+    db_session.add(real_competition)
+    db_session.flush()
+    home = Team(
+        external_id=3001,
+        name="Real Madrid",
+        logo_url=None,
+        competition_id=real_competition.id,
+    )
+    away = Team(
+        external_id=3002,
+        name="Barcelona",
+        logo_url=None,
+        competition_id=real_competition.id,
+    )
+    db_session.add_all([home, away])
+    db_session.flush()
+    real_match = Match(
+        external_id=4001,
+        competition_id=real_competition.id,
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=now,
+        status="scheduled",
+        home_goals=None,
+        away_goals=None,
+    )
+    db_session.add(real_match)
+    db_session.commit()
+
+    summary = purge_demo_seed(db_session)
+
+    assert summary.matches == 12
+    assert summary.teams == 4
+    assert summary.competitions == 1
+    assert summary.predictions == 2
+    assert summary.odds == 2
+    assert summary.value_bets == 1
+
+    assert db_session.scalar(select(func.count()).select_from(Match)) == 1
+    assert db_session.scalar(select(func.count()).select_from(Team)) == 2
+    assert db_session.scalar(select(func.count()).select_from(Competition)) == 1
+    assert db_session.scalar(select(func.count()).select_from(Prediction)) == 0
+    assert db_session.scalar(select(func.count()).select_from(Odds)) == 0
+    assert db_session.scalar(select(func.count()).select_from(ValueBet)) == 0
+    assert db_session.scalar(select(Match)) is real_match
