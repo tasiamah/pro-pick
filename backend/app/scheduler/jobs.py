@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from zoneinfo import ZoneInfo
@@ -13,7 +14,7 @@ from sqlalchemy.engine import Connection
 
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
-from app.ml.storage import resolve_model_path
+from app.ml.storage import load_model, resolve_model_path
 from app.ml.train import train_model
 from app.services.ingestion_alerts import alert_ingestion_failure
 from app.services.live_sync import run_live_sync, sync_value_bets_for_upcoming
@@ -130,6 +131,26 @@ def retrain_model() -> None:
             exc_info=exc,
         )
         logger.exception("Model retraining failed")
+
+
+def bootstrap_model_if_missing() -> None:
+    """Train an initial model in the background when none is present.
+
+    A freshly deployed instance has no model artifact on its ephemeral disk and
+    would otherwise serve the neutral fallback until the first scheduled
+    retraining. Training runs in a daemon thread so it never blocks startup or
+    health checks; the existing scheduler lock keeps concurrent workers safe.
+    """
+    if not settings.model_bootstrap_enabled:
+        return
+
+    if load_model(resolve_model_path(settings.model_path)) is not None:
+        logger.info("Existing model found; skipping startup bootstrap")
+        return
+
+    logger.info("No model found; scheduling background bootstrap training")
+    thread = threading.Thread(target=retrain_model, name="model-bootstrap", daemon=True)
+    thread.start()
 
 
 def start_scheduler() -> None:

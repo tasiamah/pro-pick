@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `space-between` spacing instead of horizontal gap with 48% columns.
 
 ### Changed
+- Value-bet engine quality guard: bets on odds above `value_bet_max_odds`
+  (default 6.0) or below `value_bet_min_confidence` (default 0.0) are no longer
+  flagged as value, keeping unreliable longshots and near-coin-flip picks out of
+  recommendations.
 - Match detail modal: screenshot-style layout with AI confidence ring, win
   probability chart, numbered key insights, live market data, and per-outcome
   AI vs market analysis cards. Opens as a modal with close button; demo match
@@ -58,6 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   tab route without TypeScript errors.
 
 ### Added
+- Startup model bootstrap: when no model artifact exists, the app trains one in
+  a background thread on startup (`model_bootstrap_enabled`, default on) so a
+  fresh deploy serves real predictions instead of the neutral fallback without
+  waiting for the first scheduled retraining.
 - Render release script (`backend/scripts/release.sh`) running
   `alembic upgrade head`, documented as the Pre-Deploy Command so deploys apply
   pending database migrations automatically (prod was previously left on an
