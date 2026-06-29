@@ -96,6 +96,9 @@ class AnalyticsOut(BaseModel):
     total_value_bets: int = 0
     settled_value_bets: int = 0
     roi_trend: list[RoiTrendPointOut] = []
+    confident_accuracy: float | None = None
+    confident_coverage: float | None = None
+    confidence_threshold: float | None = None
 
 
 class DashboardOut(BaseModel):
@@ -105,3 +108,6 @@ class DashboardOut(BaseModel):
     top_value_bets: list[ValueBetOut] = []
     model_accuracy: float | None = None
     roi: float | None = None
+    confident_accuracy: float | None = None
+    confident_coverage: float | None = None
+    confidence_threshold: float | None = None

@@ -54,6 +54,22 @@ def clear_model_metrics_cache() -> None:
         _metrics_cache = None
 
 
+def active_model_metrics() -> dict[str, float] | None:
+    """Out-of-sample metrics recorded for the live model, if one is loaded.
+
+    These come from the training walk-forward backtest (honest, point-in-time)
+    and are preferred over re-scoring stored predictions, which can be stale
+    when finished matches still hold predictions from an earlier model.
+    """
+    # Imported lazily to avoid a module-load cycle (prediction -> ... -> analytics).
+    from app.services.prediction import load_active_model
+
+    bundle = load_active_model()
+    if bundle is None:
+        return None
+    return dict(bundle.metadata.metrics)
+
+
 def _metrics_cache_enabled() -> bool:
     return settings.is_production and settings.cache_ttl_seconds > 0
 

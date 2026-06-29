@@ -6,6 +6,8 @@ import pytest
 
 from app.ml.features import (
     DEFAULT_REST_DAYS,
+    ELO_HOME_ADVANTAGE,
+    ELO_INITIAL,
     FEATURE_COLUMNS,
     MatchContext,
     MatchRecord,
@@ -178,6 +180,44 @@ def test_point_in_time_excludes_future_and_same_kickoff_matches() -> None:
     features = compute_features(_context(days=10), history)
 
     assert features["home_form_points"] == 3.0
+
+
+def test_elo_defaults_to_initial_rating_without_history() -> None:
+    features = compute_features(_context(days=10), [])
+
+    assert features["home_elo"] == ELO_INITIAL
+    assert features["away_elo"] == ELO_INITIAL
+    assert features["elo_diff"] == ELO_HOME_ADVANTAGE
+
+
+def test_elo_rewards_winning_team_and_penalizes_loser() -> None:
+    # Team 1 beats team 2 three times before the target match.
+    history = [
+        _record(1, days=1, home_team_id=1, away_team_id=2, home_goals=3, away_goals=0),
+        _record(2, days=3, home_team_id=2, away_team_id=1, home_goals=0, away_goals=2),
+        _record(3, days=5, home_team_id=1, away_team_id=2, home_goals=1, away_goals=0),
+    ]
+
+    features = compute_features(_context(days=10), history)
+
+    assert features["home_elo"] > ELO_INITIAL
+    assert features["away_elo"] < ELO_INITIAL
+    # Home strength plus the home-advantage term makes the diff strongly positive.
+    assert features["elo_diff"] > ELO_HOME_ADVANTAGE
+
+
+def test_elo_is_point_in_time_and_excludes_future_matches() -> None:
+    history = [
+        _record(1, days=1, home_team_id=1, away_team_id=2, home_goals=4, away_goals=0),
+        # Same-kickoff and future matches must not influence the rating.
+        _record(2, days=10, home_team_id=2, away_team_id=1, home_goals=5, away_goals=0),
+        _record(3, days=12, home_team_id=2, away_team_id=1, home_goals=5, away_goals=0),
+    ]
+
+    features = compute_features(_context(days=10), history)
+
+    assert features["home_elo"] > ELO_INITIAL
+    assert features["away_elo"] < ELO_INITIAL
 
 
 def test_match_outcome_classifies_result() -> None:

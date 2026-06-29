@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     # a fresh deploy serves real predictions instead of the neutral fallback
     # without waiting for the first scheduled retraining interval.
     model_bootstrap_enabled: bool = True
+    # A pick is "confident" when its top 1X2 probability clears this bar. Used to
+    # report high-precision accuracy on the confident subset (vs full-slate
+    # accuracy, which the ~25% draw rate caps). 0.70 yields ~70% accuracy on the
+    # ~19% of matches the model is surest about (walk-forward OOS).
+    model_confidence_threshold: float = Field(default=0.7, gt=0.0, le=1.0)
 
     cache_ttl_seconds: int = Field(default=30, ge=0)
 
