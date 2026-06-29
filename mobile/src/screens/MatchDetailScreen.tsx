@@ -37,11 +37,9 @@ import type {
 import { colors, radii, spacing, typography } from '../theme';
 import { formatMatchTeams } from '../utils/matchDisplay';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
-import { findDemoMatchById } from './matchesDemoData';
 import { shouldUseMatchDetailTwoColumnLayout } from './matchDetailLayoutUtils';
 import {
   buildAllMarketAnalyses,
-  DEMO_ODDS_MOVEMENTS,
   deriveMarketMovements,
   formatEdgeLabel,
   formatOutcomeAnalysisLabel,
@@ -50,7 +48,6 @@ import {
   getMatchInsights,
   hasSignificantOddsMovement,
   impliedProbability,
-  isDemoMatchId,
   parseMatchId,
   resolveEdgeBarWidthPercent,
   type MarketAnalysis,
@@ -287,20 +284,18 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
   const { width } = useWindowDimensions();
   const twoColumn = shouldUseMatchDetailTwoColumnLayout(width);
   const matchId = parseMatchId(route.params.matchId);
-  const isDemo = matchId != null && isDemoMatchId(matchId);
-  const demoMatch = isDemo && matchId != null ? findDemoMatchById(matchId) : null;
 
-  const matchQuery = useMatch(isDemo ? 0 : (matchId ?? 0));
+  const matchQuery = useMatch(matchId ?? 0);
   const valueBetsQuery = useValueBets(
     { match_id: matchId ?? undefined },
-    { enabled: matchId != null && !isDemo },
+    { enabled: matchId != null },
   );
 
   const [oddsBaseline, setOddsBaseline] = useState<Odds | null>(null);
   const [marketMovements, setMarketMovements] = useState<MarketMovements | null>(null);
   const [isUpdatingOdds, setIsUpdatingOdds] = useState(false);
 
-  const match = demoMatch ?? matchQuery.data;
+  const match = matchQuery.data;
   const primaryOdds = match?.odds?.[0] ?? null;
 
   const insights = useMemo(
@@ -310,36 +305,24 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
 
   const activeMovements = marketMovements;
   const showMovementAlert = hasSignificantOddsMovement(activeMovements);
-  const isRefreshing = !isDemo && (matchQuery.isRefetching || valueBetsQuery.isRefetching);
+  const isRefreshing = matchQuery.isRefetching || valueBetsQuery.isRefetching;
 
   const onClose = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
   const onRefresh = useCallback(() => {
-    if (isDemo) {
-      return;
-    }
-
     setMarketMovements(null);
     setOddsBaseline(null);
     void matchQuery.refetch();
     void valueBetsQuery.refetch();
-  }, [isDemo, matchQuery, valueBetsQuery]);
+  }, [matchQuery, valueBetsQuery]);
 
   const onRetry = useCallback(() => {
     onRefresh();
   }, [onRefresh]);
 
   const onUpdateOdds = useCallback(async () => {
-    if (isDemo) {
-      setIsUpdatingOdds(true);
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      setMarketMovements(DEMO_ODDS_MOVEMENTS);
-      setIsUpdatingOdds(false);
-      return;
-    }
-
     const baseline = oddsBaseline ?? primaryOdds;
     if (!baseline) {
       return;
@@ -356,17 +339,17 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
     } finally {
       setIsUpdatingOdds(false);
     }
-  }, [isDemo, matchQuery, oddsBaseline, primaryOdds]);
+  }, [matchQuery, oddsBaseline, primaryOdds]);
 
   if (matchId == null) {
     return <ErrorState message="Invalid match" onRetry={onClose} />;
   }
 
-  if (!isDemo && isInitialQueryLoad(matchQuery.isLoading, matchQuery.data)) {
+  if (isInitialQueryLoad(matchQuery.isLoading, matchQuery.data)) {
     return <LoadingState message="Loading match…" />;
   }
 
-  if (!isDemo && queryErrorForDisplay(matchQuery.error, matchQuery.data)) {
+  if (queryErrorForDisplay(matchQuery.error, matchQuery.data)) {
     return <ErrorState message="Could not load match" onRetry={onRetry} />;
   }
 
@@ -375,20 +358,18 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
   }
 
   const prediction = match.prediction;
-  const oddsUpdatedLabel = isDemo ? 'about 4 hours ago' : 'just now';
+  const oddsUpdatedLabel = marketMovements ? 'just now' : 'Latest available';
 
   return (
     <ScrollView
       contentContainerStyle={styles.scrollContent}
       refreshControl={
-        isDemo ? undefined : (
-          <RefreshControl
-            colors={[colors.primary]}
-            onRefresh={onRefresh}
-            refreshing={isRefreshing}
-            tintColor={colors.primary}
-          />
-        )
+        <RefreshControl
+          colors={[colors.primary]}
+          onRefresh={onRefresh}
+          refreshing={isRefreshing}
+          tintColor={colors.primary}
+        />
       }
       style={styles.screen}
     >
