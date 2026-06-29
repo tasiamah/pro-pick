@@ -54,16 +54,20 @@ def clear_model_metrics_cache() -> None:
         _metrics_cache = None
 
 
+def _metrics_cache_enabled() -> bool:
+    return settings.is_production and settings.cache_ttl_seconds > 0
+
+
 def get_model_metrics(
     db: Session,
 ) -> tuple[list[PredictionSnapshot], list[SettledBetSnapshot]]:
     """Load prediction and settled-bet snapshots with a short-lived in-process cache."""
     global _metrics_cache
 
-    ttl = settings.cache_ttl_seconds
-    if ttl <= 0:
+    if not _metrics_cache_enabled():
         return load_prediction_snapshots(db), load_settled_bet_snapshots(db)
 
+    ttl = settings.cache_ttl_seconds
     now = time.monotonic()
     with _metrics_cache_lock:
         if _metrics_cache is not None and now < _metrics_cache.expires_at:
