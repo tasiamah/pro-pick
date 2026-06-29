@@ -62,6 +62,8 @@ export function buildHeroStats(
   return {
     winRate: formatHeroWinRate(dashboard.model_accuracy),
     avgOdds: formatHeroAvgOdds(computeAverageOdds(matches)),
-    valueBets: formatHeroValueBetCount(analytics?.total_value_bets),
+    valueBets: formatHeroValueBetCount(
+      analytics?.total_value_bets ?? dashboard.top_value_bets?.length,
+    ),
   };
 }

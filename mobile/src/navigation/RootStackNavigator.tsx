@@ -1,7 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { AboutScreen } from '../screens/AboutScreen';
-import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
+import { getAboutScreen, getPrivacyPolicyScreen } from './lazyScreens';
 import { RootNavigator } from './RootNavigator';
 import { screenTitles } from './screenTitles';
 import { stackScreenOptions } from './stackScreenOptions';
@@ -19,12 +18,12 @@ export function RootStackNavigator() {
       />
       <Stack.Screen
         name="About"
-        component={AboutScreen}
+        getComponent={getAboutScreen}
         options={{ title: screenTitles.about }}
       />
       <Stack.Screen
         name="PrivacyPolicy"
-        component={PrivacyPolicyScreen}
+        getComponent={getPrivacyPolicyScreen}
         options={{ title: screenTitles.privacyPolicy }}
       />
     </Stack.Navigator>

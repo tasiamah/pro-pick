@@ -1,8 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { FavoritesScreen } from '../screens/FavoritesScreen';
-import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { matchDetailScreenOptions } from './matchDetailScreenOptions';
+import { getFavoritesScreen, getMatchDetailScreen } from './lazyScreens';
 import { screenTitles } from './screenTitles';
 import { stackScreenOptions } from './stackScreenOptions';
 import type { FavoritesStackParamList } from './types';
@@ -14,12 +13,12 @@ export function FavoritesStackNavigator() {
     <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen
         name="Favorites"
-        component={FavoritesScreen}
+        getComponent={getFavoritesScreen}
         options={{ title: screenTitles.favorites }}
       />
       <Stack.Screen
         name="MatchDetail"
-        component={MatchDetailScreen}
+        getComponent={getMatchDetailScreen}
         options={matchDetailScreenOptions}
       />
     </Stack.Navigator>

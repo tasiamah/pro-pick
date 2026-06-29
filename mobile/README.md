@@ -61,7 +61,7 @@ python -m app.scripts.seed_demo
 
 Run this checklist on a **real iPhone** before TestFlight or App Store submission.
 Use production API (`https://pro-pick.onrender.com`) or a seeded staging backend.
-Allow up to 45 seconds for the first request while Render wakes from sleep.
+On Render Starter (always-on), API responses are typically under a few seconds.
 
 ### Setup
 

@@ -37,7 +37,7 @@ export function HomeScreen({ navigation }: Props) {
     dashboardQuery,
   } = useMatchDateAnchor();
   const matchesQuery = useMatches(matchListParams);
-  const analyticsQuery = useAnalytics();
+  const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
 
   const filteredMatches = useMemo(
     () => filterMatchesByDate(matchesQuery.data ?? [], selectedDate),
@@ -56,9 +56,10 @@ export function HomeScreen({ navigation }: Props) {
     [analyticsQuery.data, dashboardQuery.data, matchesQuery.data],
   );
 
-  const isInitialLoading =
-    isInitialQueryLoad(dashboardQuery.isLoading, dashboardQuery.data) ||
-    isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data);
+  const isInitialLoading = isInitialQueryLoad(
+    dashboardQuery.isLoading,
+    dashboardQuery.data,
+  );
 
   const isRefreshing =
     dashboardQuery.isRefetching ||

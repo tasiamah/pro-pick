@@ -1,9 +1,12 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { queryClient } from './src/api/queryClient';
+import { setupQueryFocusManager } from './src/api/setupQueryFocusManager';
 import { DisclaimerBanner } from './src/components';
 import { flushPendingNavigation, navigationRef } from './src/navigation/navigationRef';
 import { RootStackNavigator } from './src/navigation/RootStackNavigator';
@@ -21,9 +24,9 @@ const navigationTheme = {
   },
 };
 
-const queryClient = new QueryClient();
-
 export default function App() {
+  useEffect(() => setupQueryFocusManager(), []);
+
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>

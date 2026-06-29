@@ -13,6 +13,9 @@ export const queryKeys = {
       params.offset ?? null,
       params.kickoff_from ?? null,
       params.kickoff_to ?? null,
+      params.status ?? null,
+      params.odds_tier ?? null,
+      params.q ?? null,
     ] as const,
   match: (matchId: number) => ['matches', matchId] as const,
   predictions: (params: PredictionListParams = {}) =>

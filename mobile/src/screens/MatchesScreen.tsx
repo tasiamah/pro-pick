@@ -10,20 +10,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { useMatches } from '../api/hooks';
+import type { MatchListParams } from '../api/types';
 import {
   AsyncState,
   ErrorState,
   FilterChipRow,
-  LoadingState,
   MatchCardV2,
   SearchInput,
   SegmentedControl,
 } from '../components';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useUtcDayKey } from '../hooks/useUtcDayKey';
 import { TAB_BAR_BASE_HEIGHT } from '../navigation/tabBarOptions';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
-import { addUtcDays, buildDateWindowParams, startOfUtcDay } from '../utils/matchDates';
+import { addUtcDays, startOfUtcDay } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import {
   chunkMatchesGridRows,
@@ -40,7 +41,8 @@ import {
 type Props = NativeStackScreenProps<MatchesStackParamList, 'Matches'>;
 
 const SEARCH_DEBOUNCE_MS = 300;
-const BROWSE_WINDOW_DAYS = 30;
+const BROWSE_WINDOW_DAYS = 14;
+const MATCHES_PAGE_LIMIT = 50;
 
 export function MatchesScreen({ navigation }: Props) {
   const { width: windowWidth } = useWindowDimensions();
@@ -58,12 +60,33 @@ export function MatchesScreen({ navigation }: Props) {
   const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('upcoming');
   const [oddsTierFilter, setOddsTierFilter] = useState<MatchOddsTierFilter>('all');
   const debouncedSearchQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
+  const { utcDayKey, refreshUtcDayKey } = useUtcDayKey();
 
   const matchListParams = useMemo(() => {
-    const start = addUtcDays(startOfUtcDay(), -BROWSE_WINDOW_DAYS);
-    const end = addUtcDays(startOfUtcDay(), BROWSE_WINDOW_DAYS);
-    return buildDateWindowParams(start, end);
-  }, []);
+    const today = startOfUtcDay(new Date(`${utcDayKey}T00:00:00.000Z`));
+    const start = addUtcDays(today, -BROWSE_WINDOW_DAYS);
+    const end =
+      statusFilter === 'completed'
+        ? addUtcDays(today, 1)
+        : addUtcDays(today, BROWSE_WINDOW_DAYS);
+
+    const params: MatchListParams = {
+      kickoff_from: start.toISOString(),
+      kickoff_to: end.toISOString(),
+      limit: MATCHES_PAGE_LIMIT,
+      status: statusFilter,
+    };
+
+    const trimmedQuery = debouncedSearchQuery.trim();
+    if (trimmedQuery) {
+      params.q = trimmedQuery;
+    }
+    if (oddsTierFilter !== 'all') {
+      params.odds_tier = oddsTierFilter;
+    }
+
+    return params;
+  }, [debouncedSearchQuery, oddsTierFilter, statusFilter, utcDayKey]);
 
   const matchesQuery = useMatches(matchListParams);
   const filteredMatches = useMemo(
@@ -88,12 +111,14 @@ export function MatchesScreen({ navigation }: Props) {
   );
 
   const onRefresh = useCallback(() => {
+    refreshUtcDayKey();
     void matchesQuery.refetch();
-  }, [matchesQuery]);
+  }, [matchesQuery, refreshUtcDayKey]);
 
-  if (isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)) {
-    return <LoadingState message="Loading matches…" />;
-  }
+  const isMatchesLoading = isInitialQueryLoad(
+    matchesQuery.isLoading,
+    matchesQuery.data,
+  );
 
   if (queryErrorForDisplay(matchesQuery.error, matchesQuery.data)) {
     return (
@@ -141,7 +166,7 @@ export function MatchesScreen({ navigation }: Props) {
       </View>
 
       <AsyncState
-        isLoading={false}
+        isLoading={isMatchesLoading}
         error={null}
         isEmpty={filteredMatches.length === 0}
         emptyMessage={emptyMessage}

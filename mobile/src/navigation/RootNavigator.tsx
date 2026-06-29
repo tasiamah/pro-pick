@@ -5,11 +5,13 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { colors, spacing } from '../theme';
-import { FavoritesStackNavigator } from './FavoritesStackNavigator';
 import { HomeStackNavigator } from './HomeStackNavigator';
-import { MatchesStackNavigator } from './MatchesStackNavigator';
+import {
+  getAnalyticsScreen,
+  getFavoritesStackNavigator,
+  getMatchesStackNavigator,
+} from './lazyScreens';
 import { StackHeaderTitle } from './StackHeaderTitle';
 import { buildTabBarScreenOptions } from './tabBarOptions';
 import { screenTitles } from './screenTitles';
@@ -43,7 +45,11 @@ function TabBarIcon({ name, focused }: TabBarIconProps) {
 export function RootNavigator() {
   const insets = useSafeAreaInsets();
   const screenOptions = useMemo(
-    () => buildTabBarScreenOptions(insets.bottom),
+    () => ({
+      ...buildTabBarScreenOptions(insets.bottom),
+      lazy: true,
+      freezeOnBlur: true,
+    }),
     [insets.bottom],
   );
 
@@ -59,7 +65,7 @@ export function RootNavigator() {
       />
       <Tab.Screen
         name="MatchesTab"
-        component={MatchesStackNavigator}
+        getComponent={getMatchesStackNavigator}
         options={{
           title: 'Matches',
           tabBarIcon: ({ focused }) => <TabBarIcon name="pulse-outline" focused={focused} />,
@@ -67,7 +73,7 @@ export function RootNavigator() {
       />
       <Tab.Screen
         name="FavoritesTab"
-        component={FavoritesStackNavigator}
+        getComponent={getFavoritesStackNavigator}
         options={{
           title: 'Favorites',
           tabBarIcon: ({ focused }) => <TabBarIcon name="star-outline" focused={focused} />,
@@ -75,7 +81,7 @@ export function RootNavigator() {
       />
       <Tab.Screen
         name="AnalyticsTab"
-        component={AnalyticsScreen}
+        getComponent={getAnalyticsScreen}
         options={{
           title: 'Analytics',
           headerShown: true,

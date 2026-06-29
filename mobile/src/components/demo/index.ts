@@ -4,7 +4,6 @@ export { AlertBanner } from './AlertBanner';
 export { ConfidenceBadge } from './ConfidenceBadge';
 export { ConfidenceRing } from './ConfidenceRing';
 export { DetailsLink } from './DetailsLink';
-export { DemoComponentsScreen } from './DemoComponentsScreen';
 export { EdgeBar } from './EdgeBar';
 export { FilterChipRow } from './FilterChipRow';
 export { FormIndicator } from './FormIndicator';

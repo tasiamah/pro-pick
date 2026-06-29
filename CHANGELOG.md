@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   environment (`app/services/demo_seed.py`, PP-108).
 
 ### Fixed
+- Matches list API latency: batch enrichment (one history query per page) and
+  smaller default browse window; Matches tab shows filters while loading instead
+  of a full-screen spinner.
 - Mobile app no longer shows placeholder demo fixtures (e.g. Bournemouth vs
   Luton) or hardcoded analytics now that the backend serves real data: the
   Matches and Match-detail screens render live API data with empty states, and

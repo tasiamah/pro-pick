@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import Match
@@ -168,6 +168,30 @@ def load_match_history(
     if before is not None:
         stmt = stmt.where(Match.kickoff < before)
     matches = db.execute(stmt).scalars().all()
+    return [_to_record(match) for match in matches]
+
+
+def load_match_history_for_teams(
+    db: Session,
+    team_ids: set[int],
+    before: datetime,
+) -> list[MatchRecord]:
+    """Finished matches for teams before kickoff (single query for list enrichment)."""
+    if not team_ids:
+        return []
+
+    stmt = (
+        select(Match)
+        .options(joinedload(Match.competition))
+        .where(
+            Match.kickoff.is_not(None),
+            Match.kickoff < before,
+            Match.home_goals.is_not(None),
+            Match.away_goals.is_not(None),
+            or_(Match.home_team_id.in_(team_ids), Match.away_team_id.in_(team_ids)),
+        )
+    )
+    matches = db.execute(stmt).unique().scalars().all()
     return [_to_record(match) for match in matches]
 
 
