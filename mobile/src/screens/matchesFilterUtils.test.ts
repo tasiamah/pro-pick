@@ -54,7 +54,7 @@ describe('matchesFilterUtils', () => {
     );
   });
 
-  it('sorts undated matches after dated ones', () => {
+  it('sorts matches by kickoff descending with undated matches last', () => {
     const undatedMatch: MatchDetail = {
       ...baseMatch,
       id: 3,
@@ -73,7 +73,7 @@ describe('matchesFilterUtils', () => {
       '',
     );
 
-    expect(filtered.map((match) => match.id)).toEqual([1, 2, 3]);
+    expect(filtered.map((match) => match.id)).toEqual([2, 1, 3]);
   });
 
   it('combines filters and sorts by kickoff', () => {

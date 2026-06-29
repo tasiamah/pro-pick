@@ -87,7 +87,7 @@ export function filterMatchesForBrowse(
       if (rightTime === null) {
         return -1;
       }
-      return leftTime - rightTime;
+      return rightTime - leftTime;
     });
 }
 
