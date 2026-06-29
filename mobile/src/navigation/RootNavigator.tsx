@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { ComponentProps } from 'react';
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { colors, spacing } from '../theme';
@@ -9,9 +11,9 @@ import { FavoritesStackNavigator } from './FavoritesStackNavigator';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { MatchesStackNavigator } from './MatchesStackNavigator';
 import { StackHeaderTitle } from './StackHeaderTitle';
+import { buildTabBarScreenOptions } from './tabBarOptions';
 import { screenTitles } from './screenTitles';
 import { stackScreenOptions } from './stackScreenOptions';
-import { tabBarScreenOptions } from './tabBarOptions';
 import type { RootTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -39,8 +41,14 @@ function TabBarIcon({ name, focused }: TabBarIconProps) {
 }
 
 export function RootNavigator() {
+  const insets = useSafeAreaInsets();
+  const screenOptions = useMemo(
+    () => buildTabBarScreenOptions(insets.bottom),
+    [insets.bottom],
+  );
+
   return (
-    <Tab.Navigator screenOptions={tabBarScreenOptions}>
+    <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen
         name="HomeTab"
         component={HomeStackNavigator}

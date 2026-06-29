@@ -1,8 +1,8 @@
-import { colors, typography } from '../theme';
+import { colors, spacing, typography } from '../theme';
 
+import { buildTabBarScreenOptions, TAB_BAR_BASE_HEIGHT, tabBarScreenOptions } from './tabBarOptions';
 import { screenTitles } from './screenTitles';
 import { stackScreenOptions } from './stackScreenOptions';
-import { tabBarScreenOptions } from './tabBarOptions';
 
 describe('navigation options', () => {
   it('exports demo stack header styling', () => {
@@ -21,6 +21,16 @@ describe('navigation options', () => {
       backgroundColor: colors.cardElevated,
       borderTopColor: colors.border,
       borderTopWidth: 1,
+      paddingBottom: spacing.sm,
+      paddingTop: spacing.xs,
+      height: TAB_BAR_BASE_HEIGHT + spacing.sm,
+    });
+  });
+
+  it('adds safe-area padding to the tab bar height', () => {
+    expect(buildTabBarScreenOptions(34).tabBarStyle).toMatchObject({
+      paddingBottom: 34,
+      height: TAB_BAR_BASE_HEIGHT + 34,
     });
   });
 
