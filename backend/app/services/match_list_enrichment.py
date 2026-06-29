@@ -78,13 +78,9 @@ class _MatchListEnricher:
         ]
         relevant.sort(key=lambda match: match.kickoff, reverse=True)
         recent = relevant[:FORM_DISPLAY_WINDOW]
-        return [
-            _result_for_team(match, team_id) for match in reversed(recent)
-        ]
+        return [_result_for_team(match, team_id) for match in reversed(recent)]
 
-    def _prediction_insights(
-        self, match: Match, prediction: Prediction
-    ) -> list[str]:
+    def _prediction_insights(self, match: Match, prediction: Prediction) -> list[str]:
         insights: list[str] = []
 
         if match.kickoff is not None:
