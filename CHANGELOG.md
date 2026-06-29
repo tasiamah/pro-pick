@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
-- Matches list API latency: batch enrichment (one history query per page) and
+- Home match card Details opens the selected match detail screen instead of
+  switching to the Matches tab.
   smaller default browse window; Matches tab shows filters while loading instead
   of a full-screen spinner.
 - Mobile app no longer shows placeholder demo fixtures (e.g. Bournemouth vs
@@ -39,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `space-between` spacing instead of horizontal gap with 48% columns.
 
 ### Changed
+- Matches browse grid lists fixtures in reverse kickoff order (newest first) and
+  uses tighter compact-card typography so team names, badges, and insights match
+  the demo reference in the two-column layout.
 - Value-bet engine quality guard: bets on odds above `value_bet_max_odds`
   (default 6.0) or below `value_bet_min_confidence` (default 0.0) are no longer
   flagged as value, keeping unreliable longshots and near-coin-flip picks out of
