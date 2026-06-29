@@ -30,14 +30,12 @@ import {
   getMatchesGridMetrics,
   getMatchesScrollBottomPadding,
 } from './matchesGridLayout';
-import { MATCHES_DEMO_DATA } from './matchesDemoData';
 import {
   filterMatchesForBrowse,
   getMatchesEmptyMessage,
   type MatchOddsTierFilter,
   type MatchStatusFilter,
 } from './matchesFilterUtils';
-import { resolveMatchesBrowseSource } from './matchesScreenUtils';
 
 type Props = NativeStackScreenProps<MatchesStackParamList, 'Matches'>;
 
@@ -68,19 +66,15 @@ export function MatchesScreen({ navigation }: Props) {
   }, []);
 
   const matchesQuery = useMatches(matchListParams);
-  const browseSource = useMemo(
-    () => resolveMatchesBrowseSource(matchesQuery.data, MATCHES_DEMO_DATA),
-    [matchesQuery.data],
-  );
   const filteredMatches = useMemo(
     () =>
       filterMatchesForBrowse(
-        browseSource.matches,
+        matchesQuery.data ?? [],
         statusFilter,
         oddsTierFilter,
         debouncedSearchQuery,
       ),
-    [browseSource.matches, debouncedSearchQuery, oddsTierFilter, statusFilter],
+    [matchesQuery.data, debouncedSearchQuery, oddsTierFilter, statusFilter],
   );
 
   const gridRows = useMemo(

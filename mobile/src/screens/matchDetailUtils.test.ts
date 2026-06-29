@@ -12,7 +12,6 @@ import {
   formatStakeReturnUsd,
   getMatchInsights,
   hasSignificantOddsMovement,
-  isDemoMatchId,
   parseMatchId,
   resolveEdgeBarWidthPercent,
 } from './matchDetailUtils';
@@ -41,14 +40,12 @@ describe('matchDetailUtils', () => {
     expect(parseMatchId('sample-home')).toBeNull();
     expect(parseMatchId('42abc')).toBeNull();
     expect(parseMatchId('0')).toBeNull();
+    expect(parseMatchId('-1')).toBeNull();
   });
 
-  it('accepts demo match ids', () => {
-    expect(parseMatchId('-1')).toBe(-1);
+  it('accepts large positive match ids within the safe integer range', () => {
     expect(parseMatchId(String(Number.MAX_SAFE_INTEGER))).toBe(Number.MAX_SAFE_INTEGER);
     expect(parseMatchId(String(Number.MAX_SAFE_INTEGER + 1))).toBeNull();
-    expect(isDemoMatchId(-1)).toBe(true);
-    expect(isDemoMatchId(42)).toBe(false);
   });
 
   it('derives odds movement with epsilon tolerance', () => {

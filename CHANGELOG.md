@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- Mobile app no longer shows placeholder demo fixtures (e.g. Bournemouth vs
+  Luton) or hardcoded analytics now that the backend serves real data: the
+  Matches and Match-detail screens render live API data with empty states, and
+  the Analytics screen is wired to `/analytics` (accuracy, log loss, ROI, value
+  bet counts, and a real ROI-trend chart). The demo-only confidence-trend and
+  risk-distribution charts and their seed data were removed.
 - Dashboard and analytics API latency: optimized snapshot queries, short-lived
   metrics cache, Supabase pool limits, and SQL pagination for unfiltered match
   lists so production `/dashboard` no longer exhausts DB connections.

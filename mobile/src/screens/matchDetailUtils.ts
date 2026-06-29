@@ -26,20 +26,16 @@ export type MarketAnalysis = {
 };
 
 export function parseMatchId(value: string): number | null {
-  if (!/^-?\d+$/.test(value)) {
+  if (!/^\d+$/.test(value)) {
     return null;
   }
 
   const id = Number.parseInt(value, 10);
-  if (id === 0 || !Number.isSafeInteger(id)) {
+  if (id <= 0 || !Number.isSafeInteger(id)) {
     return null;
   }
 
   return id;
-}
-
-export function isDemoMatchId(matchId: number): boolean {
-  return matchId < 0;
 }
 
 export function deriveOddsMovement(
@@ -263,9 +259,3 @@ export function resolveEdgeBarWidthPercent(edge: number): number {
 
   return Math.min(100, Math.max(8, Math.abs(edge) * 100));
 }
-
-export const DEMO_ODDS_MOVEMENTS: MarketMovements = {
-  home: 'down',
-  draw: 'down',
-  away: 'down',
-};

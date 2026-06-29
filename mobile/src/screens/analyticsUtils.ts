@@ -18,22 +18,6 @@ export function formatTrendLabel(date: string): string {
   });
 }
 
-export function toConfidenceTrendChartData(values: number[]): LineChartPoint[] {
-  return values.map((value, index) => ({
-    value,
-    label: String(index + 1),
-  }));
-}
-
-export function toRiskDistributionChartData(
-  segments: { value: number; color: string }[],
-): { value: number; color: string }[] {
-  return segments.map((segment) => ({
-    value: segment.value,
-    color: segment.color,
-  }));
-}
-
 export function toRoiTrendChartData(
   points: RoiTrendPoint[] | null | undefined,
 ): LineChartPoint[] {
@@ -45,4 +29,38 @@ export function toRoiTrendChartData(
     value: Math.round(point.roi * 100),
     label: formatTrendLabel(point.date),
   }));
+}
+
+export function formatAccuracyMetric(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) {
+    return '—';
+  }
+
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+export function formatRoiMetric(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) {
+    return '—';
+  }
+
+  const percent = value * 100;
+  const prefix = percent > 0 ? '+' : '';
+  return `${prefix}${percent.toFixed(1)}%`;
+}
+
+export function formatLogLossMetric(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) {
+    return '—';
+  }
+
+  return value.toFixed(3);
+}
+
+export function formatCountMetric(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) {
+    return '—';
+  }
+
+  return String(value);
 }

@@ -1,26 +1,37 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import type { ComponentProps } from 'react';
+import { useCallback } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { SectionHeader } from '../components';
-import { colors, radii, screenStyles, spacing, typography } from '../theme';
+import { useAnalytics } from '../api/hooks';
 import {
-  ANALYTICS_DEMO_CONFIDENCE_TREND,
-  ANALYTICS_DEMO_MODEL_PERFORMANCE,
-  ANALYTICS_DEMO_PREDICTION_OUTCOMES,
-  ANALYTICS_DEMO_RISK_DISTRIBUTION,
-  ANALYTICS_DEMO_SUMMARY,
-  type AnalyticsSummaryStat,
-  type ModelPerformanceStat,
-  type PredictionOutcomeStat,
-} from './analyticsDemoData';
-import { ConfidenceTrendChart } from './ConfidenceTrendChart';
-import { RiskDistributionChart } from './RiskDistributionChart';
+  AsyncState,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  SectionHeader,
+} from '../components';
+import { colors, radii, screenStyles, spacing, typography } from '../theme';
+import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
+import {
+  formatAccuracyMetric,
+  formatCountMetric,
+  formatLogLossMetric,
+  formatRoiMetric,
+  toRoiTrendChartData,
+} from './analyticsUtils';
+import { RoiTrendChart } from './RoiTrendChart';
 
-type SummaryStatCardProps = {
-  stat: AnalyticsSummaryStat;
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
+type SummaryStat = {
+  label: string;
+  value: string;
+  icon: IoniconName;
+  iconColor: string;
 };
 
-function SummaryStatCard({ stat }: SummaryStatCardProps) {
+function SummaryStatCard({ stat }: { stat: SummaryStat }) {
   return (
     <View style={styles.summaryCard}>
       <Ionicons name={stat.icon} size={20} color={stat.iconColor} />
@@ -30,96 +41,87 @@ function SummaryStatCard({ stat }: SummaryStatCardProps) {
   );
 }
 
-type ConfidenceTrendSectionProps = {
-  chartWidth: number;
-};
-
-function ConfidenceTrendSection({ chartWidth }: ConfidenceTrendSectionProps) {
-  return <ConfidenceTrendChart chartWidth={chartWidth} values={ANALYTICS_DEMO_CONFIDENCE_TREND} />;
-}
-
-type RiskDistributionSectionProps = {
-  chartWidth: number;
-};
-
-function RiskDistributionSection({ chartWidth }: RiskDistributionSectionProps) {
-  return (
-    <RiskDistributionChart chartWidth={chartWidth} segments={ANALYTICS_DEMO_RISK_DISTRIBUTION} />
-  );
-}
-
-type OutcomeCardProps = {
-  outcome: PredictionOutcomeStat;
-};
-
-function OutcomeCard({ outcome }: OutcomeCardProps) {
-  return (
-    <View style={styles.outcomeCard}>
-      <Text style={styles.outcomeValue}>{outcome.value}</Text>
-      <Text style={styles.outcomeLabel}>{outcome.label}</Text>
-    </View>
-  );
-}
-
-type PerformanceColumnProps = {
-  stat: ModelPerformanceStat;
-};
-
-function PerformanceColumn({ stat }: PerformanceColumnProps) {
-  return (
-    <View style={styles.performanceColumn}>
-      <Text style={styles.performanceLabel}>{stat.label}</Text>
-      <Text style={[styles.performanceValue, { color: stat.valueColor }]}>{stat.value}</Text>
-      <Text style={styles.performanceCaption}>{stat.caption}</Text>
-    </View>
-  );
-}
-
 export function AnalyticsScreen() {
-  const { width } = useWindowDimensions();
-  const chartWidth = Math.max(width - spacing.lg * 4, 240);
+  const analyticsQuery = useAnalytics();
+
+  const onRefresh = useCallback(() => {
+    void analyticsQuery.refetch();
+  }, [analyticsQuery]);
+
+  if (isInitialQueryLoad(analyticsQuery.isLoading, analyticsQuery.data)) {
+    return <LoadingState message="Loading analytics…" />;
+  }
+
+  if (queryErrorForDisplay(analyticsQuery.error, analyticsQuery.data)) {
+    return <ErrorState message="Could not load analytics" onRetry={onRefresh} />;
+  }
+
+  const analytics = analyticsQuery.data;
+  if (!analytics) {
+    return <EmptyState message="No analytics available" />;
+  }
+
+  const summaryStats: SummaryStat[] = [
+    {
+      label: 'Model Accuracy',
+      value: formatAccuracyMetric(analytics.accuracy),
+      icon: 'trending-up-outline',
+      iconColor: colors.oddsLow,
+    },
+    {
+      label: 'ROI',
+      value: formatRoiMetric(analytics.roi),
+      icon: 'cash-outline',
+      iconColor: colors.primary,
+    },
+    {
+      label: 'Log Loss',
+      value: formatLogLossMetric(analytics.log_loss),
+      icon: 'pulse-outline',
+      iconColor: colors.marketBlue,
+    },
+    {
+      label: 'Value Bets',
+      value: formatCountMetric(analytics.total_value_bets),
+      icon: 'ribbon-outline',
+      iconColor: colors.chartAway,
+    },
+  ];
+
+  const roiTrend = toRoiTrendChartData(analytics.roi_trend);
 
   return (
     <ScrollView
       style={screenStyles.screenContainer}
       contentContainerStyle={screenStyles.scrollContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={analyticsQuery.isRefetching}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
+      }
     >
       <View style={styles.summaryGrid}>
-        {ANALYTICS_DEMO_SUMMARY.map((stat) => (
+        {summaryStats.map((stat) => (
           <SummaryStatCard key={stat.label} stat={stat} />
         ))}
       </View>
 
       <View style={screenStyles.section}>
-        <SectionHeader title="Confidence Trend" />
-        <ConfidenceTrendSection chartWidth={chartWidth} />
-      </View>
-
-      <View style={screenStyles.section}>
-        <SectionHeader title="Risk Distribution" />
-        <RiskDistributionSection chartWidth={chartWidth} />
-      </View>
-
-      <View style={screenStyles.section}>
-        <SectionHeader title="Prediction Outcomes" />
-        <ScrollView
-          horizontal
-          contentContainerStyle={styles.outcomesRow}
-          showsHorizontalScrollIndicator={false}
+        <SectionHeader
+          subtitle={`${analytics.settled_value_bets} of ${analytics.total_value_bets} value bets settled`}
+          title="ROI Trend"
+        />
+        <AsyncState
+          isLoading={false}
+          error={null}
+          isEmpty={roiTrend.length === 0}
+          emptyMessage="No settled value bets yet"
         >
-          {ANALYTICS_DEMO_PREDICTION_OUTCOMES.map((outcome) => (
-            <OutcomeCard key={outcome.label} outcome={outcome} />
-          ))}
-        </ScrollView>
-      </View>
-
-      <View style={screenStyles.section}>
-        <SectionHeader title="AI Model Performance" />
-        <View style={styles.performanceCard}>
-          {ANALYTICS_DEMO_MODEL_PERFORMANCE.map((stat) => (
-            <PerformanceColumn key={stat.label} stat={stat} />
-          ))}
-        </View>
+          <RoiTrendChart points={roiTrend} />
+        </AsyncState>
       </View>
     </ScrollView>
   );
@@ -148,54 +150,5 @@ const styles = StyleSheet.create({
   summaryValue: {
     ...typography.statValue,
     color: colors.text,
-  },
-  outcomesRow: {
-    gap: spacing.md,
-    paddingRight: spacing.lg,
-  },
-  outcomeCard: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    gap: spacing.xs,
-    minWidth: 112,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
-  },
-  outcomeValue: {
-    ...typography.titleLarge,
-    color: colors.text,
-  },
-  outcomeLabel: {
-    ...typography.badge,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  performanceCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  performanceColumn: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  performanceLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  performanceValue: {
-    ...typography.title,
-    color: colors.text,
-  },
-  performanceCaption: {
-    ...typography.caption,
-    color: colors.textMuted,
   },
 });
