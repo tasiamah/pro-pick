@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- Demo seed now features one upcoming match kicking off later today so the
+  dashboard's today-scoped top value bets populate instead of staying empty.
 - Match detail modal: zero-edge outcomes no longer show a misleading edge bar
   fill, and demo odds movement appears only after Update Odds is tapped.
 - Match detail routing rejects unsafe integer ids; demo match kickoffs are

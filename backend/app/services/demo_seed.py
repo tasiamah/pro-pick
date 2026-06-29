@@ -158,10 +158,9 @@ def _upsert_upcoming_match(
     competition_id: int,
     team_ids: dict[int, int],
     spec: _UpcomingMatchSpec,
-    now: datetime,
+    kickoff: datetime,
 ) -> Match:
     existing = db.scalar(select(Match).where(Match.external_id == spec.external_id))
-    kickoff = now + timedelta(days=spec.days_ahead)
     values = {
         "competition_id": competition_id,
         "home_team_id": team_ids[spec.home_external_id],
@@ -308,6 +307,14 @@ def _upcoming_match_specs() -> tuple[_UpcomingMatchSpec, ...]:
 
 def run_demo_seed(db: Session, *, now: datetime | None = None) -> DemoSeedSummary:
     resolved = now or datetime.utcnow()
+    start_of_day = datetime(resolved.year, resolved.month, resolved.day)
+    end_of_day = start_of_day + timedelta(days=1)
+    # Feature one match kicking off later today so the dashboard's today-scoped
+    # "top value bets" populate, clamped to stay within the current day and in
+    # the future.
+    today_kickoff = min(
+        resolved + timedelta(hours=3), end_of_day - timedelta(minutes=1)
+    )
     summary = DemoSeedSummary()
 
     competition = _get_or_create_competition(db)
@@ -343,12 +350,17 @@ def run_demo_seed(db: Session, *, now: datetime | None = None) -> DemoSeedSummar
         summary.matches += 1
 
     for spec in _upcoming_match_specs():
+        kickoff = (
+            today_kickoff
+            if spec.external_id == DEMO_FEATURED_MATCH_EXTERNAL_ID
+            else resolved + timedelta(days=spec.days_ahead)
+        )
         match = _upsert_upcoming_match(
             db,
             competition_id=competition.id,
             team_ids=team_ids,
             spec=spec,
-            now=resolved,
+            kickoff=kickoff,
         )
         summary.matches += 1
         _ensure_prediction(

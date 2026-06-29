@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from sqlalchemy import create_engine, func, or_, select
@@ -86,3 +86,22 @@ def test_run_demo_seed_creates_bournemouth_vs_luton_fixture(
         )
     ).all()
     assert form_matches
+
+
+def test_run_demo_seed_features_a_match_kicking_off_today(
+    db_session: Session,
+) -> None:
+    now = datetime(2026, 6, 26, 12, 0)
+    start_of_day = datetime(now.year, now.month, now.day)
+    end_of_day = start_of_day + timedelta(days=1)
+
+    run_demo_seed(db_session, now=now)
+
+    match = db_session.scalar(
+        select(Match).where(Match.external_id == DEMO_FEATURED_MATCH_EXTERNAL_ID)
+    )
+    assert match is not None
+    # Lands inside the dashboard's today window and stays in the future so the
+    # today-scoped "top value bets" populate.
+    assert start_of_day <= match.kickoff < end_of_day
+    assert match.kickoff >= now
