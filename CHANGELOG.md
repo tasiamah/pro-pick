@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- Dashboard and analytics API latency: optimized snapshot queries, short-lived
+  metrics cache, Supabase pool limits, and SQL pagination for unfiltered match
+  lists so production `/dashboard` no longer exhausts DB connections.
 - Matches browse grid: equal-width columns with computed gutters and padding so
   cards stay inside the screen, plus extra scroll space above the tab bar.
   Rows use matched card heights and compact card layout in the grid; orphan

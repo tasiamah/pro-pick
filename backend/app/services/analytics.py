@@ -58,6 +58,8 @@ def get_model_metrics(
     db: Session,
 ) -> tuple[list[PredictionSnapshot], list[SettledBetSnapshot]]:
     """Load prediction and settled-bet snapshots with a short-lived in-process cache."""
+    global _metrics_cache
+
     ttl = settings.cache_ttl_seconds
     if ttl <= 0:
         return load_prediction_snapshots(db), load_settled_bet_snapshots(db)
