@@ -160,13 +160,9 @@ def build_roi_trend(settled_bets: list[SettledBetSnapshot]) -> list[RoiTrendPoin
 
 
 def load_prediction_snapshots(db: Session) -> list[PredictionSnapshot]:
-    finished_match_ids = (
-        select(Match.id)
-        .where(
-            Match.home_goals.is_not(None),
-            Match.away_goals.is_not(None),
-        )
-        .scalar_subquery()
+    finished_match_ids = select(Match.id).where(
+        Match.home_goals.is_not(None),
+        Match.away_goals.is_not(None),
     )
 
     latest_created_subq = (
