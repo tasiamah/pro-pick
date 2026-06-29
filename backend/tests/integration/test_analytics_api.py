@@ -32,7 +32,11 @@ def db_session() -> Session:
 def test_get_analytics_returns_accuracy_log_loss_roi_and_trend(
     client: TestClient,
     db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Force the compute-from-predictions fallback (no active model metadata) so
+    # we can assert the scoring math against the seeded prediction.
+    monkeypatch.setattr("app.api.analytics.active_model_metrics", lambda: None)
     before = client.get("/analytics").json()
 
     home = Team(name="Analytics Home", logo_url=None)
@@ -87,7 +91,11 @@ def test_get_analytics_returns_accuracy_log_loss_roi_and_trend(
     assert any(point["date"] == "2026-06-02" for point in payload["roi_trend"])
 
 
-def test_get_analytics_returns_empty_state_without_data(client: TestClient) -> None:
+def test_get_analytics_returns_empty_state_without_data(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Without an active model and without data, accuracy/log_loss are unknown.
+    monkeypatch.setattr("app.api.analytics.active_model_metrics", lambda: None)
     response = client.get("/analytics")
 
     assert response.status_code == 200
@@ -98,3 +106,19 @@ def test_get_analytics_returns_empty_state_without_data(client: TestClient) -> N
     assert payload["total_value_bets"] == 0
     assert payload["settled_value_bets"] == 0
     assert payload["roi_trend"] == []
+
+
+def test_get_analytics_surfaces_active_model_metadata(client: TestClient) -> None:
+    from app.services.prediction import load_active_model
+
+    bundle = load_active_model()
+    assert bundle is not None, "a pretrained baseline model should be shipped"
+    metrics = bundle.metadata.metrics
+
+    payload = client.get("/analytics").json()
+
+    assert payload["accuracy"] == metrics["accuracy"]
+    assert payload["log_loss"] == metrics["log_loss"]
+    assert payload["confident_accuracy"] == metrics["confident_accuracy"]
+    assert payload["confident_coverage"] == metrics["confident_coverage"]
+    assert payload["confidence_threshold"] == metrics["confidence_threshold"]
