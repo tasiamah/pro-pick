@@ -174,6 +174,19 @@ SCHEDULER_IMPORT_ODDS=true
 On Render, set the same variables in the service environment and redeploy.
 Run `sync_live_fixtures` once after deploy if you need data immediately.
 Set `SCHEDULER_IMPORT_ODDS=false` to sync fixtures only and reduce API usage.
+
+### Migrations on deploy
+
+Render does not run database migrations automatically. Set the service
+**Pre-Deploy Command** to apply pending migrations before each new version goes
+live, so production never serves against an out-of-date schema:
+
+```bash
+bash backend/scripts/release.sh   # runs `alembic upgrade head`
+```
+
+(Use `bash scripts/release.sh` if the service root is `backend/`.) The script is
+idempotent — it is a no-op when the database is already current.
 The job runs at the configured UTC hour while the API process is running.
 Only one worker runs the job in production thanks to a PostgreSQL advisory lock.
 

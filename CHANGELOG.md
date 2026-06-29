@@ -52,6 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   tab route without TypeScript errors.
 
 ### Added
+- Render release script (`backend/scripts/release.sh`) running
+  `alembic upgrade head`, documented as the Pre-Deploy Command so deploys apply
+  pending database migrations automatically (prod was previously left on an
+  out-of-date schema).
 - Privacy policy and App Store Connect App Privacy guide, plus an in-app Privacy
   Policy link on the disclaimer banner (PP-96).
 - Physical device E2E test checklist for iPhone sign-off before TestFlight, plus
