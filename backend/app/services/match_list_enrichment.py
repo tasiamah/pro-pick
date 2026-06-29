@@ -58,6 +58,8 @@ class _MatchListEnricher:
                 select(Match).where(
                     Match.status == "finished",
                     Match.kickoff < before,
+                    Match.home_goals.is_not(None),
+                    Match.away_goals.is_not(None),
                     or_(
                         Match.home_team_id.in_(team_ids),
                         Match.away_team_id.in_(team_ids),
