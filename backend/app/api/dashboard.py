@@ -13,8 +13,7 @@ from app.schemas.common import DashboardOut, ValueBetOut
 from app.services.analytics import (
     compute_accuracy,
     compute_roi,
-    load_prediction_snapshots,
-    load_settled_bet_snapshots,
+    get_model_metrics,
 )
 
 router = APIRouter()
@@ -51,8 +50,7 @@ def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
         .all()
     )
 
-    settled_snapshots = load_settled_bet_snapshots(db)
-    prediction_snapshots = load_prediction_snapshots(db)
+    prediction_snapshots, settled_snapshots = get_model_metrics(db)
 
     return DashboardOut(
         matches_today=matches_today,

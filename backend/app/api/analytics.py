@@ -13,8 +13,7 @@ from app.services.analytics import (
     compute_accuracy,
     compute_log_loss,
     compute_roi,
-    load_prediction_snapshots,
-    load_settled_bet_snapshots,
+    get_model_metrics,
 )
 
 router = APIRouter()
@@ -24,8 +23,7 @@ router = APIRouter()
 def get_analytics(db: Session = Depends(get_db)) -> AnalyticsOut:
     """Model performance and ROI of value bets (PP: GET /analytics)."""
     total_value_bets = db.execute(select(func.count(ValueBet.id))).scalar_one()
-    settled_snapshots = load_settled_bet_snapshots(db)
-    prediction_snapshots = load_prediction_snapshots(db)
+    prediction_snapshots, settled_snapshots = get_model_metrics(db)
     roi_trend = build_roi_trend(settled_snapshots)
 
     return AnalyticsOut(

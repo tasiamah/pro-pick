@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
@@ -12,16 +13,33 @@ class Base(DeclarativeBase):
     """Base class for all ORM models."""
 
 
-# SQLite needs a special connect arg for multi-threaded use.
-_connect_args = (
-    {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-)
+def _build_engine() -> Engine:
+    database_url = settings.database_url
 
-engine = create_engine(
-    settings.database_url,
-    connect_args=_connect_args,
-    pool_pre_ping=True,
-)
+    if database_url.startswith("sqlite"):
+        return create_engine(
+            database_url,
+            connect_args={"check_same_thread": False},
+            pool_pre_ping=True,
+        )
+
+    pool_kwargs: dict[str, object] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
+
+    # Supabase session pooler enforces a small connection cap per client.
+    if "pooler.supabase.com" in database_url:
+        pool_kwargs["pool_size"] = 1
+        pool_kwargs["max_overflow"] = 0
+    else:
+        pool_kwargs["pool_size"] = 3
+        pool_kwargs["max_overflow"] = 2
+
+    return create_engine(database_url, **pool_kwargs)
+
+
+engine = _build_engine()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

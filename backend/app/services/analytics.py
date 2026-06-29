@@ -1,16 +1,22 @@
 from __future__ import annotations
 
 import math
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime
+from threading import Lock
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_, func, select
+from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models import Match, Prediction, ValueBet
 
 LOG_LOSS_EPSILON = 1e-15
+
+_metrics_cache_lock = Lock()
+_metrics_cache: _ModelMetricsCache | None = None
 
 
 @dataclass(frozen=True)
@@ -33,6 +39,54 @@ class PredictionSnapshot:
     prob_away: float
     home_goals: int
     away_goals: int
+
+
+@dataclass
+class _ModelMetricsCache:
+    prediction_snapshots: list[PredictionSnapshot]
+    settled_snapshots: list[SettledBetSnapshot]
+    expires_at: float
+
+
+def clear_model_metrics_cache() -> None:
+    global _metrics_cache
+    with _metrics_cache_lock:
+        _metrics_cache = None
+
+
+def _metrics_cache_enabled() -> bool:
+    return settings.is_production and settings.cache_ttl_seconds > 0
+
+
+def get_model_metrics(
+    db: Session,
+) -> tuple[list[PredictionSnapshot], list[SettledBetSnapshot]]:
+    """Load prediction and settled-bet snapshots with a short-lived in-process cache."""
+    global _metrics_cache
+
+    if not _metrics_cache_enabled():
+        return load_prediction_snapshots(db), load_settled_bet_snapshots(db)
+
+    ttl = settings.cache_ttl_seconds
+    now = time.monotonic()
+    with _metrics_cache_lock:
+        if _metrics_cache is not None and now < _metrics_cache.expires_at:
+            return (
+                _metrics_cache.prediction_snapshots,
+                _metrics_cache.settled_snapshots,
+            )
+
+    prediction_snapshots = load_prediction_snapshots(db)
+    settled_snapshots = load_settled_bet_snapshots(db)
+
+    with _metrics_cache_lock:
+        _metrics_cache = _ModelMetricsCache(
+            prediction_snapshots=prediction_snapshots,
+            settled_snapshots=settled_snapshots,
+            expires_at=now + ttl,
+        )
+
+    return prediction_snapshots, settled_snapshots
 
 
 def compute_roi(settled_bets: list[SettledBetSnapshot]) -> float | None:
@@ -110,56 +164,89 @@ def build_roi_trend(settled_bets: list[SettledBetSnapshot]) -> list[RoiTrendPoin
 
 
 def load_prediction_snapshots(db: Session) -> list[PredictionSnapshot]:
-    finished_matches = (
-        db.execute(
-            select(Match)
-            .options(joinedload(Match.predictions))
-            .where(
-                Match.home_goals.is_not(None),
-                Match.away_goals.is_not(None),
-            )
-        )
-        .unique()
-        .scalars()
-        .all()
+    finished_match_ids = select(Match.id).where(
+        Match.home_goals.is_not(None),
+        Match.away_goals.is_not(None),
     )
 
-    snapshots: list[PredictionSnapshot] = []
-    for match in finished_matches:
-        latest_prediction = _latest_prediction(match)
-        if latest_prediction is None:
-            continue
-        snapshots.append(
-            PredictionSnapshot(
-                prob_home=latest_prediction.prob_home,
-                prob_draw=latest_prediction.prob_draw,
-                prob_away=latest_prediction.prob_away,
-                home_goals=match.home_goals,
-                away_goals=match.away_goals,
-            )
+    latest_created_subq = (
+        select(
+            Prediction.match_id,
+            func.max(Prediction.created_at).label("latest_created_at"),
         )
-    return snapshots
-
-
-def load_settled_bet_snapshots(db: Session) -> list[SettledBetSnapshot]:
-    settled_bets = (
-        db.execute(select(ValueBet).where(ValueBet.settled.is_(True))).scalars().all()
+        .where(Prediction.match_id.in_(finished_match_ids))
+        .group_by(Prediction.match_id)
+        .subquery()
     )
+
+    latest_prediction_subq = (
+        select(
+            Prediction.match_id,
+            func.max(Prediction.id).label("latest_prediction_id"),
+        )
+        .join(
+            latest_created_subq,
+            and_(
+                Prediction.match_id == latest_created_subq.c.match_id,
+                Prediction.created_at == latest_created_subq.c.latest_created_at,
+            ),
+        )
+        .group_by(Prediction.match_id)
+        .subquery()
+    )
+
+    rows = db.execute(
+        select(
+            Prediction.prob_home,
+            Prediction.prob_draw,
+            Prediction.prob_away,
+            Match.home_goals,
+            Match.away_goals,
+        )
+        .join(Match, Prediction.match_id == Match.id)
+        .join(
+            latest_prediction_subq,
+            Prediction.id == latest_prediction_subq.c.latest_prediction_id,
+        )
+        .where(
+            Match.home_goals.is_not(None),
+            Match.away_goals.is_not(None),
+        )
+    ).all()
+
     return [
-        SettledBetSnapshot(
-            profit=value_bet.profit or 0.0,
-            recommended_stake=value_bet.recommended_stake,
-            created_at=value_bet.created_at,
+        PredictionSnapshot(
+            prob_home=row.prob_home,
+            prob_draw=row.prob_draw,
+            prob_away=row.prob_away,
+            home_goals=row.home_goals,
+            away_goals=row.away_goals,
         )
-        for value_bet in settled_bets
-        if value_bet.profit is not None
+        for row in rows
+        if row.home_goals is not None and row.away_goals is not None
     ]
 
 
-def _latest_prediction(match: Match) -> Prediction | None:
-    if not match.predictions:
-        return None
-    return max(match.predictions, key=lambda prediction: prediction.created_at)
+def load_settled_bet_snapshots(db: Session) -> list[SettledBetSnapshot]:
+    rows = db.execute(
+        select(
+            ValueBet.profit,
+            ValueBet.recommended_stake,
+            ValueBet.created_at,
+        ).where(
+            ValueBet.settled.is_(True),
+            ValueBet.profit.is_not(None),
+        )
+    ).all()
+
+    return [
+        SettledBetSnapshot(
+            profit=row.profit or 0.0,
+            recommended_stake=row.recommended_stake,
+            created_at=row.created_at,
+        )
+        for row in rows
+    ]
 
 
 def actual_outcome(home_goals: int, away_goals: int) -> str:

@@ -112,7 +112,12 @@ def list_matches(
     if status is not None:
         stmt = stmt.where(Match.status.in_(tuple(STATUS_FILTER_MAP[status])))
 
-    matches = db.execute(stmt).scalars().all()
+    if q is None and odds_tier is None:
+        stmt = stmt.offset(offset).limit(limit)
+        matches = db.execute(stmt).unique().scalars().all()
+        return [_to_match_detail(db, match) for match in matches]
+
+    matches = db.execute(stmt).unique().scalars().all()
 
     filtered: list[Match] = []
     for match in matches:
