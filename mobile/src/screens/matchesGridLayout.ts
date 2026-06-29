@@ -31,6 +31,10 @@ export function chunkMatchesGridRows<T>(
   items: T[],
   columns = MATCHES_GRID_COLUMNS,
 ): T[][] {
+  if (!Number.isFinite(columns) || columns <= 0) {
+    return [];
+  }
+
   const rows: T[][] = [];
 
   for (let index = 0; index < items.length; index += columns) {

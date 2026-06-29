@@ -25,4 +25,8 @@ describe('matchesGridLayout', () => {
   it('chunks match lists into grid rows', () => {
     expect(chunkMatchesGridRows([1, 2, 3, 4, 5])).toEqual([[1, 2], [3, 4], [5]]);
   });
+
+  it('returns no rows when column count is invalid', () => {
+    expect(chunkMatchesGridRows([1, 2, 3], 0)).toEqual([]);
+  });
 });

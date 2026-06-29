@@ -159,7 +159,10 @@ export function MatchesScreen({ navigation }: Props) {
               style={[styles.cardRow, { gap: gridMetrics.gutter }]}
             >
               {row.map((match) => (
-                <View key={match.id} style={styles.cardGridItem}>
+                <View
+                  key={match.id}
+                  style={[styles.cardGridItem, { width: gridMetrics.columnWidth }]}
+                >
                   <MatchCardV2
                     compact
                     match={match}
@@ -192,7 +195,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cardGridItem: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 0,
     minWidth: 0,
   },
 });
