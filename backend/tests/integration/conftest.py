@@ -39,6 +39,9 @@ def reset_rate_limit_store() -> None:
 
 @pytest.fixture(autouse=True)
 def reset_database() -> Iterator[None]:
+    from app.services.analytics import clear_model_metrics_cache
+
+    clear_model_metrics_cache()
     yield
     session = SessionLocal()
     try:
@@ -47,3 +50,4 @@ def reset_database() -> Iterator[None]:
         session.commit()
     finally:
         session.close()
+    clear_model_metrics_cache()
