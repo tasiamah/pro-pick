@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- Matches browse grid: equal-width columns with computed gutters and padding so
+  cards stay inside the screen, plus extra scroll space above the tab bar.
+  Rows use matched card heights and compact card layout in the grid.
 - Bottom tab bar labels no longer clip on web and devices with a home indicator;
   tab bar height now includes safe-area bottom padding.
 - Match detail modal: zero-edge outcomes no longer show a misleading edge bar

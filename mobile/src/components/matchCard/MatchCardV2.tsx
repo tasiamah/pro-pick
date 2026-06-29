@@ -20,7 +20,7 @@ import {
   classifyOddsTier,
   formatPredictedOutcomeLabel,
   getConfidence,
-  getMatchInsight,
+  getExplicitMatchInsight,
   getOddForOutcome,
   getRecommendedOutcome,
 } from './matchCardUtils';
@@ -29,6 +29,7 @@ type MatchCardV2Props = {
   match: Match;
   prediction?: Prediction | null;
   odds?: Odds[] | null;
+  compact?: boolean;
   onPress?: () => void;
   onDetailsPress?: () => void;
 };
@@ -78,6 +79,7 @@ export function MatchCardV2({
   match,
   prediction,
   odds,
+  compact = false,
   onPress,
   onDetailsPress,
 }: MatchCardV2Props) {
@@ -92,6 +94,7 @@ export function MatchCardV2({
     prediction && primaryOdds
       ? classifyOddsTier(getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)))
       : null;
+  const cardInsight = prediction ? getExplicitMatchInsight(prediction) : null;
 
   const hoverHandlers =
     Platform.OS === 'web'
@@ -102,46 +105,68 @@ export function MatchCardV2({
       : undefined;
 
   return (
-    <View style={[styles.card, hovered && styles.cardHovered]} {...hoverHandlers}>
-      <View style={styles.headerRow}>
-        <Text numberOfLines={1} style={styles.league}>
-          {match.competition_name ?? 'League'}
-        </Text>
-        <View style={styles.headerActions}>
-          <View accessibilityElementsHidden>
-            <Ionicons name="notifications-outline" size={18} color={colors.textMuted} />
-          </View>
-          <HeaderFavoriteStar team={match.home_team} />
-          <Text style={styles.kickoff}>{formatKickoff(match.kickoff)}</Text>
-        </View>
-      </View>
-
-      <View style={styles.teamsBlock}>
-        <TeamRow team={match.home_team} fallbackName="Home" />
-        <TeamRow team={match.away_team} fallbackName="Away" />
-      </View>
-
-      {showAiBlock && prediction && primaryOdds ? (
-        <View style={styles.aiBlock}>
-          <View style={styles.aiHeaderRow}>
-            <View style={styles.aiPickGroup}>
-              <AiPickLabel />
-              <Text style={styles.predictedOutcome}>
-                {formatPredictedOutcomeLabel(
-                  getRecommendedOutcome(prediction),
-                  homeName,
-                  awayName,
-                )}
+    <View
+      style={[
+        styles.card,
+        compact && styles.cardCompact,
+        hovered && styles.cardHovered,
+      ]}
+      {...hoverHandlers}
+    >
+      <View style={styles.cardBody}>
+        <View style={styles.headerRow}>
+          <Text numberOfLines={1} style={styles.league}>
+            {match.competition_name ?? 'League'}
+          </Text>
+          <View style={styles.headerActions}>
+            <View accessibilityElementsHidden>
+              <Ionicons name="notifications-outline" size={18} color={colors.textMuted} />
+            </View>
+            <HeaderFavoriteStar team={match.home_team} />
+            {!compact ? (
+              <Text numberOfLines={1} style={styles.kickoff}>
+                {formatKickoff(match.kickoff)}
               </Text>
-            </View>
-            <View style={styles.badgeRow}>
-              <ConfidenceBadge confidence={getConfidence(prediction)} />
-              {oddsTier ? <OddsTierBadge tier={oddsTier} /> : null}
-            </View>
+            ) : null}
           </View>
-          <InsightBullet text={getMatchInsight(prediction)} />
         </View>
-      ) : null}
+
+        {compact ? (
+          <Text numberOfLines={1} style={styles.kickoffCompact}>
+            {formatKickoff(match.kickoff)}
+          </Text>
+        ) : null}
+
+        <View style={styles.teamsBlock}>
+          <TeamRow team={match.home_team} fallbackName="Home" />
+          <TeamRow team={match.away_team} fallbackName="Away" />
+        </View>
+
+        {showAiBlock && prediction && primaryOdds ? (
+          <View style={styles.aiBlock}>
+            <View style={[styles.aiHeaderRow, compact && styles.aiHeaderRowCompact]}>
+              <View style={styles.aiPickGroup}>
+                <AiPickLabel />
+                <Text
+                  numberOfLines={compact ? 2 : undefined}
+                  style={[styles.predictedOutcome, compact && styles.predictedOutcomeCompact]}
+                >
+                  {formatPredictedOutcomeLabel(
+                    getRecommendedOutcome(prediction),
+                    homeName,
+                    awayName,
+                  )}
+                </Text>
+              </View>
+              <View style={[styles.badgeRow, compact && styles.badgeRowCompact]}>
+                <ConfidenceBadge confidence={getConfidence(prediction)} />
+                {oddsTier ? <OddsTierBadge tier={oddsTier} /> : null}
+              </View>
+            </View>
+            {cardInsight ? <InsightBullet text={cardInsight} /> : null}
+          </View>
+        ) : null}
+      </View>
 
       {detailsHandler ? (
         <View style={styles.detailsLinkWrap}>
@@ -160,6 +185,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flex: 1,
     padding: spacing.lg,
+  },
+  cardCompact: {
+    justifyContent: 'space-between',
+  },
+  cardBody: {
+    flex: 1,
+    gap: spacing.xs,
   },
   cardHovered: {
     borderColor: colors.primary,
@@ -184,6 +216,12 @@ const styles = StyleSheet.create({
   kickoff: {
     ...typography.caption,
     color: colors.textMuted,
+    flexShrink: 1,
+  },
+  kickoffCompact: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
   },
   teamsBlock: {
     gap: spacing.sm,
@@ -206,6 +244,10 @@ const styles = StyleSheet.create({
   aiHeaderRow: {
     gap: spacing.sm,
   },
+  aiHeaderRowCompact: {
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+  },
   aiPickGroup: {
     gap: spacing.xs,
   },
@@ -213,10 +255,17 @@ const styles = StyleSheet.create({
     ...typography.bodySemibold,
     color: colors.text,
   },
+  predictedOutcomeCompact: {
+    ...typography.bodySmall,
+  },
   badgeRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  badgeRowCompact: {
+    alignItems: 'flex-start',
   },
   detailsLinkWrap: {
     alignItems: 'center',
