@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models import Competition, Match, Odds, Prediction, Team
+from app.models import Competition, Match, Odds, Prediction, Team, ValueBet
 from app.services.value_bets import generate_value_bets
 
 DEMO_MODEL_VERSION = "demo-v1"
@@ -378,6 +378,40 @@ def run_demo_seed(db: Session, *, now: datetime | None = None) -> DemoSeedSummar
         )
         if hydrated is not None:
             summary.value_bets += len(generate_value_bets(db, hydrated))
+
+    db.commit()
+    return summary
+
+
+def purge_demo_seed(db: Session) -> DemoSeedSummary:
+    """Remove every record created by run_demo_seed.
+
+    Demo competitions, teams, and matches use negative external ids, while
+    live ingestion only ever assigns positive provider ids, so the sign is a
+    safe discriminator. Dependent rows are deleted explicitly because SQLite
+    does not enforce cascading deletes.
+    """
+    summary = DemoSeedSummary()
+
+    match_ids = list(db.scalars(select(Match.id).where(Match.external_id < 0)).all())
+    if match_ids:
+        summary.value_bets = db.execute(
+            delete(ValueBet).where(ValueBet.match_id.in_(match_ids))
+        ).rowcount
+        summary.predictions = db.execute(
+            delete(Prediction).where(Prediction.match_id.in_(match_ids))
+        ).rowcount
+        summary.odds = db.execute(
+            delete(Odds).where(Odds.match_id.in_(match_ids))
+        ).rowcount
+        summary.matches = db.execute(
+            delete(Match).where(Match.id.in_(match_ids))
+        ).rowcount
+
+    summary.teams = db.execute(delete(Team).where(Team.external_id < 0)).rowcount
+    summary.competitions = db.execute(
+        delete(Competition).where(Competition.external_id < 0)
+    ).rowcount
 
     db.commit()
     return summary
