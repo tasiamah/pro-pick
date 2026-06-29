@@ -80,6 +80,9 @@ def train_model(
                 "accuracy": metrics.accuracy,
                 "log_loss": metrics.log_loss,
                 "brier": metrics.brier,
+                "confident_accuracy": metrics.confident_accuracy,
+                "confident_coverage": metrics.confident_coverage,
+                "confidence_threshold": metrics.confidence_threshold,
             },
             evaluation=evaluation,
             calibrated=should_calibrate,
@@ -92,7 +95,10 @@ def train_model(
 def _evaluate(
     dataset: TrainingDataset, model: Any, train_fn: TrainFn
 ) -> tuple[EvaluationMetrics, str]:
-    backtest = backtest_model(dataset, train_fn=train_fn)
+    threshold = settings.model_confidence_threshold
+    backtest = backtest_model(
+        dataset, train_fn=train_fn, confidence_threshold=threshold
+    )
     if backtest.sample_size > 0:
         return backtest, "walk_forward"
     return evaluate_model(model, dataset), "in_sample"

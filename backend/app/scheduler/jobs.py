@@ -14,6 +14,7 @@ from sqlalchemy.engine import Connection
 
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
+from app.ml.features import FEATURE_COLUMNS
 from app.ml.storage import load_model, resolve_model_path
 from app.ml.train import train_model
 from app.services.ingestion_alerts import alert_ingestion_failure
@@ -134,12 +135,15 @@ def retrain_model() -> None:
 
 
 def bootstrap_model_if_missing() -> None:
-    """Train an initial model in the background when none is present.
+    """Train a model in the background when none is present or its schema is stale.
 
     A freshly deployed instance has no model artifact on its ephemeral disk and
     would otherwise serve the neutral fallback until the first scheduled
-    retraining. Training runs in a daemon thread so it never blocks startup or
-    health checks; the existing scheduler lock keeps concurrent workers safe.
+    retraining. A deploy can also change the feature set, leaving an on-disk
+    model whose ``feature_columns`` no longer match the code; that model would
+    mispredict, so it is retrained too. Training runs in a daemon thread so it
+    never blocks startup or health checks; the scheduler lock keeps concurrent
+    workers safe.
     """
     if not settings.model_bootstrap_enabled:
         return
@@ -156,10 +160,13 @@ def bootstrap_model_if_missing() -> None:
         existing_model = None
 
     if existing_model is not None:
-        logger.info("Existing model found; skipping startup bootstrap")
-        return
+        if list(existing_model.metadata.feature_columns) == list(FEATURE_COLUMNS):
+            logger.info("Existing model is up to date; skipping startup bootstrap")
+            return
+        logger.info("Model feature schema is stale; scheduling background retrain")
+    else:
+        logger.info("No model found; scheduling background bootstrap training")
 
-    logger.info("No model found; scheduling background bootstrap training")
     thread = threading.Thread(target=retrain_model, name="model-bootstrap", daemon=True)
     thread.start()
 

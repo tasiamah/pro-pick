@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.models import Match, ValueBet
 from app.schemas.common import DashboardOut, ValueBetOut
 from app.services.analytics import (
+    active_model_metrics,
     compute_accuracy,
     compute_roi,
     get_model_metrics,
@@ -52,11 +53,24 @@ def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
 
     prediction_snapshots, settled_snapshots = get_model_metrics(db)
 
+    model_metrics = active_model_metrics()
+    if model_metrics is not None:
+        model_accuracy = model_metrics.get("accuracy")
+        confident_accuracy = model_metrics.get("confident_accuracy")
+        confident_coverage = model_metrics.get("confident_coverage")
+        confidence_threshold = model_metrics.get("confidence_threshold")
+    else:
+        model_accuracy = compute_accuracy(prediction_snapshots)
+        confident_accuracy = confident_coverage = confidence_threshold = None
+
     return DashboardOut(
         matches_today=matches_today,
         upcoming_matches=upcoming,
         latest_kickoff=latest_kickoff,
         top_value_bets=[ValueBetOut.model_validate(v) for v in top_bets],
-        model_accuracy=compute_accuracy(prediction_snapshots),
+        model_accuracy=model_accuracy,
         roi=compute_roi(settled_snapshots),
+        confident_accuracy=confident_accuracy,
+        confident_coverage=confident_coverage,
+        confidence_threshold=confidence_threshold,
     )

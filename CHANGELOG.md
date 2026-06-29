@@ -12,9 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `seed_demo --purge` command (backed by a `purge_demo_seed` service) that
+  removes the demo dataset (competitions, teams, matches, predictions, odds, and
+  value bets identified by their negative external ids) from a database, so
+  seeded demo fixtures like Bournemouth vs Luton can be cleared from any
+  environment (`app/services/demo_seed.py`, PP-108).
+
 ### Fixed
 - Home match card Details opens the selected match detail screen instead of
   switching to the Matches tab.
+- Matches list API latency: batch enrichment (one history query per page) and
   smaller default browse window; Matches tab shows filters while loading instead
   of a full-screen spinner.
 - Mobile app no longer shows placeholder demo fixtures (e.g. Bournemouth vs
@@ -43,6 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Matches browse grid lists fixtures in reverse kickoff order (newest first) and
   uses tighter compact-card typography so team names, badges, and insights match
   the demo reference in the two-column layout.
+- Dashboard/`analytics` model accuracy now comes from the live model's
+  walk-forward backtest metadata (honest out-of-sample) instead of re-scoring
+  stored predictions, which read low (~0.44) when finished matches still held
+  predictions from an earlier model; the real number is ~0.51.
+- Startup bootstrap also retrains when the on-disk model's `feature_columns` no
+  longer match the code, so a deploy that changes the feature set (e.g. adding
+  Elo) ships a fresh model instead of serving a stale-schema one.
 - Value-bet engine quality guard: bets on odds above `value_bet_max_odds`
   (default 6.0) or below `value_bet_min_confidence` (default 0.0) are no longer
   flagged as value, keeping unreliable longshots and near-coin-flip picks out of
@@ -54,8 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Matches tab browse grid: two-column card layout with static demo matches when
   the API list is empty, plus green border hover on web.
 - Home match card Details link: centered, lighter demo-style footer bar and
-  navigation to the Matches tab (PP-90 demo parity). Shared footer/link tokens
-  and regression tests prevent accidental revert when switching branches.
+  navigation to the selected match detail screen. Shared footer/link tokens and
+  regression tests prevent accidental revert when switching branches.
 - Analytics dashboard demo UI: summary stats, confidence trend, risk distribution,
   prediction outcomes, and AI model performance sections with static mock data
   until the analytics API is extended.
@@ -78,6 +93,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   tab route without TypeScript errors.
 
 ### Added
+- Elo team-strength features (`home_elo`, `away_elo`, `elo_diff`) to the 1X2
+  model: point-in-time ratings replayed from results, capturing longer-horizon
+  quality than the 5-game form window.
+- High-confidence accuracy metric: dashboard and `/analytics` now report
+  `confident_accuracy` and `confident_coverage` — accuracy on the subset of
+  picks whose top probability clears `model_confidence_threshold` (default 0.70,
+  ~70% accurate on ~19% of matches out-of-sample), alongside the full-slate
+  accuracy that the ~25% draw rate caps near 0.51.
 - Startup model bootstrap: when no model artifact exists, the app trains one in
   a background thread on startup (`model_bootstrap_enabled`, default on) so a
   fresh deploy serves real predictions instead of the neutral fallback without
