@@ -53,8 +53,14 @@ export function formatPredictedOutcomeLabel(
 }
 
 export function getMatchInsight(prediction: Prediction): string {
+  const insight = getExplicitMatchInsight(prediction);
+  return insight || 'AI model highlights this fixture based on current form and market odds.';
+}
+
+export function getExplicitMatchInsight(prediction: Prediction): string | null {
   const insight = prediction.insights
     ?.map((entry) => entry.trim())
     .find((entry) => entry.length > 0);
-  return insight || 'AI model highlights this fixture based on current form and market odds.';
+
+  return insight ?? null;
 }
