@@ -75,6 +75,9 @@ export type MatchListParams = {
   offset?: number;
   kickoff_from?: string;
   kickoff_to?: string;
+  status?: 'upcoming' | 'live' | 'completed';
+  odds_tier?: 'all' | 'low' | 'medium' | 'high';
+  q?: string;
 };
 
 export type PredictionListParams = {

@@ -52,9 +52,10 @@ export function useValueBets(
   });
 }
 
-export function useAnalytics() {
+export function useAnalytics(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.analytics,
     queryFn: () => api.getAnalytics(),
+    enabled: options?.enabled ?? true,
   });
 }

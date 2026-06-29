@@ -1,7 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { HomeScreen } from '../screens/HomeScreen';
-import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { BrandHeaderTitle } from './BrandHeaderTitle';
 import { matchDetailScreenOptions } from './matchDetailScreenOptions';
 import { stackScreenOptions } from './stackScreenOptions';
@@ -22,7 +21,7 @@ export function HomeStackNavigator() {
       />
       <Stack.Screen
         name="MatchDetail"
-        component={MatchDetailScreen}
+        getComponent={() => require('../screens/MatchDetailScreen').MatchDetailScreen}
         options={matchDetailScreenOptions}
       />
     </Stack.Navigator>

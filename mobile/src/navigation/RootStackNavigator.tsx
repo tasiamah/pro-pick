@@ -1,7 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { AboutScreen } from '../screens/AboutScreen';
-import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { RootNavigator } from './RootNavigator';
 import { screenTitles } from './screenTitles';
 import { stackScreenOptions } from './stackScreenOptions';
@@ -19,12 +17,12 @@ export function RootStackNavigator() {
       />
       <Stack.Screen
         name="About"
-        component={AboutScreen}
+        getComponent={() => require('../screens/AboutScreen').AboutScreen}
         options={{ title: screenTitles.about }}
       />
       <Stack.Screen
         name="PrivacyPolicy"
-        component={PrivacyPolicyScreen}
+        getComponent={() => require('../screens/PrivacyPolicyScreen').PrivacyPolicyScreen}
         options={{ title: screenTitles.privacyPolicy }}
       />
     </Stack.Navigator>

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- Matches list API latency: batch enrichment (one history query per page) and
+  smaller default browse window; Matches tab shows filters while loading instead
+  of a full-screen spinner.
 - Dashboard and analytics API latency: optimized snapshot queries, short-lived
   metrics cache, Supabase pool limits, and SQL pagination for unfiltered match
   lists so production `/dashboard` no longer exhausts DB connections.

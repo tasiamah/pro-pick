@@ -1,9 +1,10 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { queryClient } from './src/api/queryClient';
 import { DisclaimerBanner } from './src/components';
 import { flushPendingNavigation, navigationRef } from './src/navigation/navigationRef';
 import { RootStackNavigator } from './src/navigation/RootStackNavigator';
@@ -20,8 +21,6 @@ const navigationTheme = {
     text: colors.text,
   },
 };
-
-const queryClient = new QueryClient();
 
 export default function App() {
   return (
