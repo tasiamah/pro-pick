@@ -100,7 +100,11 @@ def evaluate_outcome(
     ev = expected_value(model_prob, odd)
     edge = model_prob - implied_probability(odd)
     stake = round(recommended_stake(model_prob, odd, k_mult), 4)
-    distribution = probs if probs is not None else {outcome: model_prob}
+    # Anchor the chosen outcome's probability to model_prob (the same value that
+    # drives EV/edge) so the confidence guard can't be flipped by a mismatched
+    # or missing probs[outcome] coming from a different probability source.
+    distribution = dict(probs) if probs is not None else {}
+    distribution[outcome] = model_prob
     confidence = confidence_score(distribution, outcome)
 
     is_value = edge >= threshold and odd <= odd_cap and confidence >= min_conf

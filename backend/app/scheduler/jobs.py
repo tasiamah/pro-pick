@@ -144,7 +144,18 @@ def bootstrap_model_if_missing() -> None:
     if not settings.model_bootstrap_enabled:
         return
 
-    if load_model(resolve_model_path(settings.model_path)) is not None:
+    try:
+        existing_model = load_model(resolve_model_path(settings.model_path))
+    except Exception:
+        # A corrupt or version-incompatible artifact must not crash startup;
+        # treat it as missing so we retrain a fresh, loadable model.
+        logger.warning(
+            "Failed to load existing model artifact; treating as missing",
+            exc_info=True,
+        )
+        existing_model = None
+
+    if existing_model is not None:
         logger.info("Existing model found; skipping startup bootstrap")
         return
 

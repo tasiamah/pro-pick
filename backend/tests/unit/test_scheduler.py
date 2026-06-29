@@ -211,6 +211,23 @@ def test_bootstrap_trains_in_background_when_no_model(
 
 
 @patch("app.scheduler.jobs.threading.Thread")
+@patch("app.scheduler.jobs.load_model", side_effect=RuntimeError("corrupt artifact"))
+@patch("app.scheduler.jobs.settings")
+def test_bootstrap_trains_when_existing_model_fails_to_load(
+    mock_settings: MagicMock,
+    mock_load_model: MagicMock,
+    mock_thread: MagicMock,
+) -> None:
+    mock_settings.model_bootstrap_enabled = True
+    mock_settings.model_path = ""
+
+    bootstrap_model_if_missing()
+
+    mock_thread.assert_called_once()
+    mock_thread.return_value.start.assert_called_once_with()
+
+
+@patch("app.scheduler.jobs.threading.Thread")
 @patch("app.scheduler.jobs.load_model")
 @patch("app.scheduler.jobs.settings")
 def test_bootstrap_skips_when_model_present(

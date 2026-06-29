@@ -119,6 +119,14 @@ def test_evaluate_outcome_rejects_low_confidence_pick():
     assert result.is_value is False
 
 
+def test_evaluate_outcome_confidence_anchors_to_model_prob():
+    # probs[outcome] disagrees with model_prob (the EV/edge source); confidence
+    # must follow model_prob so the guard can't be flipped by a mismatched dist.
+    probs = {"home": 0.90, "draw": 0.05, "away": 0.05}
+    result = evaluate_outcome("home", 0.40, 2.0, probs=probs)
+    assert result.confidence == pytest.approx(0.40 - 0.05)
+
+
 def test_evaluate_match_returns_only_value_outcomes_per_market():
     probs = {"home": 0.55, "draw": 0.25, "away": 0.20}
     odds = {"home": 2.10, "draw": 3.40, "away": 4.50}
