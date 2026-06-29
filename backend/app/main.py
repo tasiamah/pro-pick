@@ -9,7 +9,11 @@ from app.api import api_router
 from app.core.config import settings
 from app.core.errors import register_exception_handlers
 from app.core.rate_limit import RateLimitMiddleware
-from app.scheduler.jobs import start_scheduler, stop_scheduler
+from app.scheduler.jobs import (
+    bootstrap_model_if_missing,
+    start_scheduler,
+    stop_scheduler,
+)
 from app.schemas.common import ServiceInfoOut
 
 
@@ -18,6 +22,9 @@ async def lifespan(app: FastAPI):
     settings.validate_for_runtime()
     # Scheduler runs in-process; PostgreSQL advisory lock ensures one worker syncs.
     start_scheduler()
+    # Bootstrap a real model on a fresh deploy so we serve real predictions
+    # instead of the neutral fallback; runs in the background.
+    bootstrap_model_if_missing()
     try:
         yield
     finally:

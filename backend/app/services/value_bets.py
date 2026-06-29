@@ -78,18 +78,36 @@ def evaluate_outcome(
     edge_threshold: float | None = None,
     kelly_multiplier: float | None = None,
     probs: Mapping[str, float] | None = None,
+    max_odds: float | None = None,
+    min_confidence: float | None = None,
 ) -> ValueBetResult:
-    """Compute EV, edge, recommended stake (fractional Kelly) and value status."""
+    """Compute EV, edge, recommended stake (fractional Kelly) and value status.
+
+    Beyond a positive edge, a bet must clear the quality guard to be flagged:
+    its odd may not exceed ``max_odds`` and its confidence must reach
+    ``min_confidence``. This keeps unreliable longshots and near-coin-flip picks
+    out of the surfaced recommendations.
+    """
     threshold = (
         settings.value_bet_edge_threshold if edge_threshold is None else edge_threshold
     )
     k_mult = settings.kelly_fraction if kelly_multiplier is None else kelly_multiplier
+    odd_cap = settings.value_bet_max_odds if max_odds is None else max_odds
+    min_conf = (
+        settings.value_bet_min_confidence if min_confidence is None else min_confidence
+    )
 
     ev = expected_value(model_prob, odd)
     edge = model_prob - implied_probability(odd)
     stake = round(recommended_stake(model_prob, odd, k_mult), 4)
-    distribution = probs if probs is not None else {outcome: model_prob}
+    # Anchor the chosen outcome's probability to model_prob (the same value that
+    # drives EV/edge) so the confidence guard can't be flipped by a mismatched
+    # or missing probs[outcome] coming from a different probability source.
+    distribution = dict(probs) if probs is not None else {}
+    distribution[outcome] = model_prob
     confidence = confidence_score(distribution, outcome)
+
+    is_value = edge >= threshold and odd <= odd_cap and confidence >= min_conf
 
     return ValueBetResult(
         outcome=outcome,
@@ -99,7 +117,7 @@ def evaluate_outcome(
         edge=round(edge, 4),
         recommended_stake=stake,
         confidence=round(confidence, 4),
-        is_value=edge >= threshold,
+        is_value=is_value,
     )
 
 
