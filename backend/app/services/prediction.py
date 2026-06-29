@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.config import settings
 from app.ml.baseline import predict_outcome_probabilities
 from app.ml.features import build_features
-from app.ml.storage import ModelBundle, load_model, resolve_model_path
+from app.ml.storage import ModelBundle, active_model_path, load_model
 from app.models import Match, Prediction
 from app.services.historical_import import UPCOMING_MATCH_STATUSES
 
@@ -37,7 +37,7 @@ class MatchPrediction:
 
 def load_active_model() -> ModelBundle | None:
     global _model_cache
-    path = resolve_model_path(settings.model_path)
+    path = active_model_path(settings.model_path)
     try:
         modified_at = path.stat().st_mtime
     except OSError:

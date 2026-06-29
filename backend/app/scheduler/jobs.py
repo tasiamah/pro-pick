@@ -15,7 +15,7 @@ from sqlalchemy.engine import Connection
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
 from app.ml.features import FEATURE_COLUMNS
-from app.ml.storage import load_model, resolve_model_path
+from app.ml.storage import active_model_path, load_model, resolve_model_path
 from app.ml.train import train_model
 from app.services.ingestion_alerts import alert_ingestion_failure
 from app.services.live_sync import run_live_sync, sync_value_bets_for_upcoming
@@ -137,19 +137,19 @@ def retrain_model() -> None:
 def bootstrap_model_if_missing() -> None:
     """Train a model in the background when none is present or its schema is stale.
 
-    A freshly deployed instance has no model artifact on its ephemeral disk and
-    would otherwise serve the neutral fallback until the first scheduled
-    retraining. A deploy can also change the feature set, leaving an on-disk
-    model whose ``feature_columns`` no longer match the code; that model would
-    mispredict, so it is retrained too. Training runs in a daemon thread so it
-    never blocks startup or health checks; the scheduler lock keeps concurrent
-    workers safe.
+    A freshly deployed instance serves the shipped pretrained baseline (see
+    ``PRETRAINED_MODEL_PATH``), so it never falls back to neutral probabilities.
+    This still retrains in two cases: there is no usable artifact at all, or the
+    active model's ``feature_columns`` no longer match the code (e.g. the deploy
+    added features the shipped baseline predates), since such a model would
+    mispredict. Training runs in a daemon thread so it never blocks startup or
+    health checks; the scheduler lock keeps concurrent workers safe.
     """
     if not settings.model_bootstrap_enabled:
         return
 
     try:
-        existing_model = load_model(resolve_model_path(settings.model_path))
+        existing_model = load_model(active_model_path(settings.model_path))
     except Exception:
         # A corrupt or version-incompatible artifact must not crash startup;
         # treat it as missing so we retrain a fresh, loadable model.

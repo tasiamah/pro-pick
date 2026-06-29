@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Ship a small, version-controlled baseline model bundle
+  (`backend/app/ml/pretrained_model.pkl`, ~6 KB) so a fresh deploy serves real
+  predictions and honest metrics (walk-forward accuracy ~0.51, high-confidence
+  accuracy ~0.70) immediately, without training on startup. The prediction
+  service and the startup bootstrap now resolve the active model via
+  `active_model_path()`, which prefers a runtime-trained model and falls back to
+  this baseline (`app/ml/storage.py`, `app/services/prediction.py`,
+  `app/scheduler/jobs.py`).
 - `seed_demo --purge` command (backed by a `purge_demo_seed` service) that
   removes the demo dataset (competitions, teams, matches, predictions, odds, and
   value bets identified by their negative external ids) from a database, so
