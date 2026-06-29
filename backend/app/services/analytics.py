@@ -179,6 +179,22 @@ def load_prediction_snapshots(db: Session) -> list[PredictionSnapshot]:
         .subquery()
     )
 
+    latest_prediction_subq = (
+        select(
+            Prediction.match_id,
+            func.max(Prediction.id).label("latest_prediction_id"),
+        )
+        .join(
+            latest_created_subq,
+            and_(
+                Prediction.match_id == latest_created_subq.c.match_id,
+                Prediction.created_at == latest_created_subq.c.latest_created_at,
+            ),
+        )
+        .group_by(Prediction.match_id)
+        .subquery()
+    )
+
     rows = db.execute(
         select(
             Prediction.prob_home,
@@ -189,11 +205,8 @@ def load_prediction_snapshots(db: Session) -> list[PredictionSnapshot]:
         )
         .join(Match, Prediction.match_id == Match.id)
         .join(
-            latest_created_subq,
-            and_(
-                Prediction.match_id == latest_created_subq.c.match_id,
-                Prediction.created_at == latest_created_subq.c.latest_created_at,
-            ),
+            latest_prediction_subq,
+            Prediction.id == latest_prediction_subq.c.latest_prediction_id,
         )
         .where(
             Match.home_goals.is_not(None),
