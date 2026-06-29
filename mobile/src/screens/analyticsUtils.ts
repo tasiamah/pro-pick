@@ -1,6 +1,7 @@
 import type { RoiTrendPoint } from '../api/types';
 
 export type LineChartPoint = {
+  key: string;
   value: number;
   label: string;
 };
@@ -26,6 +27,7 @@ export function toRoiTrendChartData(
   }
 
   return points.map((point) => ({
+    key: point.date,
     value: Math.round(point.roi * 100),
     label: formatTrendLabel(point.date),
   }));

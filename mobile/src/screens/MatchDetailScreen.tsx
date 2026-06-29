@@ -358,7 +358,7 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
   }
 
   const prediction = match.prediction;
-  const oddsUpdatedLabel = 'just now';
+  const oddsUpdatedLabel = marketMovements ? 'just now' : 'Latest available';
 
   return (
     <ScrollView

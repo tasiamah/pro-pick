@@ -1,6 +1,7 @@
 import type { LineChartPoint } from './analyticsUtils';
 
 export type RoiTrendRow = {
+  key: string;
   label: string;
   valueLabel: string;
   widthPercent: number;
@@ -26,6 +27,7 @@ export function buildRoiTrendRows(points: LineChartPoint[]): RoiTrendRow[] {
         : Math.round(Math.max(8, (magnitude / maxMagnitude) * 100));
 
     return {
+      key: point.key,
       label: point.label,
       valueLabel: formatRoiValueLabel(point.value),
       widthPercent,

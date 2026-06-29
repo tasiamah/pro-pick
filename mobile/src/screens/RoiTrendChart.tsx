@@ -17,7 +17,7 @@ export function RoiTrendChart({ points }: RoiTrendChartProps) {
         const accent = row.positive ? colors.win : colors.loss;
 
         return (
-          <View key={row.label} style={styles.row}>
+          <View key={row.key} style={styles.row}>
             <Text style={styles.label}>{row.label}</Text>
             <View style={styles.track}>
               <View

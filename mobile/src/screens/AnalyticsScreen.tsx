@@ -111,7 +111,7 @@ export function AnalyticsScreen() {
 
       <View style={screenStyles.section}>
         <SectionHeader
-          subtitle={`${analytics.settled_value_bets} of ${analytics.total_value_bets} value bets settled`}
+          subtitle={`${formatCountMetric(analytics.settled_value_bets)} of ${formatCountMetric(analytics.total_value_bets)} value bets settled`}
           title="ROI Trend"
         />
         <AsyncState

@@ -9,15 +9,15 @@ describe('roiTrendChartLayout', () => {
 
   it('scales bar widths relative to the largest magnitude', () => {
     const rows = buildRoiTrendRows([
-      { value: 20, label: 'Jun 1' },
-      { value: -10, label: 'Jun 2' },
-      { value: 0, label: 'Jun 3' },
+      { key: '2026-06-01', value: 20, label: 'Jun 1' },
+      { key: '2026-06-02', value: -10, label: 'Jun 2' },
+      { key: '2026-06-03', value: 0, label: 'Jun 3' },
     ]);
 
     expect(rows).toEqual([
-      { label: 'Jun 1', valueLabel: '+20%', widthPercent: 100, positive: true },
-      { label: 'Jun 2', valueLabel: '-10%', widthPercent: 50, positive: false },
-      { label: 'Jun 3', valueLabel: '0%', widthPercent: 0, positive: true },
+      { key: '2026-06-01', label: 'Jun 1', valueLabel: '+20%', widthPercent: 100, positive: true },
+      { key: '2026-06-02', label: 'Jun 2', valueLabel: '-10%', widthPercent: 50, positive: false },
+      { key: '2026-06-03', label: 'Jun 3', valueLabel: '0%', widthPercent: 0, positive: true },
     ]);
   });
 

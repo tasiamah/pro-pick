@@ -19,8 +19,8 @@ describe('analyticsUtils', () => {
         { date: '2026-06-02', roi: -0.05 },
       ]),
     ).toEqual([
-      { value: 10, label: 'Jun 1' },
-      { value: -5, label: 'Jun 2' },
+      { key: '2026-06-01', value: 10, label: 'Jun 1' },
+      { key: '2026-06-02', value: -5, label: 'Jun 2' },
     ]);
     expect(toRoiTrendChartData(null)).toEqual([]);
   });
