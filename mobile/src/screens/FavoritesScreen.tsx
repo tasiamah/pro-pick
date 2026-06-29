@@ -20,7 +20,7 @@ import {
   buildDateWindowParams,
   DATE_RANGE_DAYS,
   filterMatchesByDate,
-  startOfUtcDay,
+  startOfLocalDay,
 } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 
@@ -66,14 +66,14 @@ function SavedFavoritesRow() {
 }
 
 export function FavoritesScreen({ navigation }: Props) {
-  const [selectedDate, setSelectedDate] = useState(() => startOfUtcDay());
+  const [selectedDate, setSelectedDate] = useState(() => startOfLocalDay());
   const teams = useFavoritesStore((state) => state.teams);
   const competitions = useFavoritesStore((state) => state.competitions);
   const hasFavorites = teams.length > 0 || competitions.length > 0;
   const matchListParams = useMemo(() => buildDateWindowParams(), []);
   const matchesQuery = useMatches(matchListParams, { enabled: hasFavorites });
 
-  const dateRange = useMemo(() => buildDateRange(startOfUtcDay(), DATE_RANGE_DAYS), []);
+  const dateRange = useMemo(() => buildDateRange(startOfLocalDay(), DATE_RANGE_DAYS), []);
 
   const filteredMatches = useMemo(() => {
     const favoriteMatches = filterMatchesByFavorites(

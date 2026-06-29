@@ -18,11 +18,33 @@ const STATUS_FILTERS: Record<MatchStatusFilter, Set<string>> = {
   completed: new Set(['finished']),
 };
 
+function hasKickedOff(kickoff: string | null, now: Date): boolean {
+  if (!kickoff) {
+    return false;
+  }
+
+  const kickoffTime = new Date(kickoff).getTime();
+  if (Number.isNaN(kickoffTime)) {
+    return false;
+  }
+
+  return kickoffTime < now.getTime();
+}
+
 export function matchesStatusFilter(
   match: MatchDetail,
   statusFilter: MatchStatusFilter,
+  now: Date = new Date(),
 ): boolean {
-  return STATUS_FILTERS[statusFilter].has(match.status.toLowerCase());
+  if (!STATUS_FILTERS[statusFilter].has(match.status.toLowerCase())) {
+    return false;
+  }
+
+  if (statusFilter === 'upcoming') {
+    return !hasKickedOff(match.kickoff, now);
+  }
+
+  return true;
 }
 
 export function matchesSearchFilter(match: MatchDetail, query: string): boolean {
@@ -67,11 +89,12 @@ export function filterMatchesForBrowse(
   statusFilter: MatchStatusFilter,
   oddsTierFilter: MatchOddsTierFilter,
   searchQuery: string,
+  now: Date = new Date(),
 ): MatchDetail[] {
   return matches
     .filter(
       (match) =>
-        matchesStatusFilter(match, statusFilter) &&
+        matchesStatusFilter(match, statusFilter, now) &&
         matchesSearchFilter(match, searchQuery) &&
         matchesOddsTierFilter(match, oddsTierFilter),
     )

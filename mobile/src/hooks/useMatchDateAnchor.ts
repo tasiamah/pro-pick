@@ -2,14 +2,14 @@ import { useMemo, useState } from 'react';
 
 import { useDashboard } from '../api/hooks';
 import {
-  addUtcDays,
+  addLocalDays,
   buildDateRange,
   buildDateRangeEndingAt,
   buildDateWindowParams,
   DATE_RANGE_DAYS,
   resolveMatchAnchorDate,
-  startOfUtcDay,
-  toUtcDateKey,
+  startOfLocalDay,
+  toLocalDateKey,
 } from '../utils/matchDates';
 
 export function useMatchDateAnchor() {
@@ -25,18 +25,18 @@ export function useMatchDateAnchor() {
   );
   const dateRange = useMemo(() => {
     if (hasUpcoming) {
-      return buildDateRange(startOfUtcDay(), DATE_RANGE_DAYS);
+      return buildDateRange(startOfLocalDay(), DATE_RANGE_DAYS);
     }
     return buildDateRangeEndingAt(anchorDate);
   }, [anchorDate, hasUpcoming]);
   const matchListParams = useMemo(() => {
-    const rangeStart = dateRange[0] ?? startOfUtcDay();
+    const rangeStart = dateRange[0] ?? startOfLocalDay();
     const rangeEnd = hasUpcoming
-      ? addUtcDays(rangeStart, DATE_RANGE_DAYS)
-      : addUtcDays(anchorDate, 1);
+      ? addLocalDays(rangeStart, DATE_RANGE_DAYS)
+      : addLocalDays(anchorDate, 1);
     return buildDateWindowParams(rangeStart, rangeEnd);
   }, [anchorDate, dateRange, hasUpcoming]);
-  const anchorKey = toUtcDateKey(anchorDate);
+  const anchorKey = toLocalDateKey(anchorDate);
   const [selectedDate, setSelectedDate] = useState(anchorDate);
   const [prevAnchorKey, setPrevAnchorKey] = useState(anchorKey);
 
