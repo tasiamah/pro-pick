@@ -7,6 +7,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../theme';
 import { HomeStackNavigator } from './HomeStackNavigator';
+import {
+  getAnalyticsScreen,
+  getFavoritesStackNavigator,
+  getMatchesStackNavigator,
+} from './lazyScreens';
 import { StackHeaderTitle } from './StackHeaderTitle';
 import { buildTabBarScreenOptions } from './tabBarOptions';
 import { screenTitles } from './screenTitles';
@@ -60,7 +65,7 @@ export function RootNavigator() {
       />
       <Tab.Screen
         name="MatchesTab"
-        getComponent={() => require('./MatchesStackNavigator').MatchesStackNavigator}
+        getComponent={getMatchesStackNavigator}
         options={{
           title: 'Matches',
           tabBarIcon: ({ focused }) => <TabBarIcon name="pulse-outline" focused={focused} />,
@@ -68,7 +73,7 @@ export function RootNavigator() {
       />
       <Tab.Screen
         name="FavoritesTab"
-        getComponent={() => require('./FavoritesStackNavigator').FavoritesStackNavigator}
+        getComponent={getFavoritesStackNavigator}
         options={{
           title: 'Favorites',
           tabBarIcon: ({ focused }) => <TabBarIcon name="star-outline" focused={focused} />,
@@ -76,7 +81,7 @@ export function RootNavigator() {
       />
       <Tab.Screen
         name="AnalyticsTab"
-        getComponent={() => require('../screens/AnalyticsScreen').AnalyticsScreen}
+        getComponent={getAnalyticsScreen}
         options={{
           title: 'Analytics',
           headerShown: true,

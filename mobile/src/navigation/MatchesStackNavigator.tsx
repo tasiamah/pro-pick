@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { matchDetailScreenOptions } from './matchDetailScreenOptions';
+import { getMatchDetailScreen, getMatchesScreen } from './lazyScreens';
 import { screenSubtitles, screenTitles } from './screenTitles';
 import { StackHeaderTitle } from './StackHeaderTitle';
 import { stackScreenOptions } from './stackScreenOptions';
@@ -13,7 +14,7 @@ export function MatchesStackNavigator() {
     <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen
         name="Matches"
-        getComponent={() => require('../screens/MatchesScreen').MatchesScreen}
+        getComponent={getMatchesScreen}
         options={{
           headerTitle: () => (
             <StackHeaderTitle
@@ -25,7 +26,7 @@ export function MatchesStackNavigator() {
       />
       <Stack.Screen
         name="MatchDetail"
-        getComponent={() => require('../screens/MatchDetailScreen').MatchDetailScreen}
+        getComponent={getMatchDetailScreen}
         options={matchDetailScreenOptions}
       />
     </Stack.Navigator>
