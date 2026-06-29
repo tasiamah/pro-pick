@@ -32,12 +32,22 @@ class Settings(BaseSettings):
 
     value_bet_edge_threshold: float = 0.05
     kelly_fraction: float = 0.25
+    # Quality guard: skip flagging longshots and low-certainty picks as value
+    # bets. Models are least reliable on long odds, so capping them keeps the
+    # surfaced bets sensible. value_bet_min_confidence is the minimum margin
+    # over the next-best outcome (see value_bets.confidence_score); 0 disables.
+    value_bet_max_odds: float = Field(default=6.0, gt=1.0)
+    value_bet_min_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
     model_path: str = ""
     model_algorithm: str = "logistic"
     model_calibrate: bool = True
     model_retraining_enabled: bool = False
     model_retraining_interval_days: int = Field(default=7, ge=1)
+    # Train an initial model in the background on startup if none exists yet, so
+    # a fresh deploy serves real predictions instead of the neutral fallback
+    # without waiting for the first scheduled retraining interval.
+    model_bootstrap_enabled: bool = True
 
     cache_ttl_seconds: int = Field(default=30, ge=0)
 

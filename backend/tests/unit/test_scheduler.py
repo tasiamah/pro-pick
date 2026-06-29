@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.scheduler.jobs import (
+    bootstrap_model_if_missing,
     daily_update,
     retrain_model,
     scheduler,
@@ -188,6 +189,75 @@ def test_retrain_model_alerts_when_training_fails(
         exc_info=error,
     )
     mock_db.close.assert_called_once()
+
+
+@patch("app.scheduler.jobs.threading.Thread")
+@patch("app.scheduler.jobs.load_model", return_value=None)
+@patch("app.scheduler.jobs.settings")
+def test_bootstrap_trains_in_background_when_no_model(
+    mock_settings: MagicMock,
+    mock_load_model: MagicMock,
+    mock_thread: MagicMock,
+) -> None:
+    mock_settings.model_bootstrap_enabled = True
+    mock_settings.model_path = ""
+
+    bootstrap_model_if_missing()
+
+    mock_thread.assert_called_once()
+    assert mock_thread.call_args.kwargs["target"] is retrain_model
+    assert mock_thread.call_args.kwargs["daemon"] is True
+    mock_thread.return_value.start.assert_called_once_with()
+
+
+@patch("app.scheduler.jobs.threading.Thread")
+@patch("app.scheduler.jobs.load_model", side_effect=RuntimeError("corrupt artifact"))
+@patch("app.scheduler.jobs.settings")
+def test_bootstrap_trains_when_existing_model_fails_to_load(
+    mock_settings: MagicMock,
+    mock_load_model: MagicMock,
+    mock_thread: MagicMock,
+) -> None:
+    mock_settings.model_bootstrap_enabled = True
+    mock_settings.model_path = ""
+
+    bootstrap_model_if_missing()
+
+    mock_thread.assert_called_once()
+    mock_thread.return_value.start.assert_called_once_with()
+
+
+@patch("app.scheduler.jobs.threading.Thread")
+@patch("app.scheduler.jobs.load_model")
+@patch("app.scheduler.jobs.settings")
+def test_bootstrap_skips_when_model_present(
+    mock_settings: MagicMock,
+    mock_load_model: MagicMock,
+    mock_thread: MagicMock,
+) -> None:
+    mock_settings.model_bootstrap_enabled = True
+    mock_settings.model_path = ""
+    mock_load_model.return_value = MagicMock()
+
+    bootstrap_model_if_missing()
+
+    mock_thread.assert_not_called()
+
+
+@patch("app.scheduler.jobs.threading.Thread")
+@patch("app.scheduler.jobs.load_model")
+@patch("app.scheduler.jobs.settings")
+def test_bootstrap_skips_when_disabled(
+    mock_settings: MagicMock,
+    mock_load_model: MagicMock,
+    mock_thread: MagicMock,
+) -> None:
+    mock_settings.model_bootstrap_enabled = False
+
+    bootstrap_model_if_missing()
+
+    mock_load_model.assert_not_called()
+    mock_thread.assert_not_called()
 
 
 @patch("app.scheduler.jobs.settings")

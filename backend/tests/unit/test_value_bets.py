@@ -95,6 +95,38 @@ def test_edge_threshold_is_configurable():
     assert evaluate_outcome("home", 0.55, 2.0, edge_threshold=0.02).is_value is True
 
 
+def test_evaluate_outcome_rejects_longshot_above_max_odds():
+    # Positive edge, but the odd exceeds the guard, so it is not flagged.
+    result = evaluate_outcome("home", 0.30, 8.0, edge_threshold=0.05, max_odds=6.0)
+    assert result.edge > 0.05
+    assert result.is_value is False
+
+
+def test_evaluate_outcome_allows_odds_at_max_odds_boundary():
+    result = evaluate_outcome("home", 0.30, 6.0, edge_threshold=0.05, max_odds=6.0)
+    assert result.is_value is True
+
+
+def test_evaluate_outcome_rejects_low_confidence_pick():
+    probs = {"home": 0.40, "draw": 0.38, "away": 0.22}
+    result = evaluate_outcome(
+        "home", 0.40, 3.0, edge_threshold=0.05, probs=probs, min_confidence=0.10
+    )
+    # Edge clears the threshold but the margin over the next-best outcome (0.02)
+    # falls short of the confidence guard.
+    assert result.edge > 0.05
+    assert result.confidence < 0.10
+    assert result.is_value is False
+
+
+def test_evaluate_outcome_confidence_anchors_to_model_prob():
+    # probs[outcome] disagrees with model_prob (the EV/edge source); confidence
+    # must follow model_prob so the guard can't be flipped by a mismatched dist.
+    probs = {"home": 0.90, "draw": 0.05, "away": 0.05}
+    result = evaluate_outcome("home", 0.40, 2.0, probs=probs)
+    assert result.confidence == pytest.approx(0.40 - 0.05)
+
+
 def test_evaluate_match_returns_only_value_outcomes_per_market():
     probs = {"home": 0.55, "draw": 0.25, "away": 0.20}
     odds = {"home": 2.10, "draw": 3.40, "away": 4.50}
