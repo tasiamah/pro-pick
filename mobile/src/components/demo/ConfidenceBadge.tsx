@@ -5,13 +5,16 @@ import { formatPercent } from '../formatters';
 
 type ConfidenceBadgeProps = {
   confidence: number;
+  compact?: boolean;
 };
 
-export function ConfidenceBadge({ confidence }: ConfidenceBadgeProps) {
+export function ConfidenceBadge({ confidence, compact = false }: ConfidenceBadgeProps) {
   return (
-    <View style={styles.badge}>
-      <Text style={styles.value}>{formatPercent(confidence)}</Text>
-      <Text style={styles.label}>CONF</Text>
+    <View style={[styles.badge, compact && styles.badgeCompact]}>
+      <Text style={[styles.value, compact && styles.valueCompact]}>
+        {formatPercent(confidence)}
+      </Text>
+      <Text style={[styles.label, compact && styles.labelCompact]}>CONF</Text>
     </View>
   );
 }
@@ -32,5 +35,20 @@ const styles = StyleSheet.create({
   label: {
     ...typography.badge,
     color: colors.textMuted,
+  },
+  badgeCompact: {
+    minWidth: 44,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+  },
+  valueCompact: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 18,
+  },
+  labelCompact: {
+    ...typography.micro,
+    letterSpacing: 0.2,
   },
 });
