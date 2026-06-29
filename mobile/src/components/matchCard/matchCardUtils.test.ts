@@ -4,6 +4,7 @@ import { classifyOddsTier } from '../demo/demoUtils';
 import {
   formatPredictedOutcomeLabel,
   getConfidence,
+  getExplicitMatchInsight,
   getMatchInsight,
   getOddForOutcome,
   getRecommendedOutcome,
@@ -60,6 +61,7 @@ describe('matchCardUtils', () => {
   });
 
   it('uses the first non-empty insight or a fallback message', () => {
+    expect(getExplicitMatchInsight(prediction)).toBeNull();
     expect(getMatchInsight(prediction)).toBe(
       'AI model highlights this fixture based on current form and market odds.',
     );

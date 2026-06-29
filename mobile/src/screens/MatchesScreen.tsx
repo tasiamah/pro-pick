@@ -1,5 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { useMatches } from '../api/hooks';
@@ -13,10 +20,16 @@ import {
   SegmentedControl,
 } from '../components';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { TAB_BAR_BASE_HEIGHT } from '../navigation/tabBarOptions';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
 import { addUtcDays, buildDateWindowParams, startOfUtcDay } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
+import {
+  chunkMatchesGridRows,
+  getMatchesGridMetrics,
+  getMatchesScrollBottomPadding,
+} from './matchesGridLayout';
 import { MATCHES_DEMO_DATA } from './matchesDemoData';
 import {
   filterMatchesForBrowse,
@@ -32,6 +45,17 @@ const SEARCH_DEBOUNCE_MS = 300;
 const BROWSE_WINDOW_DAYS = 30;
 
 export function MatchesScreen({ navigation }: Props) {
+  const { width: windowWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const gridMetrics = useMemo(() => getMatchesGridMetrics(windowWidth), [windowWidth]);
+  const scrollBottomPadding = useMemo(
+    () =>
+      getMatchesScrollBottomPadding(
+        TAB_BAR_BASE_HEIGHT + Math.max(insets.bottom, spacing.sm),
+      ),
+    [insets.bottom],
+  );
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('upcoming');
   const [oddsTierFilter, setOddsTierFilter] = useState<MatchOddsTierFilter>('all');
@@ -59,6 +83,11 @@ export function MatchesScreen({ navigation }: Props) {
     [browseSource.matches, debouncedSearchQuery, oddsTierFilter, statusFilter],
   );
 
+  const gridRows = useMemo(
+    () => chunkMatchesGridRows(filteredMatches),
+    [filteredMatches],
+  );
+
   const emptyMessage = useMemo(
     () => getMatchesEmptyMessage(statusFilter, oddsTierFilter, debouncedSearchQuery),
     [debouncedSearchQuery, oddsTierFilter, statusFilter],
@@ -81,7 +110,10 @@ export function MatchesScreen({ navigation }: Props) {
   return (
     <ScrollView
       style={screenStyles.screenContainer}
-      contentContainerStyle={screenStyles.scrollContent}
+      contentContainerStyle={[
+        screenStyles.scrollContent,
+        { paddingBottom: scrollBottomPadding },
+      ]}
       refreshControl={
         <RefreshControl
           refreshing={matchesQuery.isRefetching}
@@ -120,17 +152,25 @@ export function MatchesScreen({ navigation }: Props) {
         isEmpty={filteredMatches.length === 0}
         emptyMessage={emptyMessage}
       >
-        <View style={styles.cardGrid}>
-          {filteredMatches.map((match) => (
-            <View key={match.id} style={styles.cardGridItem}>
-              <MatchCardV2
-                match={match}
-                odds={match.odds}
-                prediction={match.prediction}
-                onDetailsPress={() => {
-                  navigation.navigate('MatchDetail', { matchId: String(match.id) });
-                }}
-              />
+        <View style={[styles.cardGrid, { gap: gridMetrics.gutter }]}>
+          {gridRows.map((row, rowIndex) => (
+            <View
+              key={`matches-row-${rowIndex}`}
+              style={[styles.cardRow, { gap: gridMetrics.gutter }]}
+            >
+              {row.map((match) => (
+                <View key={match.id} style={styles.cardGridItem}>
+                  <MatchCardV2
+                    compact
+                    match={match}
+                    odds={match.odds}
+                    prediction={match.prediction}
+                    onDetailsPress={() => {
+                      navigation.navigate('MatchDetail', { matchId: String(match.id) });
+                    }}
+                  />
+                </View>
+              ))}
             </View>
           ))}
         </View>
@@ -144,12 +184,15 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   cardGrid: {
+    width: '100%',
+  },
+  cardRow: {
+    alignItems: 'stretch',
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    width: '100%',
   },
   cardGridItem: {
-    marginBottom: spacing.md,
-    width: '48%',
+    flex: 1,
+    minWidth: 0,
   },
 });
