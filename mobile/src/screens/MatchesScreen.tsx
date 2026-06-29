@@ -20,6 +20,7 @@ import {
   SegmentedControl,
 } from '../components';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useUtcDayKey } from '../hooks/useUtcDayKey';
 import { TAB_BAR_BASE_HEIGHT } from '../navigation/tabBarOptions';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
@@ -59,9 +60,10 @@ export function MatchesScreen({ navigation }: Props) {
   const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('upcoming');
   const [oddsTierFilter, setOddsTierFilter] = useState<MatchOddsTierFilter>('all');
   const debouncedSearchQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
+  const { utcDayKey, refreshUtcDayKey } = useUtcDayKey();
 
   const matchListParams = useMemo(() => {
-    const today = startOfUtcDay();
+    const today = startOfUtcDay(new Date(`${utcDayKey}T00:00:00.000Z`));
     const start = addUtcDays(today, -BROWSE_WINDOW_DAYS);
     const end =
       statusFilter === 'completed'
@@ -84,7 +86,7 @@ export function MatchesScreen({ navigation }: Props) {
     }
 
     return params;
-  }, [debouncedSearchQuery, oddsTierFilter, statusFilter]);
+  }, [debouncedSearchQuery, oddsTierFilter, statusFilter, utcDayKey]);
 
   const matchesQuery = useMatches(matchListParams);
   const filteredMatches = useMemo(
@@ -109,8 +111,9 @@ export function MatchesScreen({ navigation }: Props) {
   );
 
   const onRefresh = useCallback(() => {
+    refreshUtcDayKey();
     void matchesQuery.refetch();
-  }, [matchesQuery]);
+  }, [matchesQuery, refreshUtcDayKey]);
 
   const isMatchesLoading = isInitialQueryLoad(
     matchesQuery.isLoading,
