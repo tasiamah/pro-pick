@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.ml.baseline import predict_outcome_probabilities
 from app.ml.evaluation import (
+    DEFAULT_CONFIDENCE_THRESHOLD,
     EvaluationMetrics,
     ScoredOutcome,
     evaluate_scored_outcomes,
@@ -73,6 +74,7 @@ def backtest_model(
     train_fn: TrainFn,
     min_train_size: int | None = None,
     step: int | None = None,
+    confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
 ) -> EvaluationMetrics:
     sample_size = len(dataset.features)
     resolved_min, resolved_step = _resolve_schedule(sample_size, min_train_size, step)
@@ -90,7 +92,7 @@ def backtest_model(
             )
             rows.append((probabilities, dataset.labels[index]))
 
-    return evaluate_scored_outcomes(rows)
+    return evaluate_scored_outcomes(rows, confidence_threshold=confidence_threshold)
 
 
 def backtest_against_bookmaker(

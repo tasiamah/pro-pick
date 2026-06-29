@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from app.ml.features import FEATURE_COLUMNS
 from app.scheduler.jobs import (
     bootstrap_model_if_missing,
     daily_update,
@@ -230,18 +231,40 @@ def test_bootstrap_trains_when_existing_model_fails_to_load(
 @patch("app.scheduler.jobs.threading.Thread")
 @patch("app.scheduler.jobs.load_model")
 @patch("app.scheduler.jobs.settings")
-def test_bootstrap_skips_when_model_present(
+def test_bootstrap_skips_when_model_present_and_schema_matches(
     mock_settings: MagicMock,
     mock_load_model: MagicMock,
     mock_thread: MagicMock,
 ) -> None:
     mock_settings.model_bootstrap_enabled = True
     mock_settings.model_path = ""
-    mock_load_model.return_value = MagicMock()
+    up_to_date = MagicMock()
+    up_to_date.metadata.feature_columns = list(FEATURE_COLUMNS)
+    mock_load_model.return_value = up_to_date
 
     bootstrap_model_if_missing()
 
     mock_thread.assert_not_called()
+
+
+@patch("app.scheduler.jobs.threading.Thread")
+@patch("app.scheduler.jobs.load_model")
+@patch("app.scheduler.jobs.settings")
+def test_bootstrap_retrains_when_feature_schema_is_stale(
+    mock_settings: MagicMock,
+    mock_load_model: MagicMock,
+    mock_thread: MagicMock,
+) -> None:
+    mock_settings.model_bootstrap_enabled = True
+    mock_settings.model_path = ""
+    stale = MagicMock()
+    stale.metadata.feature_columns = ["home_form_points"]
+    mock_load_model.return_value = stale
+
+    bootstrap_model_if_missing()
+
+    mock_thread.assert_called_once()
+    mock_thread.return_value.start.assert_called_once_with()
 
 
 @patch("app.scheduler.jobs.threading.Thread")

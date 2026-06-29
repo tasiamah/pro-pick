@@ -28,6 +28,13 @@ DRAW_POINTS = 1
 LOSS_POINTS = 0
 DEFAULT_REST_DAYS = 7.0
 
+# Elo strength rating: cheap, point-in-time team-strength signal replayed from
+# match results. It captures longer-horizon quality than the 5-game form window
+# and is the single strongest feature available from results-only data.
+ELO_INITIAL = 1500.0
+ELO_K = 20.0
+ELO_HOME_ADVANTAGE = 65.0
+
 OUTCOME_HOME = "home"
 OUTCOME_DRAW = "draw"
 OUTCOME_AWAY = "away"
@@ -50,6 +57,9 @@ FEATURE_COLUMNS: list[str] = [
     "table_points_diff",
     "home_rest_days",
     "away_rest_days",
+    "home_elo",
+    "away_elo",
+    "elo_diff",
 ]
 
 
@@ -119,6 +129,9 @@ def compute_features(
     away_form = _team_form(past, target.away_team_id, form_window)
     head_to_head = _head_to_head(past, target.home_team_id, target.away_team_id)
     home_table, away_table = _table_points(past, target)
+    elo = _elo_ratings(past)
+    home_elo = elo.get(target.home_team_id, ELO_INITIAL)
+    away_elo = elo.get(target.away_team_id, ELO_INITIAL)
 
     return {
         "home_form_points": home_form.points_avg,
@@ -142,6 +155,9 @@ def compute_features(
         "table_points_diff": home_table - away_table,
         "home_rest_days": _rest_days(past, target.home_team_id, target.kickoff),
         "away_rest_days": _rest_days(past, target.away_team_id, target.kickoff),
+        "home_elo": home_elo,
+        "away_elo": away_elo,
+        "elo_diff": home_elo - away_elo + ELO_HOME_ADVANTAGE,
     }
 
 
@@ -311,6 +327,31 @@ def _rest_days(past: Sequence[MatchRecord], team_id: int, kickoff: datetime) -> 
     if not appearances:
         return DEFAULT_REST_DAYS
     return float((kickoff - appearances[-1].kickoff).days)
+
+
+def _elo_ratings(past: Sequence[MatchRecord]) -> dict[int, float]:
+    """Replay chronological results into current Elo ratings per team.
+
+    ``past`` is already filtered to matches before the target kickoff and sorted,
+    so the returned ratings are strictly point-in-time (no leakage).
+    """
+    ratings: dict[int, float] = {}
+    for record in past:
+        home = ratings.get(record.home_team_id, ELO_INITIAL)
+        away = ratings.get(record.away_team_id, ELO_INITIAL)
+        expected_home = 1.0 / (
+            1.0 + 10.0 ** ((away - home - ELO_HOME_ADVANTAGE) / 400.0)
+        )
+        if record.home_goals > record.away_goals:
+            score_home = 1.0
+        elif record.home_goals < record.away_goals:
+            score_home = 0.0
+        else:
+            score_home = 0.5
+        adjustment = ELO_K * (score_home - expected_home)
+        ratings[record.home_team_id] = home + adjustment
+        ratings[record.away_team_id] = away - adjustment
+    return ratings
 
 
 def _team_goals(record: MatchRecord, team_id: int) -> tuple[int, int]:

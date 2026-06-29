@@ -73,3 +73,32 @@ def test_evaluate_scored_outcomes_handles_empty_input() -> None:
     assert metrics.accuracy == 0.0
     assert metrics.log_loss == 0.0
     assert metrics.brier == 0.0
+    assert metrics.confident_accuracy == 0.0
+    assert metrics.confident_coverage == 0.0
+
+
+def test_confident_accuracy_scores_only_high_probability_picks() -> None:
+    rows = [
+        # Confident and correct.
+        ({"home": 0.8, "draw": 0.1, "away": 0.1}, "home"),
+        # Confident and wrong.
+        ({"home": 0.75, "draw": 0.15, "away": 0.1}, "away"),
+        # Below the threshold: excluded from the confident subset entirely.
+        ({"home": 0.4, "draw": 0.35, "away": 0.25}, "draw"),
+    ]
+
+    metrics = evaluate_scored_outcomes(rows, confidence_threshold=0.7)
+
+    assert metrics.confidence_threshold == 0.7
+    # 2 of 3 rows clear the bar; 1 of those 2 is correct.
+    assert metrics.confident_coverage == pytest.approx(2 / 3)
+    assert metrics.confident_accuracy == pytest.approx(0.5)
+
+
+def test_confident_accuracy_is_zero_when_no_pick_clears_threshold() -> None:
+    rows = [({"home": 0.4, "draw": 0.35, "away": 0.25}, "home")]
+
+    metrics = evaluate_scored_outcomes(rows, confidence_threshold=0.6)
+
+    assert metrics.confident_coverage == 0.0
+    assert metrics.confident_accuracy == 0.0

@@ -36,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `space-between` spacing instead of horizontal gap with 48% columns.
 
 ### Changed
+- Dashboard/`analytics` model accuracy now comes from the live model's
+  walk-forward backtest metadata (honest out-of-sample) instead of re-scoring
+  stored predictions, which read low (~0.44) when finished matches still held
+  predictions from an earlier model; the real number is ~0.51.
+- Startup bootstrap also retrains when the on-disk model's `feature_columns` no
+  longer match the code, so a deploy that changes the feature set (e.g. adding
+  Elo) ships a fresh model instead of serving a stale-schema one.
 - Value-bet engine quality guard: bets on odds above `value_bet_max_odds`
   (default 6.0) or below `value_bet_min_confidence` (default 0.0) are no longer
   flagged as value, keeping unreliable longshots and near-coin-flip picks out of
@@ -71,6 +78,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   tab route without TypeScript errors.
 
 ### Added
+- Elo team-strength features (`home_elo`, `away_elo`, `elo_diff`) to the 1X2
+  model: point-in-time ratings replayed from results, capturing longer-horizon
+  quality than the 5-game form window.
+- High-confidence accuracy metric: dashboard and `/analytics` now report
+  `confident_accuracy` and `confident_coverage` — accuracy on the subset of
+  picks whose top probability clears `model_confidence_threshold` (default 0.70,
+  ~70% accurate on ~19% of matches out-of-sample), alongside the full-slate
+  accuracy that the ~25% draw rate caps near 0.51.
 - Startup model bootstrap: when no model artifact exists, the app trains one in
   a background thread on startup (`model_bootstrap_enabled`, default on) so a
   fresh deploy serves real predictions instead of the neutral fallback without

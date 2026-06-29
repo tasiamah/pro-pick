@@ -17,6 +17,7 @@ from app.ml.baseline import OUTCOMES, predict_outcome_probabilities
 from app.ml.features import OUTCOME_AWAY, OUTCOME_DRAW, OUTCOME_HOME
 
 LOG_LOSS_EPSILON = 1e-15
+DEFAULT_CONFIDENCE_THRESHOLD = 0.5
 
 ScoredOutcome = tuple[Mapping[str, float], str]
 
@@ -27,6 +28,13 @@ class EvaluationMetrics:
     accuracy: float
     log_loss: float
     brier: float
+    # Accuracy restricted to "confident" picks (top probability >= threshold) and
+    # the share of matches that clears that bar. Reported so the product can show
+    # an honest, high-precision figure on the subset where the model is sure,
+    # separate from the full-slate accuracy that draws cap.
+    confident_accuracy: float = 0.0
+    confident_coverage: float = 0.0
+    confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD
 
 
 def multiclass_log_loss(probabilities: Mapping[str, float], outcome: str) -> float:
@@ -55,16 +63,46 @@ def implied_probabilities(home: float, draw: float, away: float) -> dict[str, fl
     return {outcome: value / total for outcome, value in inverses.items()}
 
 
-def evaluate_scored_outcomes(rows: Sequence[ScoredOutcome]) -> EvaluationMetrics:
+def evaluate_scored_outcomes(
+    rows: Sequence[ScoredOutcome],
+    *,
+    confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
+) -> EvaluationMetrics:
     if not rows:
-        return EvaluationMetrics(0, 0.0, 0.0, 0.0)
+        return EvaluationMetrics(
+            0, 0.0, 0.0, 0.0, confidence_threshold=confidence_threshold
+        )
     count = len(rows)
     hits = sum(1 for probabilities, outcome in rows if _is_hit(probabilities, outcome))
     log_loss = sum(
         multiclass_log_loss(probabilities, outcome) for probabilities, outcome in rows
     )
     brier = sum(brier_score(probabilities, outcome) for probabilities, outcome in rows)
-    return EvaluationMetrics(count, hits / count, log_loss / count, brier / count)
+
+    confident = [
+        (probabilities, outcome)
+        for probabilities, outcome in rows
+        if _top_probability(probabilities) >= confidence_threshold
+    ]
+    confident_hits = sum(
+        1 for probabilities, outcome in confident if _is_hit(probabilities, outcome)
+    )
+    confident_accuracy = confident_hits / len(confident) if confident else 0.0
+    confident_coverage = len(confident) / count
+
+    return EvaluationMetrics(
+        sample_size=count,
+        accuracy=hits / count,
+        log_loss=log_loss / count,
+        brier=brier / count,
+        confident_accuracy=confident_accuracy,
+        confident_coverage=confident_coverage,
+        confidence_threshold=confidence_threshold,
+    )
+
+
+def _top_probability(probabilities: Mapping[str, float]) -> float:
+    return max(probabilities.values()) if probabilities else 0.0
 
 
 def evaluate_model(model: Any, dataset: Any) -> EvaluationMetrics:
