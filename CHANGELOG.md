@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   environment (`app/services/demo_seed.py`, PP-108).
 
 ### Fixed
+- Matches and Analytics stack headers left-align title and subtitle to match
+  Home and Favorites.
 - Live sync now includes FIFA World Cup (league id 1) so finished World Cup
   results and scores refresh from API-Football instead of staying stuck on
   `scheduled` after kickoff.
