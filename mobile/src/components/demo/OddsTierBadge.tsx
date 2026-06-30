@@ -5,9 +5,10 @@ import { formatOddsTierLabel, type OddsTier } from './demoUtils';
 
 type OddsTierBadgeProps = {
   tier: OddsTier;
+  compact?: boolean;
 };
 
-export function OddsTierBadge({ tier }: OddsTierBadgeProps) {
+export function OddsTierBadge({ tier, compact = false }: OddsTierBadgeProps) {
   const tierColors = {
     low: colors.oddsLow,
     medium: colors.oddsMedium,
@@ -15,8 +16,14 @@ export function OddsTierBadge({ tier }: OddsTierBadgeProps) {
   };
 
   return (
-    <View style={[styles.badge, { borderColor: tierColors[tier] }]}>
-      <Text style={[styles.text, { color: tierColors[tier] }]}>
+    <View style={[styles.badge, compact && styles.badgeCompact, { borderColor: tierColors[tier] }]}>
+      <Text
+        style={[
+          styles.text,
+          compact && styles.textCompact,
+          { color: tierColors[tier] },
+        ]}
+      >
         {formatOddsTierLabel(tier)}
       </Text>
     </View>
@@ -33,5 +40,15 @@ const styles = StyleSheet.create({
   text: {
     ...typography.badge,
     textTransform: 'uppercase',
+  },
+  badgeCompact: {
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+  },
+  textCompact: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    lineHeight: 13,
   },
 });

@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   environment (`app/services/demo_seed.py`, PP-108).
 
 ### Fixed
+- Home match card Details opens the selected match detail screen instead of
+  switching to the Matches tab.
 - Matches list API latency: batch enrichment (one history query per page) and
   smaller default browse window; Matches tab shows filters while loading instead
   of a full-screen spinner.
@@ -46,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `space-between` spacing instead of horizontal gap with 48% columns.
 
 ### Changed
+- Matches browse grid lists fixtures in reverse kickoff order (newest first) and
+  uses tighter compact-card typography so team names, badges, and insights match
+  the demo reference in the two-column layout.
 - Dashboard/`analytics` model accuracy now comes from the live model's
   walk-forward backtest metadata (honest out-of-sample) instead of re-scoring
   stored predictions, which read low (~0.44) when finished matches still held
@@ -64,8 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Matches tab browse grid: two-column card layout with static demo matches when
   the API list is empty, plus green border hover on web.
 - Home match card Details link: centered, lighter demo-style footer bar and
-  navigation to the Matches tab (PP-90 demo parity). Shared footer/link tokens
-  and regression tests prevent accidental revert when switching branches.
+  navigation to the selected match detail screen. Shared footer/link tokens and
+  regression tests prevent accidental revert when switching branches.
 - Analytics dashboard demo UI: summary stats, confidence trend, risk distribution,
   prediction outcomes, and AI model performance sections with static mock data
   until the analytics API is extended.

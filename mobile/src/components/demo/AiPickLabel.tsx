@@ -3,11 +3,15 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing, typography } from '../../theme';
 
-export function AiPickLabel() {
+type AiPickLabelProps = {
+  compact?: boolean;
+};
+
+export function AiPickLabel({ compact = false }: AiPickLabelProps) {
   return (
     <View style={styles.row}>
-      <Ionicons name="sparkles" size={14} color={colors.primary} />
-      <Text style={styles.text}>AI PICK</Text>
+      <Ionicons name="sparkles" size={compact ? 12 : 14} color={colors.primary} />
+      <Text style={[styles.text, compact && styles.textCompact]}>AI PICK</Text>
     </View>
   );
 }
@@ -21,5 +25,11 @@ const styles = StyleSheet.create({
   text: {
     ...typography.badge,
     color: colors.primary,
+  },
+  textCompact: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    lineHeight: 13,
   },
 });

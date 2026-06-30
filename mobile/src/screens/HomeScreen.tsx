@@ -19,7 +19,6 @@ import {
   ValueBetCard,
 } from '../components';
 import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
-import { navigateHomeDetailsToMatchesTab } from '../navigation/homeNavigation';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors, screenStyles } from '../theme';
 import { filterMatchesByDate } from '../utils/matchDates';
@@ -75,10 +74,6 @@ export function HomeScreen({ navigation }: Props) {
   const onRetry = useCallback(() => {
     onRefresh();
   }, [onRefresh]);
-
-  const onHomeDetailsPress = useCallback(() => {
-    navigateHomeDetailsToMatchesTab(navigation);
-  }, [navigation]);
 
   const openMatchDetail = useCallback(
     (matchId: number) => {
@@ -138,7 +133,7 @@ export function HomeScreen({ navigation }: Props) {
                 match={match}
                 odds={match.odds}
                 prediction={match.prediction}
-                onDetailsPress={onHomeDetailsPress}
+                onDetailsPress={() => openMatchDetail(match.id)}
               />
             ))}
           </View>

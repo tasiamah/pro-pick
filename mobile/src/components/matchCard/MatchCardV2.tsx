@@ -37,6 +37,7 @@ type MatchCardV2Props = {
 type TeamRowProps = {
   team: Team;
   fallbackName: string;
+  compact?: boolean;
 };
 
 function HeaderFavoriteStar({ team }: { team: Team }) {
@@ -66,10 +67,16 @@ function HeaderFavoriteStar({ team }: { team: Team }) {
   );
 }
 
-function TeamRow({ team, fallbackName }: TeamRowProps) {
+function TeamRow({ team, fallbackName, compact = false }: TeamRowProps) {
   return (
     <View style={styles.teamRow}>
-      <Text style={styles.teamName}>{getTeamName(team, fallbackName)}</Text>
+      <Text
+        ellipsizeMode="tail"
+        numberOfLines={compact ? 1 : undefined}
+        style={[styles.teamName, compact && styles.teamNameCompact]}
+      >
+        {getTeamName(team, fallbackName)}
+      </Text>
       <FormIndicator form={team.form} />
     </View>
   );
@@ -115,7 +122,7 @@ export function MatchCardV2({
     >
       <View style={styles.cardBody}>
         <View style={styles.headerRow}>
-          <Text numberOfLines={1} style={styles.league}>
+          <Text numberOfLines={1} style={[styles.league, compact && styles.leagueCompact]}>
             {match.competition_name ?? 'League'}
           </Text>
           <View style={styles.headerActions}>
@@ -138,15 +145,15 @@ export function MatchCardV2({
         ) : null}
 
         <View style={styles.teamsBlock}>
-          <TeamRow team={match.home_team} fallbackName="Home" />
-          <TeamRow team={match.away_team} fallbackName="Away" />
+          <TeamRow compact={compact} team={match.home_team} fallbackName="Home" />
+          <TeamRow compact={compact} team={match.away_team} fallbackName="Away" />
         </View>
 
         {showAiBlock && prediction && primaryOdds ? (
           <View style={styles.aiBlock}>
             <View style={[styles.aiHeaderRow, compact && styles.aiHeaderRowCompact]}>
               <View style={styles.aiPickGroup}>
-                <AiPickLabel />
+                <AiPickLabel compact={compact} />
                 <Text
                   numberOfLines={compact ? 2 : undefined}
                   style={[styles.predictedOutcome, compact && styles.predictedOutcomeCompact]}
@@ -159,18 +166,18 @@ export function MatchCardV2({
                 </Text>
               </View>
               <View style={[styles.badgeRow, compact && styles.badgeRowCompact]}>
-                <ConfidenceBadge confidence={getConfidence(prediction)} />
-                {oddsTier ? <OddsTierBadge tier={oddsTier} /> : null}
+                <ConfidenceBadge compact={compact} confidence={getConfidence(prediction)} />
+                {oddsTier ? <OddsTierBadge compact={compact} tier={oddsTier} /> : null}
               </View>
             </View>
-            {cardInsight ? <InsightBullet text={cardInsight} /> : null}
+            {cardInsight ? <InsightBullet compact={compact} text={cardInsight} /> : null}
           </View>
         ) : null}
       </View>
 
       {detailsHandler ? (
-        <View style={styles.detailsLinkWrap}>
-          <DetailsLink onPress={detailsHandler} />
+        <View style={[styles.detailsLinkWrap, compact && styles.detailsLinkWrapCompact]}>
+          <DetailsLink compact={compact} onPress={detailsHandler} />
         </View>
       ) : null}
     </View>
@@ -188,6 +195,7 @@ const styles = StyleSheet.create({
   },
   cardCompact: {
     justifyContent: 'space-between',
+    padding: spacing.md,
   },
   cardBody: {
     flex: 1,
@@ -208,6 +216,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     flex: 1,
   },
+  leagueCompact: {
+    letterSpacing: 0,
+  },
   headerActions: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -221,6 +232,8 @@ const styles = StyleSheet.create({
   kickoffCompact: {
     ...typography.caption,
     color: colors.textMuted,
+    letterSpacing: 0,
+    lineHeight: 16,
     marginBottom: spacing.xs,
   },
   teamsBlock: {
@@ -236,6 +249,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     marginRight: spacing.sm,
+  },
+  teamNameCompact: {
+    ...typography.labelStrong,
+    letterSpacing: 0,
+    lineHeight: 18,
+    marginRight: spacing.xs,
   },
   aiBlock: {
     gap: spacing.sm,
@@ -256,7 +275,9 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   predictedOutcomeCompact: {
-    ...typography.bodySmall,
+    ...typography.labelStrong,
+    letterSpacing: 0,
+    lineHeight: 18,
   },
   badgeRow: {
     alignItems: 'center',
@@ -275,6 +296,11 @@ const styles = StyleSheet.create({
     marginBottom: -spacing.lg,
     marginHorizontal: -spacing.lg,
     marginTop: spacing.md,
+  },
+  detailsLinkWrapCompact: {
+    marginBottom: -spacing.md,
+    marginHorizontal: -spacing.md,
+    marginTop: spacing.sm,
   },
   pressed: {
     opacity: 0.85,
