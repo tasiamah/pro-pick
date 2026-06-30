@@ -4,10 +4,12 @@ import {
   buildDateRangeEndingAt,
   buildDateWindowParams,
   filterMatchesByDate,
+  filterMatchesByWeek,
   localDayKeyToDate,
   parseMatchDate,
   resolveMatchAnchorDate,
   startOfLocalDay,
+  startOfLocalWeek,
   toLocalDateKey,
 } from './matchDates';
 import type { Match } from '../api/types';
@@ -89,5 +91,62 @@ describe('matchDates', () => {
     expect(filterMatchesByDate(matches, selectedDate).map((match) => match.id)).toEqual([
       2, 1,
     ]);
+  });
+});
+
+describe('startOfLocalWeek', () => {
+  it('returns the Monday of the week and is idempotent on a Monday', () => {
+    const monday = startOfLocalWeek(new Date(2026, 5, 24, 9, 30));
+
+    expect(monday.getDay()).toBe(1);
+    expect(startOfLocalWeek(monday).getTime()).toBe(monday.getTime());
+  });
+
+  it('maps Sunday back to the same week Monday', () => {
+    const monday = startOfLocalWeek(new Date(2026, 5, 24, 9, 30));
+    const sunday = addLocalDays(monday, 6);
+
+    expect(sunday.getDay()).toBe(0);
+    expect(startOfLocalWeek(sunday).getTime()).toBe(monday.getTime());
+  });
+
+  it('maps the following Monday to the next week', () => {
+    const monday = startOfLocalWeek(new Date(2026, 5, 24, 9, 30));
+    const nextMonday = addLocalDays(monday, 7);
+
+    expect(startOfLocalWeek(nextMonday).getTime()).toBe(nextMonday.getTime());
+  });
+});
+
+describe('filterMatchesByWeek', () => {
+  const anchor = new Date(2026, 5, 24, 9, 30);
+  const monday = startOfLocalWeek(anchor);
+
+  it('includes the week start and excludes the next week start', () => {
+    const atWeekStart = createMatch(1, monday.toISOString());
+    const atNextWeekStart = createMatch(2, addLocalDays(monday, 7).toISOString());
+
+    expect(
+      filterMatchesByWeek([atWeekStart, atNextWeekStart], anchor).map((match) => match.id),
+    ).toEqual([1]);
+  });
+
+  it('includes a match late on the final Sunday of the week', () => {
+    const sunday = addLocalDays(monday, 6);
+    const sundayNight = new Date(sunday);
+    sundayNight.setHours(23, 0, 0, 0);
+    const match = createMatch(1, sundayNight.toISOString());
+
+    expect(filterMatchesByWeek([match], anchor).map((m) => m.id)).toEqual([1]);
+  });
+
+  it('excludes matches with no kickoff and sorts the rest by kickoff', () => {
+    const matches: Match[] = [
+      createMatch(1, addLocalDays(monday, 3).toISOString()),
+      { ...createMatch(2, monday.toISOString()), kickoff: null },
+      createMatch(3, addLocalDays(monday, 1).toISOString()),
+    ];
+
+    expect(filterMatchesByWeek(matches, anchor).map((match) => match.id)).toEqual([3, 1]);
   });
 });
