@@ -89,6 +89,20 @@ class RoiTrendPointOut(BaseModel):
     roi: float
 
 
+class RiskDistributionOut(BaseModel):
+    low: int = 0
+    medium: int = 0
+    high: int = 0
+
+
+class PredictionOutcomesOut(BaseModel):
+    home_win: int = 0
+    draw: int = 0
+    away_win: int = 0
+    over_25: int = 0
+    both_teams_score: int = 0
+
+
 class AnalyticsOut(BaseModel):
     accuracy: float | None = None
     log_loss: float | None = None
@@ -99,6 +113,14 @@ class AnalyticsOut(BaseModel):
     confident_accuracy: float | None = None
     confident_coverage: float | None = None
     confidence_threshold: float | None = None
+    total_predictions: int = 0
+    avg_confidence: float | None = None
+    high_confidence_count: int = 0
+    confidence_trend: list[int] = []
+    risk_distribution: RiskDistributionOut = RiskDistributionOut()
+    prediction_outcomes: PredictionOutcomesOut = PredictionOutcomesOut()
+    predictions_today: int = 0
+    markets_covered: int = 3
 
 
 class DashboardOut(BaseModel):

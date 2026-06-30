@@ -12,8 +12,10 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import Match, Prediction, ValueBet
+from app.services.match_enrichment import classify_odds_tier
 
 LOG_LOSS_EPSILON = 1e-15
+CONFIDENCE_TREND_LIMIT = 20
 
 _metrics_cache_lock = Lock()
 _metrics_cache: _ModelMetricsCache | None = None
@@ -39,6 +41,29 @@ class PredictionSnapshot:
     prob_away: float
     home_goals: int
     away_goals: int
+
+
+@dataclass(frozen=True)
+class PredictionProbabilities:
+    prob_home: float
+    prob_draw: float
+    prob_away: float
+
+
+@dataclass(frozen=True)
+class RiskDistributionCounts:
+    low: int = 0
+    medium: int = 0
+    high: int = 0
+
+
+@dataclass(frozen=True)
+class PredictionOutcomeCounts:
+    home_win: int = 0
+    draw: int = 0
+    away_win: int = 0
+    over_25: int = 0
+    both_teams_score: int = 0
 
 
 @dataclass
@@ -177,6 +202,179 @@ def build_roi_trend(settled_bets: list[SettledBetSnapshot]) -> list[RoiTrendPoin
         points.append(RoiTrendPoint(date=day.isoformat(), roi=roi))
 
     return points
+
+
+def prediction_confidence(prob_home: float, prob_draw: float, prob_away: float) -> float:
+    return max(prob_home, prob_draw, prob_away)
+
+
+def build_confidence_trend(
+    predictions: list[PredictionProbabilities],
+) -> list[int]:
+    return [
+        round(prediction_confidence(p.prob_home, p.prob_draw, p.prob_away) * 100)
+        for p in predictions
+    ]
+
+
+def compute_avg_confidence(predictions: list[PredictionProbabilities]) -> float | None:
+    if not predictions:
+        return None
+
+    total = sum(
+        prediction_confidence(p.prob_home, p.prob_draw, p.prob_away)
+        for p in predictions
+    )
+    return total / len(predictions)
+
+
+def count_high_confidence_predictions(
+    predictions: list[PredictionProbabilities],
+    threshold: float,
+) -> int:
+    return sum(
+        1
+        for prediction in predictions
+        if prediction_confidence(
+            prediction.prob_home,
+            prediction.prob_draw,
+            prediction.prob_away,
+        )
+        >= threshold
+    )
+
+
+def build_prediction_outcome_counts(
+    predictions: list[PredictionProbabilities],
+) -> PredictionOutcomeCounts:
+    home_win = 0
+    draw = 0
+    away_win = 0
+    for prediction in predictions:
+        outcome = _predicted_outcome(
+            prediction.prob_home,
+            prediction.prob_draw,
+            prediction.prob_away,
+        )
+        if outcome == "home":
+            home_win += 1
+        elif outcome == "draw":
+            draw += 1
+        else:
+            away_win += 1
+    return PredictionOutcomeCounts(
+        home_win=home_win,
+        draw=draw,
+        away_win=away_win,
+    )
+
+
+def build_risk_distribution(db: Session) -> RiskDistributionCounts:
+    rows = db.execute(select(ValueBet.odd)).scalars().all()
+    low = medium = high = 0
+    for odd in rows:
+        tier = classify_odds_tier(odd)
+        if tier == "low":
+            low += 1
+        elif tier == "medium":
+            medium += 1
+        elif tier == "high":
+            high += 1
+    return RiskDistributionCounts(low=low, medium=medium, high=high)
+
+
+def _latest_prediction_subquery():
+    latest_created_subq = (
+        select(
+            Prediction.match_id,
+            func.max(Prediction.created_at).label("latest_created_at"),
+        )
+        .group_by(Prediction.match_id)
+        .subquery()
+    )
+
+    return (
+        select(
+            Prediction.match_id,
+            func.max(Prediction.id).label("latest_prediction_id"),
+        )
+        .join(
+            latest_created_subq,
+            and_(
+                Prediction.match_id == latest_created_subq.c.match_id,
+                Prediction.created_at == latest_created_subq.c.latest_created_at,
+            ),
+        )
+        .group_by(Prediction.match_id)
+        .subquery()
+    )
+
+
+def load_latest_prediction_probabilities(db: Session) -> list[PredictionProbabilities]:
+    latest_prediction_subq = _latest_prediction_subquery()
+
+    rows = db.execute(
+        select(
+            Prediction.prob_home,
+            Prediction.prob_draw,
+            Prediction.prob_away,
+        ).join(
+            latest_prediction_subq,
+            Prediction.id == latest_prediction_subq.c.latest_prediction_id,
+        )
+    ).all()
+
+    return [
+        PredictionProbabilities(
+            prob_home=row.prob_home,
+            prob_draw=row.prob_draw,
+            prob_away=row.prob_away,
+        )
+        for row in rows
+    ]
+
+
+def load_recent_prediction_probabilities(
+    db: Session,
+    limit: int = CONFIDENCE_TREND_LIMIT,
+) -> list[PredictionProbabilities]:
+    rows = db.execute(
+        select(
+            Prediction.prob_home,
+            Prediction.prob_draw,
+            Prediction.prob_away,
+        )
+        .order_by(Prediction.created_at.desc())
+        .limit(limit)
+    ).all()
+
+    chronological = list(reversed(rows))
+    return [
+        PredictionProbabilities(
+            prob_home=row.prob_home,
+            prob_draw=row.prob_draw,
+            prob_away=row.prob_away,
+        )
+        for row in chronological
+    ]
+
+
+def count_predictions_for_today(db: Session, today: date) -> int:
+    latest_prediction_subq = _latest_prediction_subquery()
+
+    return db.execute(
+        select(func.count())
+        .select_from(Prediction)
+        .join(
+            latest_prediction_subq,
+            Prediction.id == latest_prediction_subq.c.latest_prediction_id,
+        )
+        .join(Match, Prediction.match_id == Match.id)
+        .where(
+            Match.kickoff.is_not(None),
+            func.date(Match.kickoff) == today,
+        )
+    ).scalar_one()
 
 
 def load_prediction_snapshots(db: Session) -> list[PredictionSnapshot]:
