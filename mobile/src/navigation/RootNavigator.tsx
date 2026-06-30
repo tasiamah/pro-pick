@@ -88,6 +88,7 @@ export function RootNavigator() {
           headerStyle: stackScreenOptions.headerStyle,
           headerTintColor: stackScreenOptions.headerTintColor,
           headerShadowVisible: false,
+          headerTitleAlign: 'left',
           headerTitle: () => (
             <StackHeaderTitle title={screenTitles.analytics} />
           ),
