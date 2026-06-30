@@ -13,14 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- Home and Matches now only show high-confidence picks, using an odds-aware
-  threshold: short-priced picks must clear 0.70 (the cut-off behind the reported
-  confident accuracy), while high-odds (underdog) picks are allowed through at a
-  relaxed 0.50 since even a sub-70% probability on a long price is a meaningful
-  edge. Low-confidence and prediction-less matches are hidden, with a dedicated
-  empty state, so the app surfaces only the calls the AI is genuinely confident
-  about (`mobile/src/utils/confidence.ts`,
-  `mobile/src/screens/HomeScreen.tsx`, `mobile/src/screens/MatchesScreen.tsx`,
+- Home and Matches now surface only the strongest, most confident picks, using a
+  slate-relative bar instead of a fixed cut-off. The bar is the top-tier quantile
+  of the current slate's confidences, clamped between a 0.50 floor and the
+  canonical 0.70 threshold: a confident domestic slate behaves like the old 0.70
+  filter, while a balanced international slate (e.g. a World Cup round, where the
+  model rarely exceeds ~0.6) settles near the floor so its best calls still show
+  instead of the tab going empty. High-odds (underdog) picks get a relaxed 0.40
+  floor since a long price makes even a modest probability a real edge.
+  Low-confidence and prediction-less matches are hidden, with a dedicated empty
+  state (`mobile/src/utils/confidence.ts`, `mobile/src/screens/HomeScreen.tsx`,
+  `mobile/src/screens/MatchesScreen.tsx`,
   `mobile/src/screens/matchesFilterUtils.ts`).
 - Expo push notifications end-to-end: device token registration, per-match
   notification preferences stored in the backend, live match event detection
