@@ -53,21 +53,33 @@ def reset_model_cache() -> None:
     _model_cache = None
 
 
+def _neutral_prediction() -> MatchPrediction:
+    return MatchPrediction(
+        prob_home=NEUTRAL_PROBABILITIES["home"],
+        prob_draw=NEUTRAL_PROBABILITIES["draw"],
+        prob_away=NEUTRAL_PROBABILITIES["away"],
+        model_version=FALLBACK_VERSION,
+    )
+
+
 def predict_match(
     db: Session, match: Match, *, model_bundle: ModelBundle | None = None
 ) -> MatchPrediction:
     bundle = model_bundle if model_bundle is not None else load_active_model()
     if bundle is None or match.kickoff is None:
-        return MatchPrediction(
-            prob_home=NEUTRAL_PROBABILITIES["home"],
-            prob_draw=NEUTRAL_PROBABILITIES["draw"],
-            prob_away=NEUTRAL_PROBABILITIES["away"],
-            model_version=FALLBACK_VERSION,
-        )
+        return _neutral_prediction()
 
-    probabilities = predict_outcome_probabilities(
-        bundle.model, build_features(db, match)
-    )
+    try:
+        probabilities = predict_outcome_probabilities(
+            bundle.model, build_features(db, match)
+        )
+    except (ValueError, KeyError):
+        # A model whose feature schema no longer matches the code (e.g. a stale
+        # shipped baseline right after a deploy that added features) would raise
+        # on the wrong-shaped input. Degrade to neutral until the background
+        # bootstrap retrains a schema-matching model, instead of crashing.
+        return _neutral_prediction()
+
     return MatchPrediction(
         prob_home=probabilities["home"],
         prob_draw=probabilities["draw"],

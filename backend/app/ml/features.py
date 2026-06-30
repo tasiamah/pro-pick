@@ -20,7 +20,8 @@ from datetime import datetime
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Match
+from app.ml.market_features import MARKET_FEATURE_COLUMNS, market_features
+from app.models import Match, Odds
 
 FORM_WINDOW = 5
 WIN_POINTS = 3
@@ -39,7 +40,8 @@ OUTCOME_HOME = "home"
 OUTCOME_DRAW = "draw"
 OUTCOME_AWAY = "away"
 
-FEATURE_COLUMNS: list[str] = [
+# Results-derived columns (point-in-time, from finished matches only).
+RESULT_FEATURE_COLUMNS: list[str] = [
     "home_form_points",
     "away_form_points",
     "home_home_form_points",
@@ -61,6 +63,11 @@ FEATURE_COLUMNS: list[str] = [
     "away_elo",
     "elo_diff",
 ]
+
+# Full model input: results features plus the bookmaker market features. Changing
+# this list changes the model's feature schema, which triggers a startup
+# bootstrap retrain (see ``bootstrap_model_if_missing``).
+FEATURE_COLUMNS: list[str] = [*RESULT_FEATURE_COLUMNS, *MARKET_FEATURE_COLUMNS]
 
 
 @dataclass(frozen=True)
@@ -217,7 +224,17 @@ def build_features(
     if match.kickoff is None:
         raise ValueError("match must have a kickoff to build features")
     history = load_match_history(db, before=match.kickoff)
-    return compute_features(_to_context(match), history, form_window=form_window)
+    features = compute_features(_to_context(match), history, form_window=form_window)
+    features.update(market_features(list(match.odds)))
+    return features
+
+
+def load_odds_by_match(db: Session) -> dict[int, list[Odds]]:
+    """All stored odds rows grouped by match id, for batch feature building."""
+    odds_by_match: dict[int, list[Odds]] = {}
+    for odds in db.execute(select(Odds)).scalars():
+        odds_by_match.setdefault(odds.match_id, []).append(odds)
+    return odds_by_match
 
 
 def build_training_dataset(
@@ -228,6 +245,7 @@ def build_training_dataset(
         load_match_history(db),
         key=lambda record: (record.kickoff, record.match_id),
     )
+    odds_by_match = load_odds_by_match(db)
 
     match_ids = []
     features = []
@@ -240,8 +258,10 @@ def build_training_dataset(
             away_team_id=record.away_team_id,
             kickoff=record.kickoff,
         )
+        row = compute_features(context, history, form_window=form_window)
+        row.update(market_features(odds_by_match.get(record.match_id, [])))
         match_ids.append(record.match_id)
-        features.append(compute_features(context, history, form_window=form_window))
+        features.append(row)
         labels.append(match_outcome(record.home_goals, record.away_goals))
 
     return TrainingDataset(match_ids=match_ids, features=features, labels=labels)
