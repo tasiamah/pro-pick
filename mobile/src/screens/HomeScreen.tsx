@@ -71,6 +71,11 @@ export function HomeScreen({ navigation }: Props) {
     [filteredMatches],
   );
 
+  const shownPredictionCount = useMemo(
+    () => oddsTierGroups.reduce((total, group) => total + group.matches.length, 0),
+    [oddsTierGroups],
+  );
+
   const heroStats = useMemo(
     () =>
       dashboardQuery.data
@@ -78,10 +83,10 @@ export function HomeScreen({ navigation }: Props) {
             dashboardQuery.data,
             analyticsQuery.data,
             matchesQuery.data ?? [],
-            now,
+            shownPredictionCount,
           )
         : null,
-    [analyticsQuery.data, dashboardQuery.data, matchesQuery.data, now],
+    [analyticsQuery.data, dashboardQuery.data, matchesQuery.data, shownPredictionCount],
   );
 
   const isInitialLoading = isInitialQueryLoad(
