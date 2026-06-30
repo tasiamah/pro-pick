@@ -6,7 +6,6 @@ import { LiveBadge } from './LiveBadge';
 
 export type AiPredictionsHeroStats = {
   winRate: string;
-  winRateCaption?: string | null;
   avgOdds: string;
   valueBets: string;
   subtitle?: string | null;
@@ -29,11 +28,7 @@ export function AiPredictionsHero({ stats }: AiPredictionsHeroProps) {
         <LiveBadge />
       </View>
       <View style={styles.statsRow}>
-        <HeroStat
-          label="Win Rate"
-          value={stats.winRate}
-          caption={stats.winRateCaption}
-        />
+        <HeroStat label="Win Rate" value={stats.winRate} />
         <HeroStat label="Avg Odds" value={stats.avgOdds} />
         <HeroStat label="Value Bets" value={stats.valueBets} />
       </View>
