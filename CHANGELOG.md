@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- The live notification poll now fetches fresh fixture status each cycle and
+  detects match status transitions (match start/end, half-time, second half,
+  penalty shootout) on every run instead of only during the once-daily sync,
+  and automatically polls every minute while a tracked match is live (relaxing
+  back to the configured interval otherwise) so those events fire close to real
+  time (`backend/app/services/match_notification_events.py`,
+  `backend/app/scheduler/jobs.py`).
 - Value bets, odds-tier classification, and the displayed odds now use the
   best-price bookmaker for each match (the book with the lowest margin /
   overround) instead of the alphabetically first one. This stops understating
