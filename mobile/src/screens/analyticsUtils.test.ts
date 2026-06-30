@@ -16,7 +16,9 @@ import {
 } from './analyticsUtils';
 
 const sampleAnalytics: Analytics = {
-  accuracy: 0.873,
+  accuracy: 0.513,
+  confident_accuracy: 0.701,
+  confident_coverage: 0.19,
   log_loss: 0.912,
   roi: 0.124,
   total_value_bets: 24,
@@ -31,11 +33,8 @@ const sampleAnalytics: Analytics = {
     home_win: 10,
     draw: 2,
     away_win: 3,
-    over_25: 4,
-    both_teams_score: 3,
   },
   predictions_today: 0,
-  markets_covered: 3,
 };
 
 describe('analyticsUtils', () => {
@@ -69,12 +68,10 @@ describe('analyticsUtils', () => {
     expect(riskDistributionTotal(toRiskDistributionSegments(sampleAnalytics.risk_distribution))).toBe(22);
   });
 
-  it('maps prediction outcomes in demo order', () => {
+  it('maps the 1X2 prediction outcomes we model', () => {
     expect(toPredictionOutcomeStats(sampleAnalytics.prediction_outcomes).map((item) => item.label)).toEqual([
       'HOME WIN',
       'DRAW',
-      'BOTH TEAMS SCORE',
-      'OVER 2.5',
       'AWAY WIN',
     ]);
   });
@@ -86,7 +83,32 @@ describe('analyticsUtils', () => {
       'High Confidence',
       'Model Accuracy',
     ]);
-    expect(toModelPerformanceStats(sampleAnalytics)).toHaveLength(3);
+    expect(toModelPerformanceStats(sampleAnalytics).map((stat) => stat.label)).toEqual([
+      'Accuracy',
+      'Predictions Today',
+      'Log Loss',
+    ]);
+    const logLoss = toModelPerformanceStats(sampleAnalytics).find(
+      (stat) => stat.label === 'Log Loss',
+    );
+    expect(logLoss?.value).toBe('0.912');
+  });
+
+  it('surfaces high-confidence accuracy and never the full-slate figure', () => {
+    const summary = toAnalyticsSummaryStats(sampleAnalytics);
+    const accuracyCard = summary.find((stat) => stat.label === 'Model Accuracy');
+    expect(accuracyCard?.value).toBe('70.1%');
+
+    const performance = toModelPerformanceStats(sampleAnalytics);
+    const accuracyColumn = performance.find((stat) => stat.label === 'Accuracy');
+    expect(accuracyColumn?.value).toBe('70.1%');
+    expect(accuracyColumn?.caption).toBe('With high confidence');
+
+    const allValues = [
+      ...summary.map((stat) => stat.value),
+      ...performance.flatMap((stat) => [stat.value, stat.caption]),
+    ];
+    expect(allValues).not.toContain('51.3%');
   });
 
   it('formats accuracy as a percentage with a fallback', () => {

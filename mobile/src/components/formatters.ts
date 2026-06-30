@@ -19,6 +19,9 @@ export function formatKickoff(kickoff: string | null): string {
 }
 
 export function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '—';
+  }
   return `${Math.round(value * 100)}%`;
 }
 

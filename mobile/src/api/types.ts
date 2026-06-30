@@ -62,8 +62,6 @@ export type PredictionOutcomes = {
   home_win: number;
   draw: number;
   away_win: number;
-  over_25: number;
-  both_teams_score: number;
 };
 
 export type Analytics = {
@@ -83,7 +81,6 @@ export type Analytics = {
   risk_distribution?: RiskDistribution;
   prediction_outcomes?: PredictionOutcomes;
   predictions_today?: number;
-  markets_covered?: number;
 };
 
 export type Dashboard = {

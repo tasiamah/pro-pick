@@ -62,8 +62,6 @@ class PredictionOutcomeCounts:
     home_win: int = 0
     draw: int = 0
     away_win: int = 0
-    over_25: int = 0
-    both_teams_score: int = 0
 
 
 @dataclass

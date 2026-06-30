@@ -99,8 +99,6 @@ class PredictionOutcomesOut(BaseModel):
     home_win: int = 0
     draw: int = 0
     away_win: int = 0
-    over_25: int = 0
-    both_teams_score: int = 0
 
 
 class AnalyticsOut(BaseModel):
@@ -120,7 +118,6 @@ class AnalyticsOut(BaseModel):
     risk_distribution: RiskDistributionOut = RiskDistributionOut()
     prediction_outcomes: PredictionOutcomesOut = PredictionOutcomesOut()
     predictions_today: int = 0
-    markets_covered: int = 3
 
 
 class DashboardOut(BaseModel):

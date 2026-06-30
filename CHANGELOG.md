@@ -12,6 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Home "Top Value Bets" cards now show the fixture (teams, league, kickoff) and
+  the picked 1X2 outcome alongside edge, EV, odds, and stake, instead of a bare
+  stat line. The separate margin-based "Confidence" figure was removed so
+  "confidence" means one thing app-wide (the match-card top-pick probability)
+  (`mobile/src/components/ValueBetCard.tsx`, `mobile/src/screens/HomeScreen.tsx`).
+- Analytics now reflects the single market we actually model (1X2): the
+  "Prediction Outcomes" breakdown shows Home/Draw/Away only, and the
+  "AI Model Performance" row replaces the placeholder "Markets Covered" stat
+  with the model's Log Loss. Removed the always-zero "Both Teams Score" and
+  "Over 2.5" outcome cards and the `markets_covered` field
+  (`backend/app/services/analytics.py`, `backend/app/schemas/common.py`,
+  `backend/app/api/analytics.py`, `mobile/src/screens/analyticsUtils.ts`,
+  `mobile/src/api/types.ts`).
+
 ### Added
 - Expo push notifications end-to-end: device token registration, per-match
   notification preferences stored in the backend, live match event detection
@@ -20,6 +35,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `python -m app.scripts.test_push_notification` CLI helper. Mobile registers
   push tokens on launch, syncs modal toggles to the API, and opens match detail
   when a notification is tapped.
+- Home tab now groups matches into Low / Medium / High **Odds** tier sections,
+  each with a tier icon and an "N matches available" count (replacing the single
+  flat "Matches" list), matching the design reference. Tier is derived from the
+  price of the model's recommended outcome
+  (`mobile/src/screens/homeMatchUtils.ts`, `mobile/src/screens/HomeScreen.tsx`,
+  `mobile/src/components/demo/SectionHeader.tsx`).
+- Match cards now show a dynamic, fixture-specific headline insight derived from
+  the recommended outcome, model confidence and each side's recent form (e.g.
+  "Alpha unstoppable right now", "Evenly matched — honours likely shared"),
+  replacing the backend's repetitive templated line
+  (`mobile/src/components/matchCard/matchInsightUtils.ts`,
+  `mobile/src/components/matchCard/MatchCardV2.tsx`).
 - Home "AI Predictions" hero now shows a live status pill and a
   "N verified predictions today" subtitle (count of matches kicking off today
   that carry a model prediction), and the Home "Matches" section shows an
@@ -46,6 +73,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   environment (`app/services/demo_seed.py`, PP-108).
 
 ### Changed
+- Analytics now headlines the high-confidence accuracy (~70%) instead of the
+  full-slate accuracy: the "Model Accuracy" summary card and the AI Model
+  Performance "Accuracy" column both read from `confident_accuracy` and are
+  captioned "With high confidence". The full-slate figure (~51%) is no longer
+  surfaced anywhere on the Analytics tab (`mobile/src/screens/analyticsUtils.ts`).
 - Favorites now star a whole match instead of a team: the card star toggles the
   match, and the Favorites tab lists those starred matches (fetched by id, sorted
   by earliest kickoff) to match the design. Removed the unused team/competition

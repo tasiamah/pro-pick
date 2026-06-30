@@ -97,9 +97,6 @@ def get_analytics(db: Session = Depends(get_db)) -> AnalyticsOut:
             home_win=outcome_counts.home_win,
             draw=outcome_counts.draw,
             away_win=outcome_counts.away_win,
-            over_25=outcome_counts.over_25,
-            both_teams_score=outcome_counts.both_teams_score,
         ),
         predictions_today=predictions_today,
-        markets_covered=3,
     )

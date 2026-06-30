@@ -84,8 +84,6 @@ export function toPredictionOutcomeStats(
   return [
     { label: 'HOME WIN', value: outcomes?.home_win ?? 0 },
     { label: 'DRAW', value: outcomes?.draw ?? 0 },
-    { label: 'BOTH TEAMS SCORE', value: outcomes?.both_teams_score ?? 0 },
-    { label: 'OVER 2.5', value: outcomes?.over_25 ?? 0 },
     { label: 'AWAY WIN', value: outcomes?.away_win ?? 0 },
   ];
 }
@@ -114,7 +112,7 @@ export function toAnalyticsSummaryStats(
     },
     {
       label: 'Model Accuracy',
-      value: formatAccuracyMetric(analytics.accuracy),
+      value: formatAccuracyMetric(analytics.confident_accuracy),
       icon: 'trending-up-outline',
       iconColor: colors.oddsLow,
     },
@@ -126,11 +124,9 @@ export function toModelPerformanceStats(
 ): ModelPerformanceStat[] {
   return [
     {
-      label: 'Overall Accuracy',
-      value: formatAccuracyMetric(analytics.accuracy),
-      caption: analytics.confident_coverage != null
-        ? `${formatCoverageMetric(analytics.confident_coverage)} high-confidence picks`
-        : 'Across settled predictions',
+      label: 'Accuracy',
+      value: formatAccuracyMetric(analytics.confident_accuracy),
+      caption: 'With high confidence',
       valueColor: colors.primary,
     },
     {
@@ -140,9 +136,9 @@ export function toModelPerformanceStats(
       valueColor: colors.marketBlue,
     },
     {
-      label: 'Markets Covered',
-      value: formatCountMetric(analytics.markets_covered ?? 3),
-      caption: 'Bet types available',
+      label: 'Log Loss',
+      value: formatLogLossMetric(analytics.log_loss),
+      caption: 'Lower is better',
       valueColor: colors.chartAway,
     },
   ];
@@ -171,14 +167,6 @@ export function formatAccuracyMetric(value: number | null | undefined): string {
 }
 
 export function formatAvgConfidenceMetric(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) {
-    return '—';
-  }
-
-  return `${(value * 100).toFixed(1)}%`;
-}
-
-export function formatCoverageMetric(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) {
     return '—';
   }

@@ -21,10 +21,10 @@ import {
   classifyOddsTier,
   formatPredictedOutcomeLabel,
   getConfidence,
-  getExplicitMatchInsight,
   getOddForOutcome,
   getRecommendedOutcome,
 } from './matchCardUtils';
+import { buildDynamicMatchInsight } from './matchInsightUtils';
 
 type MatchCardV2Props = {
   match: Match;
@@ -98,7 +98,9 @@ export function MatchCardV2({
     prediction && primaryOdds
       ? classifyOddsTier(getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)))
       : null;
-  const cardInsight = prediction ? getExplicitMatchInsight(prediction) : null;
+  const cardInsight = prediction
+    ? buildDynamicMatchInsight(match, prediction)
+    : null;
 
   const hoverHandlers =
     Platform.OS === 'web'
