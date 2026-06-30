@@ -3,6 +3,7 @@ import { startOfLocalDay } from '../utils/matchDates';
 import {
   filterUpcomingMatchesForDay,
   filterUpcomingValueBets,
+  selectHomeMatches,
 } from './homeMatchUtils';
 
 function createMatch(id: number, kickoff: string): MatchDetail {
@@ -58,6 +59,66 @@ describe('filterUpcomingMatchesForDay', () => {
     const result = filterUpcomingMatchesForDay([early, late], selectedDate, now);
 
     expect(result.map((match) => match.id)).toEqual([1, 2]);
+  });
+});
+
+describe('selectHomeMatches', () => {
+  const selectedToday = startOfLocalDay(new Date(2026, 5, 24, 0, 0));
+  const now = new Date(2026, 5, 24, 16, 0);
+
+  it('tops up to the target with the soonest upcoming matches from later days', () => {
+    const startedToday = createMatch(1, new Date(2026, 5, 24, 15, 0).toISOString());
+    const upcomingTodayA = createMatch(2, new Date(2026, 5, 24, 17, 0).toISOString());
+    const upcomingTodayB = createMatch(3, new Date(2026, 5, 24, 20, 0).toISOString());
+    const tomorrow = createMatch(4, new Date(2026, 5, 25, 13, 0).toISOString());
+    const dayAfter = createMatch(5, new Date(2026, 5, 26, 18, 0).toISOString());
+
+    const result = selectHomeMatches(
+      [startedToday, upcomingTodayA, upcomingTodayB, tomorrow, dayAfter],
+      selectedToday,
+      now,
+    );
+
+    // Two upcoming today (started one dropped) + soonest later match.
+    expect(result.map((match) => match.id)).toEqual([2, 3, 4]);
+  });
+
+  it('returns every match on a day that already meets the target without filling', () => {
+    const a = createMatch(1, new Date(2026, 5, 24, 17, 0).toISOString());
+    const b = createMatch(2, new Date(2026, 5, 24, 19, 0).toISOString());
+    const c = createMatch(3, new Date(2026, 5, 24, 21, 0).toISOString());
+    const d = createMatch(4, new Date(2026, 5, 24, 22, 0).toISOString());
+    const tomorrow = createMatch(5, new Date(2026, 5, 25, 13, 0).toISOString());
+
+    const result = selectHomeMatches([a, b, c, d, tomorrow], selectedToday, now);
+
+    expect(result.map((match) => match.id)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('returns only what is available when later days cannot fill the target', () => {
+    const a = createMatch(1, new Date(2026, 5, 24, 17, 0).toISOString());
+    const b = createMatch(2, new Date(2026, 5, 24, 20, 0).toISOString());
+
+    const result = selectHomeMatches([a, b], selectedToday, now);
+
+    expect(result.map((match) => match.id)).toEqual([1, 2]);
+  });
+
+  it('only borrows from days after the selected day', () => {
+    const selectedTomorrow = startOfLocalDay(new Date(2026, 5, 25, 0, 0));
+    const earlierToday = createMatch(1, new Date(2026, 5, 24, 20, 0).toISOString());
+    const onSelectedDay = createMatch(2, new Date(2026, 5, 25, 18, 0).toISOString());
+    const laterA = createMatch(3, new Date(2026, 5, 26, 13, 0).toISOString());
+    const laterB = createMatch(4, new Date(2026, 5, 27, 14, 0).toISOString());
+
+    const result = selectHomeMatches(
+      [earlierToday, onSelectedDay, laterA, laterB],
+      selectedTomorrow,
+      now,
+    );
+
+    // The earlier (today) match is not borrowed; fills forward from later days.
+    expect(result.map((match) => match.id)).toEqual([2, 3, 4]);
   });
 });
 

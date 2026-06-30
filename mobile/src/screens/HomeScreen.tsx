@@ -24,10 +24,7 @@ import type { HomeStackParamList } from '../navigation/types';
 import { colors, screenStyles } from '../theme';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
-import {
-  filterUpcomingMatchesForDay,
-  filterUpcomingValueBets,
-} from './homeMatchUtils';
+import { filterUpcomingValueBets, selectHomeMatches } from './homeMatchUtils';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -44,7 +41,7 @@ export function HomeScreen({ navigation }: Props) {
   const now = useNow();
 
   const filteredMatches = useMemo(
-    () => filterUpcomingMatchesForDay(matchesQuery.data ?? [], selectedDate, now),
+    () => selectHomeMatches(matchesQuery.data ?? [], selectedDate, now),
     [matchesQuery.data, selectedDate, now],
   );
 

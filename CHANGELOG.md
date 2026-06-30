@@ -37,7 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Home tab no longer lists matches that have already kicked off (e.g. a fixture
   that started earlier today): it now applies the same kickoff guard as the
   Matches tab via a live clock (`useNow`), and hides Top Value Bets whose match
-  has started (`mobile/src/screens/HomeScreen.tsx`,
+  has started. To avoid a sparse list once started matches drop off, the Matches
+  section tops up to at least 3 by appending the soonest upcoming matches from
+  later days (`mobile/src/screens/HomeScreen.tsx`,
   `mobile/src/screens/homeMatchUtils.ts`).
 - Live sync now includes FIFA World Cup (league id 1) so finished World Cup
   results and scores refresh from API-Football instead of staying stuck on

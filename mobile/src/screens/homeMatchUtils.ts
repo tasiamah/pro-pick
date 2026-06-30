@@ -1,6 +1,13 @@
 import type { MatchDetail, ValueBet } from '../api/types';
-import { filterMatchesByDate } from '../utils/matchDates';
+import {
+  addLocalDays,
+  filterMatchesByDate,
+  startOfLocalDay,
+} from '../utils/matchDates';
 import { hasKickedOff } from './matchesFilterUtils';
+
+/** Minimum number of matches the Home tab tries to show. */
+export const HOME_MATCH_TARGET = 3;
 
 /**
  * Matches on the selected local day that have not kicked off yet. The Home tab
@@ -16,6 +23,43 @@ export function filterUpcomingMatchesForDay(
   return filterMatchesByDate(matches, selectedDate).filter(
     (match) => !hasKickedOff(match.kickoff, now),
   );
+}
+
+function kickoffTime(match: MatchDetail): number {
+  return match.kickoff ? new Date(match.kickoff).getTime() : 0;
+}
+
+/**
+ * Matches to show on the Home tab: the selected day's upcoming matches, topped
+ * up with the soonest upcoming matches from later days so the list never shrinks
+ * below ``target`` while the loaded window still has upcoming fixtures. Days that
+ * already have ``target`` or more upcoming matches are returned unchanged.
+ */
+export function selectHomeMatches(
+  matches: MatchDetail[],
+  selectedDate: Date,
+  now: Date,
+  target = HOME_MATCH_TARGET,
+): MatchDetail[] {
+  const dayMatches = filterUpcomingMatchesForDay(matches, selectedDate, now);
+  if (dayMatches.length >= target) {
+    return dayMatches;
+  }
+
+  const nextDayStart = addLocalDays(startOfLocalDay(selectedDate), 1).getTime();
+  const alreadyShown = new Set(dayMatches.map((match) => match.id));
+  const fillers = matches
+    .filter(
+      (match) =>
+        !alreadyShown.has(match.id) &&
+        match.kickoff !== null &&
+        !hasKickedOff(match.kickoff, now) &&
+        kickoffTime(match) >= nextDayStart,
+    )
+    .sort((left, right) => kickoffTime(left) - kickoffTime(right))
+    .slice(0, target - dayMatches.length);
+
+  return [...dayMatches, ...fillers];
 }
 
 /**
