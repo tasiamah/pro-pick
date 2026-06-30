@@ -84,8 +84,6 @@ export function toPredictionOutcomeStats(
   return [
     { label: 'HOME WIN', value: outcomes?.home_win ?? 0 },
     { label: 'DRAW', value: outcomes?.draw ?? 0 },
-    { label: 'BOTH TEAMS SCORE', value: outcomes?.both_teams_score ?? 0 },
-    { label: 'OVER 2.5', value: outcomes?.over_25 ?? 0 },
     { label: 'AWAY WIN', value: outcomes?.away_win ?? 0 },
   ];
 }
@@ -138,9 +136,9 @@ export function toModelPerformanceStats(
       valueColor: colors.marketBlue,
     },
     {
-      label: 'Markets Covered',
-      value: formatCountMetric(analytics.markets_covered ?? 3),
-      caption: 'Bet types available',
+      label: 'Log Loss',
+      value: formatLogLossMetric(analytics.log_loss),
+      caption: 'Lower is better',
       valueColor: colors.chartAway,
     },
   ];

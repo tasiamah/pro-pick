@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   stat line. The separate margin-based "Confidence" figure was removed so
   "confidence" means one thing app-wide (the match-card top-pick probability)
   (`mobile/src/components/ValueBetCard.tsx`, `mobile/src/screens/HomeScreen.tsx`).
+- Analytics now reflects the single market we actually model (1X2): the
+  "Prediction Outcomes" breakdown shows Home/Draw/Away only, and the
+  "AI Model Performance" row replaces the placeholder "Markets Covered" stat
+  with the model's Log Loss. Removed the always-zero "Both Teams Score" and
+  "Over 2.5" outcome cards and the `markets_covered` field
+  (`backend/app/services/analytics.py`, `backend/app/schemas/common.py`,
+  `backend/app/api/analytics.py`, `mobile/src/screens/analyticsUtils.ts`,
+  `mobile/src/api/types.ts`).
 
 ### Added
 - Home "AI Predictions" hero now shows a live status pill and a
