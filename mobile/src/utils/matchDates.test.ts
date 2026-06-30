@@ -4,6 +4,7 @@ import {
   buildDateRangeEndingAt,
   buildDateWindowParams,
   filterMatchesByDate,
+  localDayKeyToDate,
   resolveMatchAnchorDate,
   startOfLocalDay,
   toLocalDateKey,
@@ -22,6 +23,13 @@ function createMatch(id: number, kickoff: string): Match {
 }
 
 describe('matchDates', () => {
+  it('round-trips a local day key back to the start of that local day', () => {
+    const start = startOfLocalDay(new Date(2026, 5, 24, 9, 30));
+    const restored = localDayKeyToDate(toLocalDateKey(start));
+
+    expect(restored.getTime()).toBe(start.getTime());
+  });
+
   it('builds a local date range from the start day', () => {
     const start = startOfLocalDay(new Date(2026, 5, 24, 12, 0));
     const range = buildDateRange(start, 3);

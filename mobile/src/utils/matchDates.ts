@@ -20,6 +20,11 @@ export function toLocalDateKey(value: string | Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function localDayKeyToDate(key: string): Date {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function formatDateChipLabel(date: Date): string {
   return date.toLocaleDateString('en-US', {
     weekday: 'short',

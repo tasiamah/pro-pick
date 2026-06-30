@@ -20,11 +20,11 @@ import {
   SegmentedControl,
 } from '../components';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { useLocalDayKey } from '../hooks/useLocalDayKey';
+import { useNow } from '../hooks/useNow';
 import { TAB_BAR_BASE_HEIGHT } from '../navigation/tabBarOptions';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
-import { addLocalDays } from '../utils/matchDates';
+import { addLocalDays, localDayKeyToDate, toLocalDateKey } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import {
   chunkMatchesGridRows,
@@ -60,11 +60,11 @@ export function MatchesScreen({ navigation }: Props) {
   const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('upcoming');
   const [oddsTierFilter, setOddsTierFilter] = useState<MatchOddsTierFilter>('all');
   const debouncedSearchQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
-  const { localDayKey, refreshLocalDayKey } = useLocalDayKey();
+  const now = useNow();
+  const localDayKey = toLocalDateKey(now);
 
   const matchListParams = useMemo(() => {
-    const [year, month, day] = localDayKey.split('-').map(Number);
-    const today = new Date(year, month - 1, day);
+    const today = localDayKeyToDate(localDayKey);
     const start = addLocalDays(today, -BROWSE_WINDOW_DAYS);
     const end =
       statusFilter === 'completed'
@@ -97,8 +97,9 @@ export function MatchesScreen({ navigation }: Props) {
         statusFilter,
         oddsTierFilter,
         debouncedSearchQuery,
+        now,
       ),
-    [matchesQuery.data, debouncedSearchQuery, oddsTierFilter, statusFilter],
+    [matchesQuery.data, debouncedSearchQuery, oddsTierFilter, statusFilter, now],
   );
 
   const gridRows = useMemo(
@@ -112,9 +113,8 @@ export function MatchesScreen({ navigation }: Props) {
   );
 
   const onRefresh = useCallback(() => {
-    refreshLocalDayKey();
     void matchesQuery.refetch();
-  }, [matchesQuery, refreshLocalDayKey]);
+  }, [matchesQuery]);
 
   const isMatchesLoading = isInitialQueryLoad(
     matchesQuery.isLoading,

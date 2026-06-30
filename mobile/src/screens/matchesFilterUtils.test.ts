@@ -55,6 +55,13 @@ describe('matchesFilterUtils', () => {
     ).toEqual([]);
   });
 
+  it('excludes a match at the exact kickoff instant from upcoming', () => {
+    const kickoff = '2026-06-29T15:00:00Z';
+    const startingMatch: MatchDetail = { ...baseMatch, id: 5, kickoff };
+
+    expect(matchesStatusFilter(startingMatch, 'upcoming', new Date(kickoff))).toBe(false);
+  });
+
   it('filters matches by team or competition search', () => {
     expect(matchesSearchFilter(baseMatch, 'bourn')).toBe(true);
     expect(matchesSearchFilter(baseMatch, 'premier')).toBe(true);

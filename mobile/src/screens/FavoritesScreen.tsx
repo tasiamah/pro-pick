@@ -12,6 +12,7 @@ import {
   LoadingState,
   MatchCardV2,
 } from '../components';
+import { useLocalDayKey } from '../hooks/useLocalDayKey';
 import type { FavoritesStackParamList } from '../navigation/types';
 import { filterMatchesByFavorites, useFavoritesStore } from '../store';
 import { colors, screenStyles, spacing, typography } from '../theme';
@@ -20,7 +21,7 @@ import {
   buildDateWindowParams,
   DATE_RANGE_DAYS,
   filterMatchesByDate,
-  startOfLocalDay,
+  localDayKeyToDate,
 } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 
@@ -66,14 +67,27 @@ function SavedFavoritesRow() {
 }
 
 export function FavoritesScreen({ navigation }: Props) {
-  const [selectedDate, setSelectedDate] = useState(() => startOfLocalDay());
+  const localDayKey = useLocalDayKey();
+  const [selectedDate, setSelectedDate] = useState(() => localDayKeyToDate(localDayKey));
+  const [prevDayKey, setPrevDayKey] = useState(localDayKey);
   const teams = useFavoritesStore((state) => state.teams);
   const competitions = useFavoritesStore((state) => state.competitions);
   const hasFavorites = teams.length > 0 || competitions.length > 0;
-  const matchListParams = useMemo(() => buildDateWindowParams(), []);
+  const matchListParams = useMemo(
+    () => buildDateWindowParams(localDayKeyToDate(localDayKey)),
+    [localDayKey],
+  );
   const matchesQuery = useMatches(matchListParams, { enabled: hasFavorites });
 
-  const dateRange = useMemo(() => buildDateRange(startOfLocalDay(), DATE_RANGE_DAYS), []);
+  const dateRange = useMemo(
+    () => buildDateRange(localDayKeyToDate(localDayKey), DATE_RANGE_DAYS),
+    [localDayKey],
+  );
+
+  if (localDayKey !== prevDayKey) {
+    setPrevDayKey(localDayKey);
+    setSelectedDate(localDayKeyToDate(localDayKey));
+  }
 
   const filteredMatches = useMemo(() => {
     const favoriteMatches = filterMatchesByFavorites(

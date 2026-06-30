@@ -28,7 +28,7 @@ function hasKickedOff(kickoff: string | null, now: Date): boolean {
     return false;
   }
 
-  return kickoffTime < now.getTime();
+  return kickoffTime <= now.getTime();
 }
 
 export function matchesStatusFilter(
