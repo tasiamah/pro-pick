@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Match, Odds, Prediction, Team } from '../../api/types';
+import { MatchNotificationsModal } from '../matchNotifications/MatchNotificationsModal';
 import {
   AiPickLabel,
   ConfidenceBadge,
@@ -86,6 +87,7 @@ export function MatchCardV2({
   onDetailsPress,
 }: MatchCardV2Props) {
   const [hovered, setHovered] = useState(false);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
   const primaryOdds = odds?.[0];
   const showAiBlock = prediction != null && primaryOdds != null;
   const homeName = getTeamName(match.home_team, 'Home');
@@ -121,9 +123,15 @@ export function MatchCardV2({
             {match.competition_name ?? 'League'}
           </Text>
           <View style={styles.headerActions}>
-            <View accessibilityElementsHidden>
+            <Pressable
+              accessibilityLabel={`Match notifications for ${homeName} vs ${awayName}`}
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => setNotificationsVisible(true)}
+              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+            >
               <Ionicons name="notifications-outline" size={18} color={colors.textMuted} />
-            </View>
+            </Pressable>
             <MatchFavoriteStar matchId={match.id} label={`${homeName} vs ${awayName}`} />
             {!compact ? (
               <Text numberOfLines={1} style={styles.kickoff}>
@@ -175,6 +183,12 @@ export function MatchCardV2({
           <DetailsLink compact={compact} onPress={detailsHandler} />
         </View>
       ) : null}
+
+      <MatchNotificationsModal
+        match={match}
+        visible={notificationsVisible}
+        onClose={() => setNotificationsVisible(false)}
+      />
     </View>
   );
 }
@@ -218,6 +232,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  iconButton: {
+    padding: spacing.xs,
   },
   kickoff: {
     ...typography.caption,

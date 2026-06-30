@@ -21,6 +21,11 @@ from app.services.historical_import import (
     ImportSummary,
 )
 from app.services.ingestion_alerts import IngestionPipelineError
+from app.services.match_notification_events import (
+    NotificationDispatchSummary,
+    process_match_fixture_update,
+    run_live_notification_sync,
+)
 from app.services.prediction import generate_prediction
 from app.services.value_bets import generate_value_bets, settlement_profit
 
@@ -45,6 +50,7 @@ class LiveSyncSummary:
     predictions: int = 0
     value_bets: int = 0
     settled_value_bets: int = 0
+    notifications: NotificationDispatchSummary | None = None
 
     def merge_import(self, summary: ImportSummary) -> None:
         self.import_summary = summary
@@ -189,6 +195,47 @@ def settle_value_bets(db: Session) -> int:
     return len(open_bets)
 
 
+def _process_fixture_notifications(
+    db: Session,
+    fixtures: list[dict],
+) -> NotificationDispatchSummary:
+    total = NotificationDispatchSummary()
+    external_ids = [
+        int(item["fixture"]["id"])
+        for item in fixtures
+        if item.get("fixture", {}).get("id") is not None
+    ]
+    if not external_ids:
+        return total
+
+    matches = db.scalars(
+        select(Match)
+        .options(
+            selectinload(Match.home_team),
+            selectinload(Match.away_team),
+        )
+        .where(Match.external_id.in_(external_ids))
+    ).all()
+    matches_by_external = {
+        match.external_id: match for match in matches if match.external_id is not None
+    }
+
+    for fixture_item in fixtures:
+        external_id = fixture_item.get("fixture", {}).get("id")
+        if external_id is None:
+            continue
+        match = matches_by_external.get(int(external_id))
+        if match is None:
+            continue
+
+        result = process_match_fixture_update(db, match, fixture_item)
+        total.events_detected += result.events_detected
+        total.messages_sent += result.messages_sent
+        total.messages_failed += result.messages_failed
+
+    return total
+
+
 def run_live_sync(
     db: Session,
     *,
@@ -236,15 +283,29 @@ def run_live_sync(
 
     summary.settled_value_bets = settle_value_bets(db)
 
+    if settings.notifications_enabled:
+        notification_summary = NotificationDispatchSummary()
+        if fixtures:
+            fixture_summary = _process_fixture_notifications(db, fixtures)
+            notification_summary.events_detected += fixture_summary.events_detected
+            notification_summary.messages_sent += fixture_summary.messages_sent
+            notification_summary.messages_failed += fixture_summary.messages_failed
+        live_summary = run_live_notification_sync(db, api_client)
+        notification_summary.events_detected += live_summary.events_detected
+        notification_summary.messages_sent += live_summary.messages_sent
+        notification_summary.messages_failed += live_summary.messages_failed
+        summary.notifications = notification_summary
+
     logger.info(
         "Live sync complete: %s fixtures, %s new matches, %s odds rows, "
-        "%s predictions, %s value bets, %s settled bets",
+        "%s predictions, %s value bets, %s settled bets, %s push sent",
         summary.fixtures_fetched,
         summary.import_summary.matches if summary.import_summary else 0,
         summary.import_summary.odds if summary.import_summary else 0,
         summary.predictions,
         summary.value_bets,
         summary.settled_value_bets,
+        summary.notifications.messages_sent if summary.notifications else 0,
     )
 
     return summary

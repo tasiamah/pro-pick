@@ -117,3 +117,19 @@ export type ValueBetListParams = {
   limit?: number;
   match_id?: number;
 };
+
+export type PushTokenRegisterRequest = {
+  device_id: string;
+  expo_push_token: string;
+  platform: string;
+};
+
+export type PushTokenRegisterResponse = {
+  device_id: string;
+  registered: boolean;
+};
+
+export type MatchNotificationSettings = {
+  match_id: number;
+  settings: Record<string, boolean>;
+};

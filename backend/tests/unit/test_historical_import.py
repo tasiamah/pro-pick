@@ -210,8 +210,10 @@ def test_import_league_season_is_idempotent(db_session: Session) -> None:
     assert db_session.query(Match).count() == 1
 
 
-def test_scheduled_fixture_does_not_store_goals(db_session: Session) -> None:
-    fixture = sample_fixture(status="NS", home_goals=None, away_goals=None)
+def test_scheduled_fixture_stores_goals_when_provider_returns_them(
+    db_session: Session,
+) -> None:
+    fixture = sample_fixture(status="NS", home_goals=0, away_goals=0)
     client = StubFootballApiClient(fixtures={(39, 2024): [fixture]})
     importer = HistoricalDataImporter(db_session, client=client, import_odds=False)
 
@@ -219,5 +221,5 @@ def test_scheduled_fixture_does_not_store_goals(db_session: Session) -> None:
 
     match = db_session.query(Match).one()
     assert match.status == "scheduled"
-    assert match.home_goals is None
-    assert match.away_goals is None
+    assert match.home_goals == 0
+    assert match.away_goals == 0

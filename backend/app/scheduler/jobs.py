@@ -19,6 +19,7 @@ from app.ml.storage import active_model_path, load_model, resolve_model_path
 from app.ml.train import train_model
 from app.services.ingestion_alerts import alert_ingestion_failure
 from app.services.live_sync import run_live_sync, sync_value_bets_for_upcoming
+from app.services.match_notification_events import run_live_notification_sync
 from app.services.prediction import refresh_predictions_for_upcoming, reset_model_cache
 
 logger = logging.getLogger(__name__)
@@ -134,6 +135,39 @@ def retrain_model() -> None:
         logger.exception("Model retraining failed")
 
 
+def live_notification_poll() -> None:
+    if not settings.notifications_enabled:
+        return
+
+    logger.info("Starting live notification poll")
+    try:
+        with _scheduler_lock() as acquired:
+            if not acquired:
+                logger.info(
+                    "Another worker holds the scheduler lock; skipping notification poll"
+                )
+                return
+
+            db = SessionLocal()
+            try:
+                summary = run_live_notification_sync(db)
+                logger.info(
+                    "Live notification poll complete: %s events, %s sent, %s failed",
+                    summary.events_detected,
+                    summary.messages_sent,
+                    summary.messages_failed,
+                )
+            finally:
+                db.close()
+    except Exception as exc:
+        alert_ingestion_failure(
+            source="scheduler.live_notification_poll",
+            message="Live notification poll failed",
+            exc_info=exc,
+        )
+        logger.exception("Live notification poll failed")
+
+
 def bootstrap_model_if_missing() -> None:
     """Train a model in the background when none is present or its schema is stale.
 
@@ -200,6 +234,17 @@ def start_scheduler() -> None:
             coalesce=True,
         )
 
+    if settings.scheduler_live_notifications_enabled and settings.notifications_enabled:
+        scheduler.add_job(
+            live_notification_poll,
+            "interval",
+            minutes=settings.live_notification_poll_minutes,
+            id="live_notification_poll",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
     scheduler.start()
     logger.info(
         "Scheduler started; daily live sync scheduled at %02d:00 UTC",
@@ -209,6 +254,11 @@ def start_scheduler() -> None:
         logger.info(
             "Model retraining scheduled every %s day(s)",
             settings.model_retraining_interval_days,
+        )
+    if settings.scheduler_live_notifications_enabled:
+        logger.info(
+            "Live notification poll scheduled every %s minute(s)",
+            settings.live_notification_poll_minutes,
         )
 
 

@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Expo push notifications end-to-end: device token registration, per-match
+  notification preferences stored in the backend, live match event detection
+  (goals, cards, kick-off, full-time, line-ups, etc.), deduplicated delivery
+  via the Expo Push API, a `POST /notifications/test` endpoint, and a
+  `python -m app.scripts.test_push_notification` CLI helper. Mobile registers
+  push tokens on launch, syncs modal toggles to the API, and opens match detail
+  when a notification is tapped.
 - Ship a small, version-controlled baseline model bundle
   (`backend/app/ml/pretrained_model.pkl`, ~6 KB) so a fresh deploy serves real
   predictions and honest metrics (walk-forward accuracy ~0.51, high-confidence
