@@ -282,6 +282,49 @@ def test_odds_circuit_breaker_stops_after_repeated_failures(
     assert summary.odds == 0
 
 
+def test_backfill_odds_populates_matches_without_odds(db_session: Session) -> None:
+    fixtures = [sample_fixture(fixture_id=1001), sample_fixture(fixture_id=1002)]
+    seeder = StubFootballApiClient(fixtures={(39, 2024): fixtures})
+    HistoricalDataImporter(
+        db_session, client=seeder, import_odds=False
+    ).import_league_season(league_id=39, season=2024)
+    assert db_session.query(Odds).count() == 0
+
+    backfill_client = StubFootballApiClient(
+        odds={1001: odds_payload(), 1002: odds_payload()}
+    )
+    importer = HistoricalDataImporter(db_session, client=backfill_client)
+    matches = db_session.query(Match).order_by(Match.external_id).all()
+
+    summary = importer.backfill_odds(matches)
+
+    assert summary.odds == 2
+    assert summary.odds_failed == 0
+    assert db_session.query(Odds).count() == 2
+    assert sorted(backfill_client.odds_calls) == [1001, 1002]
+
+
+def test_backfill_odds_skips_failures_without_aborting(db_session: Session) -> None:
+    fixtures = [sample_fixture(fixture_id=1001), sample_fixture(fixture_id=1002)]
+    seeder = StubFootballApiClient(fixtures={(39, 2024): fixtures})
+    HistoricalDataImporter(
+        db_session, client=seeder, import_odds=False
+    ).import_league_season(league_id=39, season=2024)
+
+    backfill_client = StubFootballApiClient(
+        odds={1002: odds_payload()},
+        failing_odds_ids=frozenset({1001}),
+    )
+    importer = HistoricalDataImporter(db_session, client=backfill_client)
+    matches = db_session.query(Match).order_by(Match.external_id).all()
+
+    summary = importer.backfill_odds(matches)
+
+    assert summary.odds == 1
+    assert summary.odds_failed == 1
+    assert db_session.query(Odds).count() == 1
+
+
 @pytest.mark.parametrize(
     ("home_goals", "away_goals"),
     [

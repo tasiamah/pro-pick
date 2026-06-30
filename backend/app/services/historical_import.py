@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -189,6 +190,41 @@ class HistoricalDataImporter:
                             "this batch.",
                             consecutive_odds_failures,
                         )
+
+        self.db.commit()
+        return summary
+
+    def backfill_odds(self, matches: Sequence[Match]) -> ImportSummary:
+        """Fetch and store odds for already-imported matches that lack them.
+
+        Used to populate market features for historical training data. Resilient
+        like ``import_fixture_items``: a provider error on one match is logged and
+        skipped, and after repeated failures (e.g. quota exhaustion) it stops and
+        commits what it has. Honors ``import_odds`` / ``upcoming_odds_only`` via
+        ``_should_import_odds``.
+        """
+        summary = ImportSummary()
+        consecutive_failures = 0
+
+        for match in matches:
+            if not self._should_import_odds(match):
+                continue
+            try:
+                summary.odds += self._import_odds_for_match(match)
+                consecutive_failures = 0
+            except (FootballApiError, httpx.HTTPError) as exc:
+                summary.odds_failed += 1
+                consecutive_failures += 1
+                logger.warning(
+                    "Odds backfill failed for fixture %s: %s", match.external_id, exc
+                )
+                if consecutive_failures >= MAX_CONSECUTIVE_ODDS_FAILURES:
+                    logger.warning(
+                        "Stopping odds backfill after %s consecutive failures; "
+                        "committing what was fetched.",
+                        consecutive_failures,
+                    )
+                    break
 
         self.db.commit()
         return summary

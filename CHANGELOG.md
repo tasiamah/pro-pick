@@ -48,6 +48,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`mobile/src/screens/homeHeroUtils.ts`, `mobile/src/screens/HomeScreen.tsx`).
 
 ### Added
+- Bookmaker **market features** for the 1X2 model: the margin-removed implied
+  probabilities of the best-price book (`market_prob_home/draw/away`), its
+  overround, and a `has_market_odds` flag. The market line is the sharpest
+  available prior (it already prices in injuries, line-ups, suspensions and money
+  flow) and odds are a pre-match signal, so this is a strong, leakage-free input
+  that the previous results-only model (form, H2H, table, rest days, Elo) could
+  not see. Wired into both training and inference; matches without odds get
+  zeroed market columns plus the flag so the model leans on the market only when
+  present. Changing the feature schema triggers the startup bootstrap to retrain;
+  `predict_match` now degrades to neutral instead of crashing if a loaded model's
+  schema no longer matches the code (`backend/app/ml/market_features.py`,
+  `backend/app/ml/features.py`, `backend/app/services/prediction.py`).
+- `python -m app.scripts.backfill_odds` CLI to fetch and store odds for already
+  imported matches that have none, so historical training data has market-feature
+  signal. Resilient like the live sync (skips per-match failures, stops after
+  repeated failures) and selectable by status/limit
+  (`backend/app/scripts/backfill_odds.py`,
+  `backend/app/services/historical_import.py`).
 - Expo push notifications end-to-end: device token registration, per-match
   notification preferences stored in the backend, live match event detection
   (goals, cards, kick-off, full-time, line-ups, etc.), deduplicated delivery
