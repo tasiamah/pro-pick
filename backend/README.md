@@ -148,10 +148,10 @@ upgrade to a paid plan for a full import. See
 
 ## Live fixture sync — free tier (PP-51)
 
-Sync fixtures for **Premier League (39)** and **La Liga (140)** using the
-API-Football date endpoint. On the free plan this covers roughly **yesterday
-through tomorrow** (three days). The daily scheduler and manual CLI also write
-stub predictions and value bets for upcoming matches.
+Sync fixtures for **Premier League (39)**, **La Liga (140)**, and **FIFA World
+Cup (1)** using the API-Football date endpoint. On the free plan this covers
+roughly **yesterday through tomorrow** (three days). The daily scheduler and
+manual CLI also write stub predictions and value bets for upcoming matches.
 
 Manual run:
 
@@ -164,7 +164,7 @@ python -m app.scripts.sync_live_fixtures
 Configure in `.env`:
 
 ```env
-SYNC_LEAGUE_IDS=39,140
+SYNC_LEAGUE_IDS=39,140,1
 SYNC_DATE_OFFSETS=-1,0,1
 SCHEDULER_ENABLED=true
 SCHEDULER_DAILY_HOUR=6

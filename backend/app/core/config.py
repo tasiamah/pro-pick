@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     football_api_max_retries: int = 3
     football_api_min_request_interval_seconds: float = 0.6
 
-    sync_league_ids: str = "39,140"
+    sync_league_ids: str = "39,140,1"
     sync_date_offsets: str = "-1,0,1"
     scheduler_enabled: bool = False
     scheduler_daily_hour: int = Field(default=6, ge=0, le=23)
