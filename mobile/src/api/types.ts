@@ -52,6 +52,20 @@ export type RoiTrendPoint = {
   roi: number;
 };
 
+export type RiskDistribution = {
+  low: number;
+  medium: number;
+  high: number;
+};
+
+export type PredictionOutcomes = {
+  home_win: number;
+  draw: number;
+  away_win: number;
+  over_25: number;
+  both_teams_score: number;
+};
+
 export type Analytics = {
   accuracy: number | null;
   log_loss: number | null;
@@ -59,6 +73,17 @@ export type Analytics = {
   total_value_bets: number;
   settled_value_bets: number;
   roi_trend: RoiTrendPoint[];
+  confident_accuracy?: number | null;
+  confident_coverage?: number | null;
+  confidence_threshold?: number | null;
+  total_predictions?: number;
+  avg_confidence?: number | null;
+  high_confidence_count?: number;
+  confidence_trend?: number[];
+  risk_distribution?: RiskDistribution;
+  prediction_outcomes?: PredictionOutcomes;
+  predictions_today?: number;
+  markets_covered?: number;
 };
 
 export type Dashboard = {

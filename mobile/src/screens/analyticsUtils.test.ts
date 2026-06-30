@@ -1,11 +1,42 @@
+import type { Analytics } from '../api/types';
 import {
   formatAccuracyMetric,
+  formatAvgConfidenceMetric,
   formatCountMetric,
   formatLogLossMetric,
   formatRoiMetric,
   formatTrendLabel,
+  riskDistributionTotal,
+  toAnalyticsSummaryStats,
+  toConfidenceTrendValues,
+  toModelPerformanceStats,
+  toPredictionOutcomeStats,
+  toRiskDistributionSegments,
   toRoiTrendChartData,
 } from './analyticsUtils';
+
+const sampleAnalytics: Analytics = {
+  accuracy: 0.873,
+  log_loss: 0.912,
+  roi: 0.124,
+  total_value_bets: 24,
+  settled_value_bets: 19,
+  roi_trend: [{ date: '2026-06-01', roi: 0.1 }],
+  total_predictions: 22,
+  avg_confidence: 0.743,
+  high_confidence_count: 11,
+  confidence_trend: [42, 48, 51, 55, 58],
+  risk_distribution: { low: 7, medium: 14, high: 1 },
+  prediction_outcomes: {
+    home_win: 10,
+    draw: 2,
+    away_win: 3,
+    over_25: 4,
+    both_teams_score: 3,
+  },
+  predictions_today: 0,
+  markets_covered: 3,
+};
 
 describe('analyticsUtils', () => {
   it('formats trend labels', () => {
@@ -25,9 +56,47 @@ describe('analyticsUtils', () => {
     expect(toRoiTrendChartData(null)).toEqual([]);
   });
 
+  it('filters invalid confidence trend values', () => {
+    expect(toConfidenceTrendValues([42, Number.NaN, 58])).toEqual([42, 58]);
+    expect(toConfidenceTrendValues([])).toEqual([]);
+    expect(toConfidenceTrendValues(undefined)).toEqual([]);
+  });
+
+  it('maps risk distribution segments with zero fallbacks', () => {
+    const segments = toRiskDistributionSegments(undefined);
+    expect(segments).toHaveLength(3);
+    expect(riskDistributionTotal(segments)).toBe(0);
+    expect(riskDistributionTotal(toRiskDistributionSegments(sampleAnalytics.risk_distribution))).toBe(22);
+  });
+
+  it('maps prediction outcomes in demo order', () => {
+    expect(toPredictionOutcomeStats(sampleAnalytics.prediction_outcomes).map((item) => item.label)).toEqual([
+      'HOME WIN',
+      'DRAW',
+      'BOTH TEAMS SCORE',
+      'OVER 2.5',
+      'AWAY WIN',
+    ]);
+  });
+
+  it('builds summary and performance stats from analytics', () => {
+    expect(toAnalyticsSummaryStats(sampleAnalytics).map((stat) => stat.label)).toEqual([
+      'Total Predictions',
+      'Avg Confidence',
+      'High Confidence',
+      'Model Accuracy',
+    ]);
+    expect(toModelPerformanceStats(sampleAnalytics)).toHaveLength(3);
+  });
+
   it('formats accuracy as a percentage with a fallback', () => {
     expect(formatAccuracyMetric(0.873)).toBe('87.3%');
     expect(formatAccuracyMetric(null)).toBe('—');
+  });
+
+  it('formats average confidence as a percentage with a fallback', () => {
+    expect(formatAvgConfidenceMetric(0.743)).toBe('74.3%');
+    expect(formatAvgConfidenceMetric(null)).toBe('—');
   });
 
   it('formats roi as a signed percentage with a fallback', () => {
@@ -41,8 +110,8 @@ describe('analyticsUtils', () => {
     expect(formatLogLossMetric(null)).toBe('—');
   });
 
-  it('formats counts with a fallback', () => {
+  it('formats counts with zero fallback', () => {
     expect(formatCountMetric(22)).toBe('22');
-    expect(formatCountMetric(undefined)).toBe('—');
+    expect(formatCountMetric(undefined)).toBe('0');
   });
 });

@@ -7,12 +7,17 @@ import pytest
 
 from app.services.analytics import (
     LOG_LOSS_EPSILON,
+    PredictionProbabilities,
     PredictionSnapshot,
     SettledBetSnapshot,
+    build_confidence_trend,
+    build_prediction_outcome_counts,
     build_roi_trend,
     compute_accuracy,
+    compute_avg_confidence,
     compute_log_loss,
     compute_roi,
+    count_high_confidence_predictions,
 )
 
 pytestmark = pytest.mark.unit
@@ -132,3 +137,36 @@ def test_build_roi_trend_returns_cumulative_roi_by_day():
     assert round(trend[0].roi, 3) == 0.1
     assert trend[1].date == "2026-06-02"
     assert round(trend[1].roi, 3) == round(0.5 / 15.0, 3)
+
+
+def test_build_confidence_trend_returns_percentages():
+    predictions = [
+        PredictionProbabilities(prob_home=0.7, prob_draw=0.2, prob_away=0.1),
+        PredictionProbabilities(prob_home=0.4, prob_draw=0.35, prob_away=0.25),
+    ]
+
+    assert build_confidence_trend(predictions) == [70, 40]
+
+
+def test_build_prediction_outcome_counts_groups_latest_predictions():
+    predictions = [
+        PredictionProbabilities(prob_home=0.7, prob_draw=0.2, prob_away=0.1),
+        PredictionProbabilities(prob_home=0.2, prob_draw=0.5, prob_away=0.3),
+        PredictionProbabilities(prob_home=0.1, prob_draw=0.2, prob_away=0.7),
+    ]
+
+    counts = build_prediction_outcome_counts(predictions)
+
+    assert counts.home_win == 1
+    assert counts.draw == 1
+    assert counts.away_win == 1
+
+
+def test_compute_avg_confidence_and_high_confidence_count():
+    predictions = [
+        PredictionProbabilities(prob_home=0.8, prob_draw=0.1, prob_away=0.1),
+        PredictionProbabilities(prob_home=0.55, prob_draw=0.25, prob_away=0.2),
+    ]
+
+    assert round(compute_avg_confidence(predictions), 3) == round((0.8 + 0.55) / 2, 3)
+    assert count_high_confidence_predictions(predictions, 0.7) == 1
