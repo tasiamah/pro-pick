@@ -18,6 +18,11 @@ describe('formatters', () => {
     expect(formatPercent(0.456)).toBe('46%');
   });
 
+  it('renders a dash for non-finite percentages', () => {
+    expect(formatPercent(Number.NaN)).toBe('—');
+    expect(formatPercent(Number.POSITIVE_INFINITY)).toBe('—');
+  });
+
   it('formats outcomes', () => {
     expect(formatOutcome('home')).toBe('Home');
   });
