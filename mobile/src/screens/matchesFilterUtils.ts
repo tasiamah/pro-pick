@@ -110,7 +110,9 @@ export function filterMatchesForBrowse(
       if (rightTime === null) {
         return -1;
       }
-      return rightTime - leftTime;
+      return statusFilter === 'completed'
+        ? rightTime - leftTime
+        : leftTime - rightTime;
     });
 }
 

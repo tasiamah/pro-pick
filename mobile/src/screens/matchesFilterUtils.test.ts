@@ -79,7 +79,7 @@ describe('matchesFilterUtils', () => {
     );
   });
 
-  it('sorts matches by kickoff descending with undated matches last', () => {
+  it('sorts upcoming matches by earliest kickoff with undated matches last', () => {
     const undatedMatch: MatchDetail = {
       ...baseMatch,
       id: 3,
@@ -94,6 +94,37 @@ describe('matchesFilterUtils', () => {
     const filtered = filterMatchesForBrowse(
       [undatedMatch, laterMatch, baseMatch],
       'upcoming',
+      'all',
+      '',
+      referenceNow,
+    );
+
+    expect(filtered.map((match) => match.id)).toEqual([1, 2, 3]);
+  });
+
+  it('sorts completed matches by most recent kickoff with undated matches last', () => {
+    const undatedMatch: MatchDetail = {
+      ...baseMatch,
+      id: 3,
+      status: 'finished',
+      kickoff: null,
+    };
+    const earlierMatch: MatchDetail = {
+      ...baseMatch,
+      id: 1,
+      status: 'finished',
+      kickoff: '2026-06-28T15:00:00Z',
+    };
+    const laterMatch: MatchDetail = {
+      ...baseMatch,
+      id: 2,
+      status: 'finished',
+      kickoff: '2026-06-29T15:00:00Z',
+    };
+
+    const filtered = filterMatchesForBrowse(
+      [undatedMatch, earlierMatch, laterMatch],
+      'completed',
       'all',
       '',
       referenceNow,
