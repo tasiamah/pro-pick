@@ -17,17 +17,12 @@ export function formatHeroWinRate(value: number | null): string {
 
 export function formatHeroWinRateCaption(
   confidentAccuracy: number | null,
-  coverage: number | null,
 ): string | null {
   if (confidentAccuracy == null || !Number.isFinite(confidentAccuracy)) {
     return null;
   }
 
-  if (coverage != null && Number.isFinite(coverage)) {
-    return `Top ${Math.round(coverage * 100)}% confident picks`;
-  }
-
-  return 'High-confidence picks';
+  return 'Confident picks';
 }
 
 export function formatHeroAvgOdds(value: number | null): string {
@@ -78,10 +73,7 @@ export function buildHeroStats(
   const confidentAccuracy = dashboard.confident_accuracy;
   return {
     winRate: formatHeroWinRate(confidentAccuracy ?? dashboard.model_accuracy),
-    winRateCaption: formatHeroWinRateCaption(
-      confidentAccuracy,
-      dashboard.confident_coverage,
-    ),
+    winRateCaption: formatHeroWinRateCaption(confidentAccuracy),
     avgOdds: formatHeroAvgOdds(computeAverageOdds(matches)),
     valueBets: formatHeroValueBetCount(
       analytics?.total_value_bets ?? dashboard.top_value_bets?.length,

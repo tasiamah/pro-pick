@@ -30,10 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 - Matches and Analytics stack headers left-align title and subtitle to match
   Home and Favorites.
-- Home "Win Rate" stat now reports the model's high-confidence accuracy (with a
-  coverage caption) instead of full-slate 1X2 accuracy, so the headline figure
-  reflects the picks the model is surest about rather than the draw-capped
-  ~51% across all matches (`mobile/src/screens/homeHeroUtils.ts`).
+- Home "Win Rate" stat now reports the model's high-confidence accuracy
+  (captioned "Confident picks") instead of full-slate 1X2 accuracy, so the
+  headline figure reflects the picks the model is surest about rather than the
+  draw-capped ~51% across all matches (`mobile/src/screens/homeHeroUtils.ts`).
 - Home tab no longer lists matches that have already kicked off (e.g. a fixture
   that started earlier today): it now applies the same kickoff guard as the
   Matches tab via a live clock (`useNow`), and hides Top Value Bets whose match
