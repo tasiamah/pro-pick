@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- "High-confidence picks only" toggle on the Home and Matches tabs. When on, the
+  list shows only matches whose top model probability clears the confidence
+  threshold (0.70, the same cut-off behind the reported confident accuracy);
+  low-confidence and prediction-less matches are hidden, with a dedicated empty
+  state. Default off so the app still shows the full slate
+  (`mobile/src/utils/confidence.ts`,
+  `mobile/src/components/HighConfidenceToggle.tsx`,
+  `mobile/src/screens/HomeScreen.tsx`, `mobile/src/screens/MatchesScreen.tsx`,
+  `mobile/src/screens/matchesFilterUtils.ts`).
 - Expo push notifications end-to-end: device token registration, per-match
   notification preferences stored in the backend, live match event detection
   (goals, cards, kick-off, full-time, line-ups, etc.), deduplicated delivery

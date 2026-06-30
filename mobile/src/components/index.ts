@@ -25,6 +25,7 @@ export {
 } from './demo';
 export { DatePickerRow } from './DatePickerRow';
 export { DisclaimerBanner } from './DisclaimerBanner';
+export { HighConfidenceToggle } from './HighConfidenceToggle';
 export { AsyncState } from './AsyncState';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';

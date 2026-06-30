@@ -15,6 +15,7 @@ import {
   AsyncState,
   ErrorState,
   FilterChipRow,
+  HighConfidenceToggle,
   MatchCardV2,
   SearchInput,
   SegmentedControl,
@@ -24,6 +25,7 @@ import { useNow } from '../hooks/useNow';
 import { TAB_BAR_BASE_HEIGHT } from '../navigation/tabBarOptions';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
+import { filterHighConfidenceMatches } from '../utils/confidence';
 import { addLocalDays, localDayKeyToDate, toLocalDateKey } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import {
@@ -59,6 +61,7 @@ export function MatchesScreen({ navigation }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('upcoming');
   const [oddsTierFilter, setOddsTierFilter] = useState<MatchOddsTierFilter>('all');
+  const [highConfidenceOnly, setHighConfidenceOnly] = useState(false);
   const debouncedSearchQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
   const now = useNow();
   const localDayKey = toLocalDateKey(now);
@@ -102,14 +105,28 @@ export function MatchesScreen({ navigation }: Props) {
     [matchesQuery.data, debouncedSearchQuery, oddsTierFilter, statusFilter, now],
   );
 
+  const visibleMatches = useMemo(
+    () =>
+      highConfidenceOnly
+        ? filterHighConfidenceMatches(filteredMatches)
+        : filteredMatches,
+    [filteredMatches, highConfidenceOnly],
+  );
+
   const gridRows = useMemo(
-    () => chunkMatchesGridRows(filteredMatches),
-    [filteredMatches],
+    () => chunkMatchesGridRows(visibleMatches),
+    [visibleMatches],
   );
 
   const emptyMessage = useMemo(
-    () => getMatchesEmptyMessage(statusFilter, oddsTierFilter, debouncedSearchQuery),
-    [debouncedSearchQuery, oddsTierFilter, statusFilter],
+    () =>
+      getMatchesEmptyMessage(
+        statusFilter,
+        oddsTierFilter,
+        debouncedSearchQuery,
+        highConfidenceOnly,
+      ),
+    [debouncedSearchQuery, oddsTierFilter, statusFilter, highConfidenceOnly],
   );
 
   const onRefresh = useCallback(() => {
@@ -164,12 +181,16 @@ export function MatchesScreen({ navigation }: Props) {
           ]}
           value={oddsTierFilter}
         />
+        <HighConfidenceToggle
+          value={highConfidenceOnly}
+          onValueChange={setHighConfidenceOnly}
+        />
       </View>
 
       <AsyncState
         isLoading={isMatchesLoading}
         error={null}
-        isEmpty={filteredMatches.length === 0}
+        isEmpty={visibleMatches.length === 0}
         emptyMessage={emptyMessage}
       >
         <View style={[styles.cardGrid, { gap: gridMetrics.gutter }]}>

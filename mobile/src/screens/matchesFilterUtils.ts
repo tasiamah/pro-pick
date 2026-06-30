@@ -123,9 +123,14 @@ export function getMatchesEmptyMessage(
   statusFilter: MatchStatusFilter,
   oddsTierFilter: MatchOddsTierFilter,
   searchQuery: string,
+  highConfidenceOnly = false,
 ): string {
   if (searchQuery.trim()) {
     return 'No matches match your search.';
+  }
+
+  if (highConfidenceOnly) {
+    return 'No high-confidence picks in this list.';
   }
 
   if (oddsTierFilter !== 'all') {

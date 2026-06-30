@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -16,6 +16,7 @@ import {
   DatePickerRow,
   EmptyState,
   ErrorState,
+  HighConfidenceToggle,
   LoadingState,
   MatchCardV2,
   SectionHeader,
@@ -25,6 +26,7 @@ import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
 import { useNow } from '../hooks/useNow';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
+import { filterHighConfidenceMatches } from '../utils/confidence';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
 import {
@@ -60,15 +62,24 @@ export function HomeScreen({ navigation }: Props) {
   const matchesQuery = useMatches(matchListParams);
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
   const now = useNow();
+  const [highConfidenceOnly, setHighConfidenceOnly] = useState(false);
 
   const filteredMatches = useMemo(
     () => selectHomeMatches(matchesQuery.data ?? [], selectedDate, now),
     [matchesQuery.data, selectedDate, now],
   );
 
+  const visibleMatches = useMemo(
+    () =>
+      highConfidenceOnly
+        ? filterHighConfidenceMatches(filteredMatches)
+        : filteredMatches,
+    [filteredMatches, highConfidenceOnly],
+  );
+
   const oddsTierGroups = useMemo(
-    () => groupHomeMatchesByOddsTier(filteredMatches),
-    [filteredMatches],
+    () => groupHomeMatchesByOddsTier(visibleMatches),
+    [visibleMatches],
   );
 
   const shownPredictionCount = useMemo(
@@ -151,11 +162,22 @@ export function HomeScreen({ navigation }: Props) {
       <AiPredictionsHero stats={heroStats} />
 
       <View style={screenStyles.section}>
+        <HighConfidenceToggle
+          value={highConfidenceOnly}
+          onValueChange={setHighConfidenceOnly}
+        />
+      </View>
+
+      <View style={screenStyles.section}>
         <AsyncState
           isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
           error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
           isEmpty={oddsTierGroups.length === 0}
-          emptyMessage="No matches on this day"
+          emptyMessage={
+            highConfidenceOnly
+              ? 'No high-confidence picks on this day'
+              : 'No matches on this day'
+          }
           errorMessage="Could not load matches"
           onRetry={() => void matchesQuery.refetch()}
         >
