@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Home date selector now starts with a "This week" chip (styled like the day
+  chips) that filters the slate to the current local calendar week (Mon–Sun),
+  while a day chip filters to that exact calendar day only. Week and day
+  comparisons use the device's local zone so matches never appear under the
+  wrong day (`mobile/src/components/DatePickerRow.tsx`,
+  `mobile/src/screens/HomeScreen.tsx`, `mobile/src/screens/homeMatchUtils.ts`,
+  `mobile/src/utils/matchDates.ts`).
+
 ### Changed
 - Value bets now reflect only upcoming fixtures. The dashboard scopes both the
   "Top Value Bets" list and the new uncapped `upcoming_value_bets` count to

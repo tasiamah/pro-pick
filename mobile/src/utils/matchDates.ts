@@ -100,3 +100,40 @@ export function filterMatchesByDate<T extends Match>(
       return leftTime - rightTime;
     });
 }
+
+/**
+ * Start of the local calendar week (Monday 00:00) containing `date`. Uses the
+ * device's local zone so a match's local kickoff day decides its week.
+ */
+export function startOfLocalWeek(date = new Date()): Date {
+  const start = startOfLocalDay(date);
+  const daysSinceMonday = (start.getDay() + 6) % 7;
+  return addLocalDays(start, -daysSinceMonday);
+}
+
+/**
+ * Matches whose local kickoff day falls within the calendar week (Mon–Sun)
+ * containing `date`, sorted by kickoff. Compares absolute kickoff instants
+ * against the local week bounds so matches never land under the wrong day.
+ */
+export function filterMatchesByWeek<T extends Match>(
+  matches: T[],
+  date: Date,
+): T[] {
+  const weekStart = startOfLocalWeek(date).getTime();
+  const weekEndExclusive = addLocalDays(startOfLocalWeek(date), DATE_RANGE_DAYS).getTime();
+
+  return matches
+    .filter((match) => {
+      if (!match.kickoff) {
+        return false;
+      }
+      const kickoff = parseMatchDate(match.kickoff).getTime();
+      return kickoff >= weekStart && kickoff < weekEndExclusive;
+    })
+    .sort((left, right) => {
+      const leftTime = left.kickoff ? parseMatchDate(left.kickoff).getTime() : 0;
+      const rightTime = right.kickoff ? parseMatchDate(right.kickoff).getTime() : 0;
+      return leftTime - rightTime;
+    });
+}
