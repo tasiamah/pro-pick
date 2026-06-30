@@ -33,11 +33,8 @@ const sampleAnalytics: Analytics = {
     home_win: 10,
     draw: 2,
     away_win: 3,
-    over_25: 4,
-    both_teams_score: 3,
   },
   predictions_today: 0,
-  markets_covered: 3,
 };
 
 describe('analyticsUtils', () => {
@@ -71,12 +68,10 @@ describe('analyticsUtils', () => {
     expect(riskDistributionTotal(toRiskDistributionSegments(sampleAnalytics.risk_distribution))).toBe(22);
   });
 
-  it('maps prediction outcomes in demo order', () => {
+  it('maps the 1X2 prediction outcomes we model', () => {
     expect(toPredictionOutcomeStats(sampleAnalytics.prediction_outcomes).map((item) => item.label)).toEqual([
       'HOME WIN',
       'DRAW',
-      'BOTH TEAMS SCORE',
-      'OVER 2.5',
       'AWAY WIN',
     ]);
   });
@@ -88,7 +83,15 @@ describe('analyticsUtils', () => {
       'High Confidence',
       'Model Accuracy',
     ]);
-    expect(toModelPerformanceStats(sampleAnalytics)).toHaveLength(3);
+    expect(toModelPerformanceStats(sampleAnalytics).map((stat) => stat.label)).toEqual([
+      'Accuracy',
+      'Predictions Today',
+      'Log Loss',
+    ]);
+    const logLoss = toModelPerformanceStats(sampleAnalytics).find(
+      (stat) => stat.label === 'Log Loss',
+    );
+    expect(logLoss?.value).toBe('0.912');
   });
 
   it('surfaces high-confidence accuracy and never the full-slate figure', () => {
