@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- Recent-form indicators on match cards now render as circular **W/D/L** letter
+  badges (muted, semi-transparent fills with a bright letter) instead of plain
+  colored dots, matching the design reference across Home and Matches
+  (`mobile/src/components/demo/FormIndicator.tsx`).
 - Home "Top Value Bets" cards now show the fixture (teams, league, kickoff) and
   the picked 1X2 outcome alongside edge, EV, odds, and stake, instead of a bare
   stat line. The separate margin-based "Confidence" figure was removed so
