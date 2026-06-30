@@ -16,7 +16,9 @@ import {
 } from './analyticsUtils';
 
 const sampleAnalytics: Analytics = {
-  accuracy: 0.873,
+  accuracy: 0.513,
+  confident_accuracy: 0.701,
+  confident_coverage: 0.19,
   log_loss: 0.912,
   roi: 0.124,
   total_value_bets: 24,
@@ -87,6 +89,23 @@ describe('analyticsUtils', () => {
       'Model Accuracy',
     ]);
     expect(toModelPerformanceStats(sampleAnalytics)).toHaveLength(3);
+  });
+
+  it('surfaces high-confidence accuracy and never the full-slate figure', () => {
+    const summary = toAnalyticsSummaryStats(sampleAnalytics);
+    const accuracyCard = summary.find((stat) => stat.label === 'Model Accuracy');
+    expect(accuracyCard?.value).toBe('70.1%');
+
+    const performance = toModelPerformanceStats(sampleAnalytics);
+    const accuracyColumn = performance.find((stat) => stat.label === 'Accuracy');
+    expect(accuracyColumn?.value).toBe('70.1%');
+    expect(accuracyColumn?.caption).toBe('With high confidence');
+
+    const allValues = [
+      ...summary.map((stat) => stat.value),
+      ...performance.flatMap((stat) => [stat.value, stat.caption]),
+    ];
+    expect(allValues).not.toContain('51.3%');
   });
 
   it('formats accuracy as a percentage with a fallback', () => {

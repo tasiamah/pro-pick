@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   environment (`app/services/demo_seed.py`, PP-108).
 
 ### Changed
+- Analytics now headlines the high-confidence accuracy (~70%) instead of the
+  full-slate accuracy: the "Model Accuracy" summary card and the AI Model
+  Performance "Accuracy" column both read from `confident_accuracy` and are
+  captioned "With high confidence". The full-slate figure (~51%) is no longer
+  surfaced anywhere on the Analytics tab (`mobile/src/screens/analyticsUtils.ts`).
 - Favorites now star a whole match instead of a team: the card star toggles the
   match, and the Favorites tab lists those starred matches (fetched by id, sorted
   by earliest kickoff) to match the design. Removed the unused team/competition
