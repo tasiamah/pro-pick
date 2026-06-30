@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { colors, radii, spacing, typography } from '../theme';
-import { formatDateChipLabel, toUtcDateKey } from '../utils/matchDates';
+import { formatDateChipLabel, toLocalDateKey } from '../utils/matchDates';
 
 type DatePickerRowProps = {
   dates: Date[];
@@ -10,7 +10,7 @@ type DatePickerRowProps = {
 };
 
 export function DatePickerRow({ dates, selectedDate, onSelectDate }: DatePickerRowProps) {
-  const selectedKey = toUtcDateKey(selectedDate);
+  const selectedKey = toLocalDateKey(selectedDate);
 
   return (
     <ScrollView
@@ -19,7 +19,7 @@ export function DatePickerRow({ dates, selectedDate, onSelectDate }: DatePickerR
       showsHorizontalScrollIndicator={false}
     >
       {dates.map((date) => {
-        const dateKey = toUtcDateKey(date);
+        const dateKey = toLocalDateKey(date);
         const isSelected = dateKey === selectedKey;
 
         return (

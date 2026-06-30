@@ -25,9 +25,11 @@ const baseMatch: MatchDetail = {
   },
 };
 
+const referenceNow = new Date('2026-06-01T00:00:00Z');
+
 describe('matchesFilterUtils', () => {
   it('filters matches by status bucket', () => {
-    expect(matchesStatusFilter(baseMatch, 'upcoming')).toBe(true);
+    expect(matchesStatusFilter(baseMatch, 'upcoming', referenceNow)).toBe(true);
     expect(
       matchesStatusFilter({ ...baseMatch, status: 'finished' }, 'completed'),
     ).toBe(true);
@@ -35,6 +37,29 @@ describe('matchesFilterUtils', () => {
     expect(
       matchesStatusFilter({ ...baseMatch, status: 'finished' }, 'upcoming'),
     ).toBe(false);
+  });
+
+  it('excludes matches that already kicked off from upcoming', () => {
+    const startedMatch: MatchDetail = {
+      ...baseMatch,
+      id: 4,
+      kickoff: '2026-06-29T15:00:00Z',
+    };
+    const now = new Date('2026-06-29T18:00:00Z');
+
+    expect(matchesStatusFilter(startedMatch, 'upcoming', now)).toBe(false);
+    expect(
+      filterMatchesForBrowse([startedMatch], 'upcoming', 'all', '', now).map(
+        (match) => match.id,
+      ),
+    ).toEqual([]);
+  });
+
+  it('excludes a match at the exact kickoff instant from upcoming', () => {
+    const kickoff = '2026-06-29T15:00:00Z';
+    const startingMatch: MatchDetail = { ...baseMatch, id: 5, kickoff };
+
+    expect(matchesStatusFilter(startingMatch, 'upcoming', new Date(kickoff))).toBe(false);
   });
 
   it('filters matches by team or competition search', () => {
@@ -71,6 +96,7 @@ describe('matchesFilterUtils', () => {
       'upcoming',
       'all',
       '',
+      referenceNow,
     );
 
     expect(filtered.map((match) => match.id)).toEqual([2, 1, 3]);
@@ -89,6 +115,7 @@ describe('matchesFilterUtils', () => {
       'upcoming',
       'all',
       'bourn',
+      referenceNow,
     );
 
     expect(filtered.map((match) => match.id)).toEqual([1]);

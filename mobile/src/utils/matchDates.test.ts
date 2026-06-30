@@ -1,11 +1,13 @@
 import {
+  addLocalDays,
   buildDateRange,
   buildDateRangeEndingAt,
   buildDateWindowParams,
   filterMatchesByDate,
+  localDayKeyToDate,
   resolveMatchAnchorDate,
-  startOfUtcDay,
-  toUtcDateKey,
+  startOfLocalDay,
+  toLocalDateKey,
 } from './matchDates';
 import type { Match } from '../api/types';
 
@@ -21,37 +23,45 @@ function createMatch(id: number, kickoff: string): Match {
 }
 
 describe('matchDates', () => {
-  it('builds a UTC date range from the start day', () => {
-    const start = startOfUtcDay(new Date('2026-06-24T12:00:00Z'));
-    const range = buildDateRange(start, 3);
+  it('round-trips a local day key back to the start of that local day', () => {
+    const start = startOfLocalDay(new Date(2026, 5, 24, 9, 30));
+    const restored = localDayKeyToDate(toLocalDateKey(start));
 
-    expect(range.map(toUtcDateKey)).toEqual(['2026-06-24', '2026-06-25', '2026-06-26']);
+    expect(restored.getTime()).toBe(start.getTime());
   });
 
-  it('builds API params for the visible date window', () => {
-    const start = startOfUtcDay(new Date('2026-06-24T15:00:00Z'));
-    const end = startOfUtcDay(new Date('2026-07-01T00:00:00Z'));
+  it('builds a local date range from the start day', () => {
+    const start = startOfLocalDay(new Date(2026, 5, 24, 12, 0));
+    const range = buildDateRange(start, 3);
+
+    expect(range.map(toLocalDateKey)).toEqual(['2026-06-24', '2026-06-25', '2026-06-26']);
+  });
+
+  it('builds API params spanning the visible date window', () => {
+    const start = startOfLocalDay(new Date(2026, 5, 24, 15, 0));
+    const end = addLocalDays(start, 7);
     const params = buildDateWindowParams(start, end);
 
-    expect(params.kickoff_from).toBe('2026-06-24T00:00:00.000Z');
-    expect(params.kickoff_to).toBe('2026-07-01T00:00:00.000Z');
+    expect(new Date(params.kickoff_from).getTime()).toBe(start.getTime());
+    expect(new Date(params.kickoff_to).getTime()).toBe(end.getTime());
     expect(params.limit).toBe(200);
   });
 
   it('anchors on the latest kickoff when nothing is upcoming', () => {
-    const anchor = resolveMatchAnchorDate(0, '2025-05-25T18:30:00Z');
+    const latestKickoff = new Date(2025, 4, 25, 18, 30).toISOString();
+    const anchor = resolveMatchAnchorDate(0, latestKickoff);
     const range = buildDateRangeEndingAt(anchor, 3);
 
-    expect(toUtcDateKey(anchor)).toBe('2025-05-25');
-    expect(range.map(toUtcDateKey)).toEqual(['2025-05-23', '2025-05-24', '2025-05-25']);
+    expect(toLocalDateKey(anchor)).toBe('2025-05-25');
+    expect(range.map(toLocalDateKey)).toEqual(['2025-05-23', '2025-05-24', '2025-05-25']);
   });
 
   it('filters and sorts matches for the selected day', () => {
-    const selectedDate = startOfUtcDay(new Date('2026-06-24T00:00:00Z'));
+    const selectedDate = startOfLocalDay(new Date(2026, 5, 24, 0, 0));
     const matches = [
-      createMatch(1, '2026-06-24T20:00:00Z'),
-      createMatch(2, '2026-06-24T15:00:00Z'),
-      createMatch(3, '2026-06-25T15:00:00Z'),
+      createMatch(1, new Date(2026, 5, 24, 20, 0).toISOString()),
+      createMatch(2, new Date(2026, 5, 24, 15, 0).toISOString()),
+      createMatch(3, new Date(2026, 5, 25, 15, 0).toISOString()),
     ];
 
     expect(filterMatchesByDate(matches, selectedDate).map((match) => match.id)).toEqual([

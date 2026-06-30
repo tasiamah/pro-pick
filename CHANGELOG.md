@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   tab Completed filter shows latest results instead of the oldest page of fifty.
 - Home match card Details opens the selected match detail screen instead of
   switching to the Matches tab.
+- Mobile app shows kickoff times, browse date chips, and day grouping in the
+  device's local timezone instead of UTC, and the Upcoming filter no longer lists
+  matches whose kickoff has already passed (`mobile/src/utils/matchDates.ts`,
+  `mobile/src/components/formatters.ts`, `mobile/src/screens/matchesFilterUtils.ts`).
 - Matches list API latency: batch enrichment (one history query per page) and
   smaller default browse window; Matches tab shows filters while loading instead
   of a full-screen spinner.

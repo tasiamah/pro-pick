@@ -20,11 +20,11 @@ import {
   SegmentedControl,
 } from '../components';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { useUtcDayKey } from '../hooks/useUtcDayKey';
+import { useNow } from '../hooks/useNow';
 import { TAB_BAR_BASE_HEIGHT } from '../navigation/tabBarOptions';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
-import { addUtcDays, startOfUtcDay } from '../utils/matchDates';
+import { addLocalDays, localDayKeyToDate, toLocalDateKey } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import {
   chunkMatchesGridRows,
@@ -60,15 +60,16 @@ export function MatchesScreen({ navigation }: Props) {
   const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('upcoming');
   const [oddsTierFilter, setOddsTierFilter] = useState<MatchOddsTierFilter>('all');
   const debouncedSearchQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
-  const { utcDayKey, refreshUtcDayKey } = useUtcDayKey();
+  const now = useNow();
+  const localDayKey = toLocalDateKey(now);
 
   const matchListParams = useMemo(() => {
-    const today = startOfUtcDay(new Date(`${utcDayKey}T00:00:00.000Z`));
-    const start = addUtcDays(today, -BROWSE_WINDOW_DAYS);
+    const today = localDayKeyToDate(localDayKey);
+    const start = addLocalDays(today, -BROWSE_WINDOW_DAYS);
     const end =
       statusFilter === 'completed'
-        ? addUtcDays(today, 1)
-        : addUtcDays(today, BROWSE_WINDOW_DAYS);
+        ? addLocalDays(today, 1)
+        : addLocalDays(today, BROWSE_WINDOW_DAYS);
 
     const params: MatchListParams = {
       kickoff_from: start.toISOString(),
@@ -86,7 +87,7 @@ export function MatchesScreen({ navigation }: Props) {
     }
 
     return params;
-  }, [debouncedSearchQuery, oddsTierFilter, statusFilter, utcDayKey]);
+  }, [debouncedSearchQuery, oddsTierFilter, statusFilter, localDayKey]);
 
   const matchesQuery = useMatches(matchListParams);
   const filteredMatches = useMemo(
@@ -96,8 +97,9 @@ export function MatchesScreen({ navigation }: Props) {
         statusFilter,
         oddsTierFilter,
         debouncedSearchQuery,
+        now,
       ),
-    [matchesQuery.data, debouncedSearchQuery, oddsTierFilter, statusFilter],
+    [matchesQuery.data, debouncedSearchQuery, oddsTierFilter, statusFilter, now],
   );
 
   const gridRows = useMemo(
@@ -111,9 +113,8 @@ export function MatchesScreen({ navigation }: Props) {
   );
 
   const onRefresh = useCallback(() => {
-    refreshUtcDayKey();
     void matchesQuery.refetch();
-  }, [matchesQuery, refreshUtcDayKey]);
+  }, [matchesQuery]);
 
   const isMatchesLoading = isInitialQueryLoad(
     matchesQuery.isLoading,
