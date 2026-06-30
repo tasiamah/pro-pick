@@ -79,14 +79,9 @@ export function HomeScreen({ navigation }: Props) {
   const heroStats = useMemo(
     () =>
       dashboardQuery.data
-        ? buildHeroStats(
-            dashboardQuery.data,
-            analyticsQuery.data,
-            matchesQuery.data ?? [],
-            shownPredictionCount,
-          )
+        ? buildHeroStats(dashboardQuery.data, filteredMatches, shownPredictionCount)
         : null,
-    [analyticsQuery.data, dashboardQuery.data, matchesQuery.data, shownPredictionCount],
+    [dashboardQuery.data, filteredMatches, shownPredictionCount],
   );
 
   const isInitialLoading = isInitialQueryLoad(
