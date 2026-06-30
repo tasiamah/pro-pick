@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `scheduled` after kickoff.
 - Completed matches list returns the most recent fixtures first so the Matches
   tab Completed filter shows latest results instead of the oldest page of fifty.
+- Matches tab now sorts Upcoming and Live by earliest kickoff first (Completed
+  stays most-recent-first), so the soonest match leads instead of one days out
+  (`mobile/src/screens/matchesFilterUtils.ts`).
 - Home match card Details opens the selected match detail screen instead of
   switching to the Matches tab.
 - Mobile app shows kickoff times, browse date chips, and day grouping in the
