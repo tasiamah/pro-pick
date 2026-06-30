@@ -7,8 +7,10 @@ import joblib
 import pytest
 
 from app.ml.storage import (
+    PRETRAINED_MODEL_PATH,
     ModelBundle,
     ModelMetadata,
+    active_model_path,
     load_model,
     make_version,
     save_model,
@@ -57,3 +59,23 @@ def test_load_model_rejects_non_bundle_artifact(tmp_path: Path) -> None:
 
     with pytest.raises(TypeError):
         load_model(path)
+
+
+def test_active_model_path_prefers_runtime_model(tmp_path: Path) -> None:
+    bundle = ModelBundle(model={"weights": [1]}, metadata=_metadata())
+    runtime = tmp_path / "model.pkl"
+    save_model(bundle, runtime)
+
+    assert active_model_path(str(runtime)) == runtime
+
+
+def test_active_model_path_falls_back_to_pretrained(tmp_path: Path) -> None:
+    assert active_model_path(str(tmp_path / "absent.pkl")) == PRETRAINED_MODEL_PATH
+
+
+def test_pretrained_baseline_is_shipped_and_loadable() -> None:
+    bundle = load_model(PRETRAINED_MODEL_PATH)
+
+    assert bundle is not None
+    assert bundle.metadata.evaluation == "walk_forward"
+    assert bundle.metadata.metrics["accuracy"] > 0.45

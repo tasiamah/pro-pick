@@ -15,8 +15,11 @@ venv/
 .env.*
 !.env.example
 
-# ML artifacts
+# ML artifacts (runtime-trained models are local-only)
 backend/app/ml/*.pkl
+# ...except the shipped baseline that ships with the deploy so a fresh instance
+# serves real predictions without training on startup.
+!backend/app/ml/pretrained_model.pkl
 
 # Node / Expo
 node_modules/

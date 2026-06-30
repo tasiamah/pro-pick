@@ -33,7 +33,11 @@ def db_session() -> Session:
 def test_get_dashboard_summarizes_today_and_model_performance(
     client: TestClient,
     db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Force the compute-from-predictions fallback (no active model metadata) so
+    # we can assert model_accuracy from the seeded finished match.
+    monkeypatch.setattr("app.api.dashboard.active_model_metrics", lambda: None)
     now = datetime.utcnow()
     start_of_day = datetime(now.year, now.month, now.day)
 
@@ -184,7 +188,11 @@ def test_get_dashboard_top_value_bets_scoped_to_today_ordered_by_edge(
     ]
 
 
-def test_get_dashboard_returns_empty_state_without_data(client: TestClient) -> None:
+def test_get_dashboard_returns_empty_state_without_data(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Without an active model and without data, model_accuracy is unknown.
+    monkeypatch.setattr("app.api.dashboard.active_model_metrics", lambda: None)
     response = client.get("/dashboard")
 
     assert response.status_code == 200
@@ -195,3 +203,18 @@ def test_get_dashboard_returns_empty_state_without_data(client: TestClient) -> N
     assert payload["top_value_bets"] == []
     assert payload["model_accuracy"] is None
     assert payload["roi"] is None
+
+
+def test_get_dashboard_surfaces_active_model_metadata(client: TestClient) -> None:
+    from app.services.prediction import load_active_model
+
+    bundle = load_active_model()
+    assert bundle is not None, "a pretrained baseline model should be shipped"
+    metrics = bundle.metadata.metrics
+
+    payload = client.get("/dashboard").json()
+
+    assert payload["model_accuracy"] == metrics["accuracy"]
+    assert payload["confident_accuracy"] == metrics["confident_accuracy"]
+    assert payload["confident_coverage"] == metrics["confident_coverage"]
+    assert payload["confidence_threshold"] == metrics["confidence_threshold"]

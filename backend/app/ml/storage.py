@@ -21,6 +21,12 @@ import joblib
 
 DEFAULT_MODEL_PATH = Path(__file__).resolve().parent / "model.pkl"
 
+# A small, version-controlled baseline bundle shipped with the deploy so a fresh
+# instance serves real predictions and honest metrics immediately, without having
+# to train on startup (which is slow/memory-heavy on small hosts). A model trained
+# at runtime to DEFAULT_MODEL_PATH always takes precedence over this fallback.
+PRETRAINED_MODEL_PATH = Path(__file__).resolve().parent / "pretrained_model.pkl"
+
 
 @dataclass(frozen=True)
 class ModelMetadata:
@@ -47,6 +53,15 @@ def make_version(algorithm: str, *, now: datetime | None = None) -> str:
 
 def resolve_model_path(model_path: str = "") -> Path:
     return Path(model_path) if model_path else DEFAULT_MODEL_PATH
+
+
+def active_model_path(model_path: str = "") -> Path:
+    """Path of the model to serve: a runtime-trained model if present, else the
+    shipped pretrained baseline."""
+    resolved = resolve_model_path(model_path)
+    if resolved.exists():
+        return resolved
+    return PRETRAINED_MODEL_PATH
 
 
 def save_model(bundle: ModelBundle, path: Path = DEFAULT_MODEL_PATH) -> Path:

@@ -152,6 +152,10 @@ def test_predict_match_falls_back_without_model(
 ) -> None:
     upcoming = _seed(db_session)
     monkeypatch.setattr(settings, "model_path", str(tmp_path / "absent.pkl"))
+    # Also hide the shipped baseline so we exercise the true no-model fallback.
+    monkeypatch.setattr(
+        "app.ml.storage.PRETRAINED_MODEL_PATH", tmp_path / "absent-baseline.pkl"
+    )
     reset_model_cache()
 
     result = predict_match(db_session, upcoming)
