@@ -465,13 +465,14 @@ def _fetch_live_fixture_window(
             )
             continue
         for item in fixtures:
-            league_id = (item.get("league") or {}).get("id")
+            try:
+                league_id = int((item.get("league") or {}).get("id"))
+                external_id = int((item.get("fixture") or {}).get("id"))
+            except (TypeError, ValueError):
+                continue
             if league_id not in league_set:
                 continue
-            external_id = (item.get("fixture") or {}).get("id")
-            if external_id is None:
-                continue
-            fixtures_by_id[int(external_id)] = item
+            fixtures_by_id[external_id] = item
 
     return fixtures_by_id
 

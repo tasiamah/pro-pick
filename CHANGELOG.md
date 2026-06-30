@@ -20,26 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   back to the configured interval otherwise) so those events fire close to real
   time (`backend/app/services/match_notification_events.py`,
   `backend/app/scheduler/jobs.py`).
-- Value bets, odds-tier classification, and the displayed odds now use the
-  best-price bookmaker for each match (the book with the lowest margin /
-  overround) instead of the alphabetically first one. This stops understating
-  edge/EV and missing value bets, and keeps a single, deterministic odds source
-  across the API, list enrichment, and value-bet engine
-  (`backend/app/services/value_bets.py`, `backend/app/api/matches.py`,
-  `backend/app/services/match_list_enrichment.py`).
-- Home "Top Value Bets" cards now show the fixture (teams, league, kickoff) and
-  the picked 1X2 outcome alongside edge, EV, odds, and stake, instead of a bare
-  stat line. The separate margin-based "Confidence" figure was removed so
-  "confidence" means one thing app-wide (the match-card top-pick probability)
-  (`mobile/src/components/ValueBetCard.tsx`, `mobile/src/screens/HomeScreen.tsx`).
-- Analytics now reflects the single market we actually model (1X2): the
-  "Prediction Outcomes" breakdown shows Home/Draw/Away only, and the
-  "AI Model Performance" row replaces the placeholder "Markets Covered" stat
-  with the model's Log Loss. Removed the always-zero "Both Teams Score" and
-  "Over 2.5" outcome cards and the `markets_covered` field
-  (`backend/app/services/analytics.py`, `backend/app/schemas/common.py`,
-  `backend/app/api/analytics.py`, `mobile/src/screens/analyticsUtils.ts`,
-  `mobile/src/api/types.ts`).
 
 ### Added
 - Expo push notifications end-to-end: device token registration, per-match
@@ -49,21 +29,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `python -m app.scripts.test_push_notification` CLI helper. Mobile registers
   push tokens on launch, syncs modal toggles to the API, and opens match detail
   when a notification is tapped.
-- Home tab now groups matches into Low / Medium / High **Odds** tier sections,
-  each with a tier icon and an "N matches available" count (replacing the single
-  flat "Matches" list), matching the design reference. Tier is derived from the
-  price of the model's recommended outcome
+- Home tab now groups matches into High / Medium / Low **Odds** tier sections
+  (highest odds first), each with a tier icon and an "N matches available" count
+  (replacing the single flat "Matches" list), matching the design reference. Tier
+  is derived from the price of the model's recommended outcome
   (`mobile/src/screens/homeMatchUtils.ts`, `mobile/src/screens/HomeScreen.tsx`,
   `mobile/src/components/demo/SectionHeader.tsx`).
 - Match cards now show a dynamic, fixture-specific headline insight derived from
   the recommended outcome, model confidence and each side's recent form (e.g.
-  "Alpha unstoppable right now", "Evenly matched — honours likely shared"),
-  replacing the backend's repetitive templated line
+  "Alpha unstoppable right now", "Evenly matched, honours likely shared"),
+  replacing the backend's repetitive templated line. Each confidence band has
+  several variants picked deterministically per fixture so different matches read
+  differently instead of all repeating one line; the copy is venue-neutral (no
+  "at home"/"on the road") since tournament fixtures are played at neutral
+  grounds, and avoids dash separators
   (`mobile/src/components/matchCard/matchInsightUtils.ts`,
   `mobile/src/components/matchCard/MatchCardV2.tsx`).
-- Home "AI Predictions" hero now shows a live status pill and a
-  "N verified predictions today" subtitle (count of matches kicking off today
-  that carry a model prediction), and the Home "Matches" section shows an
+- Home "AI Predictions" hero now shows a live status pill and an
+  "N upcoming predictions" subtitle that counts the predictions actually shown
+  on the Home slate (previously it said "N verified predictions today", which
+  only counted today's kickoffs and read as wrong next to the multi-day slate),
+  and the Home "Matches" section shows an
   "N matches available" count — closing visual gaps against the design
   reference (`mobile/src/components/demo/AiPredictionsHero.tsx`,
   `mobile/src/components/demo/LiveBadge.tsx`,
@@ -85,134 +71,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   value bets identified by their negative external ids) from a database, so
   seeded demo fixtures like Bournemouth vs Luton can be cleared from any
   environment (`app/services/demo_seed.py`, PP-108).
-
-### Changed
-- Analytics now headlines the high-confidence accuracy (~70%) instead of the
-  full-slate accuracy: the "Model Accuracy" summary card and the AI Model
-  Performance "Accuracy" column both read from `confident_accuracy` and are
-  captioned "With high confidence". The full-slate figure (~51%) is no longer
-  surfaced anywhere on the Analytics tab (`mobile/src/screens/analyticsUtils.ts`).
-- Favorites now star a whole match instead of a team: the card star toggles the
-  match, and the Favorites tab lists those starred matches (fetched by id, sorted
-  by earliest kickoff) to match the design. Removed the unused team/competition
-  favoriting code (`mobile/src/store/favoritesStore.ts`,
-  `mobile/src/screens/FavoritesScreen.tsx`,
-  `mobile/src/components/matchCard/MatchCardV2.tsx`).
-- Daily live sync now refreshes upcoming predictions instead of skipping any
-  match that already has one, so picks stop going stale between retrains as new
-  results shift form/Elo/table features. A fresh prediction is written only when
-  the active model or probabilities change, and value bets follow the refreshed
-  prediction (`app/services/prediction.py`, `app/services/live_sync.py`).
-- Analytics dashboard restores the demo chart layout (confidence trend, risk
-  distribution, prediction outcomes, model performance) wired to real `/analytics`
-  data with empty states when sections have no data yet.
-- Matches and Analytics stack headers left-align title and subtitle to match
-  Home and Favorites.
-- Home "Win Rate" stat now reports the model's high-confidence accuracy
-  (captioned "Confident picks") instead of full-slate 1X2 accuracy, so the
-  headline figure reflects the picks the model is surest about rather than the
-  draw-capped ~51% across all matches (`mobile/src/screens/homeHeroUtils.ts`).
-- Home tab no longer lists matches that have already kicked off (e.g. a fixture
-  that started earlier today): it now applies the same kickoff guard as the
-  Matches tab via a live clock (`useNow`), and hides Top Value Bets whose match
-  has started. To avoid a sparse list once started matches drop off, the Matches
-  section tops up to at least 3 by appending the soonest upcoming matches from
-  later days (`mobile/src/screens/HomeScreen.tsx`,
-  `mobile/src/screens/homeMatchUtils.ts`).
-- Live sync now includes FIFA World Cup (league id 1) so finished World Cup
-  results and scores refresh from API-Football instead of staying stuck on
-  `scheduled` after kickoff.
-- Completed matches list returns the most recent fixtures first so the Matches
-  tab Completed filter shows latest results instead of the oldest page of fifty.
-- Matches tab now sorts Upcoming and Live by earliest kickoff first (Completed
-  stays most-recent-first), so the soonest match leads instead of one days out
-  (`mobile/src/screens/matchesFilterUtils.ts`).
-- Home match card Details opens the selected match detail screen instead of
-  switching to the Matches tab.
-- Mobile app shows kickoff times, browse date chips, and day grouping in the
-  device's local timezone instead of UTC, and the Upcoming filter no longer lists
-  matches whose kickoff has already passed (`mobile/src/utils/matchDates.ts`,
-  `mobile/src/components/formatters.ts`, `mobile/src/screens/matchesFilterUtils.ts`).
-- Matches list API latency: batch enrichment (one history query per page) and
-  smaller default browse window; Matches tab shows filters while loading instead
-  of a full-screen spinner.
-- Mobile app no longer shows placeholder demo fixtures (e.g. Bournemouth vs
-  Luton) or hardcoded analytics now that the backend serves real data: the
-  Matches and Match-detail screens render live API data with empty states, and
-  the Analytics screen is wired to `/analytics` (accuracy, log loss, ROI, value
-  bet counts, and a real ROI-trend chart). The demo-only confidence-trend and
-  risk-distribution charts and their seed data were removed.
-- Dashboard and analytics API latency: optimized snapshot queries, short-lived
-  metrics cache, Supabase pool limits, and SQL pagination for unfiltered match
-  lists so production `/dashboard` no longer exhausts DB connections.
-- Matches browse grid: equal-width columns with computed gutters and padding so
-  cards stay inside the screen, plus extra scroll space above the tab bar.
-  Rows use matched card heights and compact card layout in the grid; orphan
-  cards keep half-width instead of stretching full row.
-- Bottom tab bar labels no longer clip on web and devices with a home indicator;
-  tab bar height now includes safe-area bottom padding.
-- Match detail modal: zero-edge outcomes no longer show a misleading edge bar
-  fill, and demo odds movement appears only after Update Odds is tapped.
-- Match detail routing rejects unsafe integer ids; demo match kickoffs are
-  generated relative to the current date so browse cards stay upcoming.
-- Matches browse grid keeps two columns on phone widths by using
-  `space-between` spacing instead of horizontal gap with 48% columns.
-
-### Changed
-- Matches browse grid lists fixtures in reverse kickoff order (newest first) and
-  uses tighter compact-card typography so team names, badges, and insights match
-  the demo reference in the two-column layout.
-- Dashboard/`analytics` model accuracy now comes from the live model's
-  walk-forward backtest metadata (honest out-of-sample) instead of re-scoring
-  stored predictions, which read low (~0.44) when finished matches still held
-  predictions from an earlier model; the real number is ~0.51.
-- Startup bootstrap also retrains when the on-disk model's `feature_columns` no
-  longer match the code, so a deploy that changes the feature set (e.g. adding
-  Elo) ships a fresh model instead of serving a stale-schema one.
-- Value-bet engine quality guard: bets on odds above `value_bet_max_odds`
-  (default 6.0) or below `value_bet_min_confidence` (default 0.0) are no longer
-  flagged as value, keeping unreliable longshots and near-coin-flip picks out of
-  recommendations.
-- Match detail modal: screenshot-style layout with AI confidence ring, win
-  probability chart, numbered key insights, live market data, and per-outcome
-  AI vs market analysis cards. Opens as a modal with close button; demo match
-  cards use static data without API calls.
-- Matches tab browse grid: two-column card layout with static demo matches when
-  the API list is empty, plus green border hover on web.
-- Home match card Details link: centered, lighter demo-style footer bar and
-  navigation to the selected match detail screen. Shared footer/link tokens and
-  regression tests prevent accidental revert when switching branches.
-- Analytics dashboard demo UI: summary stats, confidence trend, risk distribution,
-  prediction outcomes, and AI model performance sections with static mock data
-  until the analytics API is extended.
-- Confidence Trend chart: interactive hover with crosshair, highlighted point,
-  and tooltip showing the nearest data label and value.
-- Confidence Trend chart hover now tracks mouse movement on web instead of
-  requiring click-and-drag from gifted-charts pointerConfig.
-- Confidence Trend chart uses native touch scrubbing on iOS (PanResponder) so
-  drag across the chart shows crosshair, point, and tooltip without relying on
-  web-only mouse events.
-- Risk Distribution doughnut chart: interactive hover/touch with segment explode
-  and tooltip showing risk category and value.
-- Analytics header: removed unrequested subtitle under Analytics Dashboard.
-- Mobile UI/UX polish for demo parity: shared screen layout styles, consistent
-  section headers and stat typography, and theme tokens for micro, metric, and
-  label-strong text (PP-90).
-
-### Fixed
-- Kickoff times now display in the user's local timezone. The API serializes
-  naive UTC timestamps with no timezone (e.g. `2026-06-30T17:00:00`), which
-  `new Date()` parsed as local time — showing times off by the device's UTC
-  offset (e.g. Ivory Coast vs Norway as 5pm instead of 7pm in NL). Added a
-  shared `parseMatchDate` helper that treats a missing timezone as UTC and used
-  it everywhere kickoff strings are parsed for display, grouping, sorting, and
-  the kicked-off guard (`mobile/src/utils/matchDates.ts`,
-  `mobile/src/components/formatters.ts`, `mobile/src/screens/matchesFilterUtils.ts`,
-  `mobile/src/screens/homeMatchUtils.ts`, `mobile/src/screens/favoritesUtils.ts`).
-- Root tab navigation types so Home Details can navigate to the nested Matches
-  tab route without TypeScript errors.
-
-### Added
 - Elo team-strength features (`home_elo`, `away_elo`, `elo_diff`) to the 1X2
   model: point-in-time ratings replayed from results, capturing longer-horizon
   quality than the 5-game form window.
@@ -376,11 +234,151 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   query parameters), pagination limits, and empty-state responses across the
   matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
-### Fixed
-- Mobile: declare `expo-linear-gradient` in `package.json` so Analytics charts and
-  gradient UI work on a fresh clone (PP-109).
-
 ### Changed
+- Recent-form indicators on match cards now render as circular **W/D/L** letter
+  badges (muted, semi-transparent fills with a bright letter) instead of plain
+  colored dots, matching the design reference across Home and Matches
+  (`mobile/src/components/demo/FormIndicator.tsx`).
+- Value bets, odds-tier classification, and the displayed odds now use the
+  best-price bookmaker for each match (the book with the lowest margin /
+  overround) instead of the alphabetically first one. This stops understating
+  edge/EV and missing value bets, and keeps a single, deterministic odds source
+  across the API, list enrichment, and value-bet engine
+  (`backend/app/services/value_bets.py`, `backend/app/api/matches.py`,
+  `backend/app/services/match_list_enrichment.py`).
+- Analytics "Prediction Outcomes" now stretches its three cards (Home / Draw /
+  Away) evenly across the full width instead of left-aligning fixed-width cards
+  in a horizontal scroll, removing the empty space on the right left after the
+  Both Teams Score / Over 2.5 cards were dropped
+  (`mobile/src/screens/AnalyticsScreen.tsx`).
+- Home "Top Value Bets" cards now show the fixture (teams, league, kickoff) and
+  the picked 1X2 outcome alongside edge, EV, odds, and stake, instead of a bare
+  stat line. The separate margin-based "Confidence" figure was removed so
+  "confidence" means one thing app-wide (the match-card top-pick probability)
+  (`mobile/src/components/ValueBetCard.tsx`, `mobile/src/screens/HomeScreen.tsx`).
+- Analytics now reflects the single market we actually model (1X2): the
+  "Prediction Outcomes" breakdown shows Home/Draw/Away only, and the
+  "AI Model Performance" row replaces the placeholder "Markets Covered" stat
+  with the model's Log Loss. Removed the always-zero "Both Teams Score" and
+  "Over 2.5" outcome cards and the `markets_covered` field
+  (`backend/app/services/analytics.py`, `backend/app/schemas/common.py`,
+  `backend/app/api/analytics.py`, `mobile/src/screens/analyticsUtils.ts`,
+  `mobile/src/api/types.ts`).
+- Home tab now shows a fuller slate: the match floor was raised from 3 to 12, so
+  a quiet day tops up to ~12 (≈ four per odds tier) from upcoming days while a
+  busy day still renders its full slate (`mobile/src/screens/homeMatchUtils.ts`).
+- Removed the "Confident picks" caption under the Home hero "Win Rate" stat
+  (`mobile/src/screens/homeHeroUtils.ts`,
+  `mobile/src/components/demo/AiPredictionsHero.tsx`).
+- Analytics now headlines the high-confidence accuracy (~70%) instead of the
+  full-slate accuracy: the "Model Accuracy" summary card and the AI Model
+  Performance "Accuracy" column both read from `confident_accuracy` and are
+  captioned "With high confidence". The full-slate figure (~51%) is no longer
+  surfaced anywhere on the Analytics tab (`mobile/src/screens/analyticsUtils.ts`).
+- Favorites now star a whole match instead of a team: the card star toggles the
+  match, and the Favorites tab lists those starred matches (fetched by id, sorted
+  by earliest kickoff) to match the design. Removed the unused team/competition
+  favoriting code (`mobile/src/store/favoritesStore.ts`,
+  `mobile/src/screens/FavoritesScreen.tsx`,
+  `mobile/src/components/matchCard/MatchCardV2.tsx`).
+- Daily live sync now refreshes upcoming predictions instead of skipping any
+  match that already has one, so picks stop going stale between retrains as new
+  results shift form/Elo/table features. A fresh prediction is written only when
+  the active model or probabilities change, and value bets follow the refreshed
+  prediction (`app/services/prediction.py`, `app/services/live_sync.py`).
+- Analytics dashboard restores the demo chart layout (confidence trend, risk
+  distribution, prediction outcomes, model performance) wired to real `/analytics`
+  data with empty states when sections have no data yet.
+- Matches and Analytics stack headers left-align title and subtitle to match
+  Home and Favorites.
+- Home "Win Rate" stat now reports the model's high-confidence accuracy
+  (captioned "Confident picks") instead of full-slate 1X2 accuracy, so the
+  headline figure reflects the picks the model is surest about rather than the
+  draw-capped ~51% across all matches (`mobile/src/screens/homeHeroUtils.ts`).
+- Home tab no longer lists matches that have already kicked off (e.g. a fixture
+  that started earlier today): it now applies the same kickoff guard as the
+  Matches tab via a live clock (`useNow`), and hides Top Value Bets whose match
+  has started. To avoid a sparse list once started matches drop off, the Matches
+  section tops up to at least 3 by appending the soonest upcoming matches from
+  later days (`mobile/src/screens/HomeScreen.tsx`,
+  `mobile/src/screens/homeMatchUtils.ts`).
+- Live sync now includes FIFA World Cup (league id 1) so finished World Cup
+  results and scores refresh from API-Football instead of staying stuck on
+  `scheduled` after kickoff.
+- Completed matches list returns the most recent fixtures first so the Matches
+  tab Completed filter shows latest results instead of the oldest page of fifty.
+- Matches tab now sorts Upcoming and Live by earliest kickoff first (Completed
+  stays most-recent-first), so the soonest match leads instead of one days out
+  (`mobile/src/screens/matchesFilterUtils.ts`).
+- Home match card Details opens the selected match detail screen instead of
+  switching to the Matches tab.
+- Mobile app shows kickoff times, browse date chips, and day grouping in the
+  device's local timezone instead of UTC, and the Upcoming filter no longer lists
+  matches whose kickoff has already passed (`mobile/src/utils/matchDates.ts`,
+  `mobile/src/components/formatters.ts`, `mobile/src/screens/matchesFilterUtils.ts`).
+- Matches list API latency: batch enrichment (one history query per page) and
+  smaller default browse window; Matches tab shows filters while loading instead
+  of a full-screen spinner.
+- Mobile app no longer shows placeholder demo fixtures (e.g. Bournemouth vs
+  Luton) or hardcoded analytics now that the backend serves real data: the
+  Matches and Match-detail screens render live API data with empty states, and
+  the Analytics screen is wired to `/analytics` (accuracy, log loss, ROI, value
+  bet counts, and a real ROI-trend chart). The demo-only confidence-trend and
+  risk-distribution charts and their seed data were removed.
+- Dashboard and analytics API latency: optimized snapshot queries, short-lived
+  metrics cache, Supabase pool limits, and SQL pagination for unfiltered match
+  lists so production `/dashboard` no longer exhausts DB connections.
+- Matches browse grid: equal-width columns with computed gutters and padding so
+  cards stay inside the screen, plus extra scroll space above the tab bar.
+  Rows use matched card heights and compact card layout in the grid; orphan
+  cards keep half-width instead of stretching full row.
+- Bottom tab bar labels no longer clip on web and devices with a home indicator;
+  tab bar height now includes safe-area bottom padding.
+- Match detail modal: zero-edge outcomes no longer show a misleading edge bar
+  fill, and demo odds movement appears only after Update Odds is tapped.
+- Match detail routing rejects unsafe integer ids; demo match kickoffs are
+  generated relative to the current date so browse cards stay upcoming.
+- Matches browse grid keeps two columns on phone widths by using
+  `space-between` spacing instead of horizontal gap with 48% columns.
+- Matches browse grid lists fixtures in reverse kickoff order (newest first) and
+  uses tighter compact-card typography so team names, badges, and insights match
+  the demo reference in the two-column layout.
+- Dashboard/`analytics` model accuracy now comes from the live model's
+  walk-forward backtest metadata (honest out-of-sample) instead of re-scoring
+  stored predictions, which read low (~0.44) when finished matches still held
+  predictions from an earlier model; the real number is ~0.51.
+- Startup bootstrap also retrains when the on-disk model's `feature_columns` no
+  longer match the code, so a deploy that changes the feature set (e.g. adding
+  Elo) ships a fresh model instead of serving a stale-schema one.
+- Value-bet engine quality guard: bets on odds above `value_bet_max_odds`
+  (default 6.0) or below `value_bet_min_confidence` (default 0.0) are no longer
+  flagged as value, keeping unreliable longshots and near-coin-flip picks out of
+  recommendations.
+- Match detail modal: screenshot-style layout with AI confidence ring, win
+  probability chart, numbered key insights, live market data, and per-outcome
+  AI vs market analysis cards. Opens as a modal with close button; demo match
+  cards use static data without API calls.
+- Matches tab browse grid: two-column card layout with static demo matches when
+  the API list is empty, plus green border hover on web.
+- Home match card Details link: centered, lighter demo-style footer bar and
+  navigation to the selected match detail screen. Shared footer/link tokens and
+  regression tests prevent accidental revert when switching branches.
+- Analytics dashboard demo UI: summary stats, confidence trend, risk distribution,
+  prediction outcomes, and AI model performance sections with static mock data
+  until the analytics API is extended.
+- Confidence Trend chart: interactive hover with crosshair, highlighted point,
+  and tooltip showing the nearest data label and value.
+- Confidence Trend chart hover now tracks mouse movement on web instead of
+  requiring click-and-drag from gifted-charts pointerConfig.
+- Confidence Trend chart uses native touch scrubbing on iOS (PanResponder) so
+  drag across the chart shows crosshair, point, and tooltip without relying on
+  web-only mouse events.
+- Risk Distribution doughnut chart: interactive hover/touch with segment explode
+  and tooltip showing risk category and value.
+- Analytics header: removed unrequested subtitle under Analytics Dashboard.
+- Mobile UI/UX polish for demo parity: shared screen layout styles, consistent
+  section headers and stat typography, and theme tokens for micro, metric, and
+  label-strong text (PP-90).
 - Home and Favorites screens now use MatchCard v2; legacy MatchCard removed
   (PP-106).
 - Home screen stat grid replaced with AI Predictions hero showing win rate, average
@@ -407,7 +405,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Mobile screens use shared query-state helpers so loading, empty, and error
   views stay consistent and keep cached data visible during refetch failures
   (PP-85).
-
 - `GET /matches` now returns upcoming matches with embedded prediction and odds
   for list screens (PP-80).
 - `GET /value-bets` accepts optional `match_id` query parameter for
@@ -434,9 +431,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `.env.example` uses explicit localhost CORS origins instead of a wildcard.
 - Remaining Dutch comment in `alembic/env.py` translated to English.
 
+### Removed
+- Dropped the standalone "Top Value Bets" section from the Home tab; matches are
+  now presented purely as the High/Medium/Low odds-tier groups, matching the
+  design reference (`mobile/src/screens/HomeScreen.tsx`).
+
 ### Fixed
+- Kickoff times now display in the user's local timezone. The API serializes
+  naive UTC timestamps with no timezone (e.g. `2026-06-30T17:00:00`), which
+  `new Date()` parsed as local time — showing times off by the device's UTC
+  offset (e.g. Ivory Coast vs Norway as 5pm instead of 7pm in NL). Added a
+  shared `parseMatchDate` helper that treats a missing timezone as UTC and used
+  it everywhere kickoff strings are parsed for display, grouping, sorting, and
+  the kicked-off guard (`mobile/src/utils/matchDates.ts`,
+  `mobile/src/components/formatters.ts`, `mobile/src/screens/matchesFilterUtils.ts`,
+  `mobile/src/screens/homeMatchUtils.ts`, `mobile/src/screens/favoritesUtils.ts`).
+- Root tab navigation types so Home Details can navigate to the nested Matches
+  tab route without TypeScript errors.
+- Mobile: declare `expo-linear-gradient` in `package.json` so Analytics charts and
+  gradient UI work on a fresh clone (PP-109).
 - `GET /dashboard` now returns `latest_kickoff` so clients can browse imported
   historical match weeks (PP-49).
 - `mobile/LICENSE` copyright updated from Expo template text to Pro Pick.
-
 [Unreleased]: https://github.com/tasiamah/pro-pick/commits/main

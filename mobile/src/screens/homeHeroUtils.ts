@@ -1,9 +1,7 @@
 import type { Analytics, Dashboard, MatchDetail } from '../api/types';
-import { toLocalDateKey } from '../utils/matchDates';
 
 export type HeroStats = {
   winRate: string;
-  winRateCaption: string | null;
   avgOdds: string;
   valueBets: string;
   subtitle: string;
@@ -15,16 +13,6 @@ export function formatHeroWinRate(value: number | null): string {
   }
 
   return `${(value * 100).toFixed(1)}%`;
-}
-
-export function formatHeroWinRateCaption(
-  confidentAccuracy: number | null,
-): string | null {
-  if (confidentAccuracy == null || !Number.isFinite(confidentAccuracy)) {
-    return null;
-  }
-
-  return 'Confident picks';
 }
 
 export function formatHeroAvgOdds(value: number | null): string {
@@ -43,21 +31,8 @@ export function formatHeroValueBetCount(value: number | null | undefined): strin
   return String(value);
 }
 
-export function countVerifiedPredictionsToday(
-  matches: MatchDetail[],
-  now: Date,
-): number {
-  const todayKey = toLocalDateKey(now);
-  return matches.filter(
-    (match) =>
-      match.prediction != null &&
-      match.kickoff != null &&
-      toLocalDateKey(match.kickoff) === todayKey,
-  ).length;
-}
-
 export function formatPredictionsSubtitle(count: number): string {
-  return `${count} verified prediction${count === 1 ? '' : 's'} today`;
+  return `${count} upcoming prediction${count === 1 ? '' : 's'}`;
 }
 
 export function computeAverageOdds(matches: MatchDetail[]): number | null {
@@ -88,18 +63,15 @@ export function buildHeroStats(
   dashboard: Dashboard,
   analytics: Analytics | null | undefined,
   matches: MatchDetail[],
-  now: Date = new Date(),
+  shownPredictionCount = 0,
 ): HeroStats {
   const confidentAccuracy = dashboard.confident_accuracy;
   return {
     winRate: formatHeroWinRate(confidentAccuracy ?? dashboard.model_accuracy),
-    winRateCaption: formatHeroWinRateCaption(confidentAccuracy),
     avgOdds: formatHeroAvgOdds(computeAverageOdds(matches)),
     valueBets: formatHeroValueBetCount(
       analytics?.total_value_bets ?? dashboard.top_value_bets?.length,
     ),
-    subtitle: formatPredictionsSubtitle(
-      countVerifiedPredictionsToday(matches, now),
-    ),
+    subtitle: formatPredictionsSubtitle(shownPredictionCount),
   };
 }

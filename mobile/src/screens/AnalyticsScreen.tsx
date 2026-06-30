@@ -154,15 +154,11 @@ export function AnalyticsScreen() {
           isEmpty={!hasPredictionOutcomes}
           emptyMessage="No prediction outcomes yet"
         >
-          <ScrollView
-            horizontal
-            contentContainerStyle={styles.outcomesRow}
-            showsHorizontalScrollIndicator={false}
-          >
+          <View style={styles.outcomesRow}>
             {predictionOutcomes.map((outcome) => (
               <OutcomeCard key={outcome.label} outcome={outcome} />
             ))}
-          </ScrollView>
+          </View>
         </AsyncState>
       </View>
 
@@ -203,8 +199,8 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   outcomesRow: {
+    flexDirection: 'row',
     gap: spacing.md,
-    paddingRight: spacing.lg,
   },
   outcomeCard: {
     alignItems: 'center',
@@ -212,9 +208,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
+    flex: 1,
     gap: spacing.xs,
-    minWidth: 112,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.lg,
   },
   outcomeValue: {

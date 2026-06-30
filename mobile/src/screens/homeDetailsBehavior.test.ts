@@ -8,8 +8,4 @@ describe('HomeScreen details behavior', () => {
     expect(homeScreenSource).toContain('onDetailsPress={() => openMatchDetail(match.id)}');
     expect(homeScreenSource).not.toContain('navigateHomeDetailsToMatchesTab');
   });
-
-  it('still opens MatchDetail for value bet cards', () => {
-    expect(homeScreenSource).toContain('openMatchDetail(valueBet.match_id)');
-  });
 });
