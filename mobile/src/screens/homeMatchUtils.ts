@@ -25,8 +25,8 @@ export type HomeOddsTierGroup = {
   matches: MatchDetail[];
 };
 
-/** Display order of the Home odds-tier sections (safest first). */
-const ODDS_TIER_ORDER: readonly OddsTier[] = ['low', 'medium', 'high'];
+/** Display order of the Home odds-tier sections (highest odds first). */
+const ODDS_TIER_ORDER: readonly OddsTier[] = ['high', 'medium', 'low'];
 
 /**
  * Odds tier of a match, classified from the price of the model's recommended

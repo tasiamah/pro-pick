@@ -156,7 +156,7 @@ describe('classifyMatchOddsTier', () => {
 });
 
 describe('groupHomeMatchesByOddsTier', () => {
-  it('buckets matches into low/medium/high order, preserving input order', () => {
+  it('buckets matches into high/medium/low order, preserving input order', () => {
     const medium = createTieredMatch(2, 2.5);
     const high = createTieredMatch(3, 4.0);
     const low = createTieredMatch(1, 1.5);
@@ -164,7 +164,7 @@ describe('groupHomeMatchesByOddsTier', () => {
 
     const groups = groupHomeMatchesByOddsTier([medium, high, low, medium2]);
 
-    expect(groups.map((group) => group.tier)).toEqual(['low', 'medium', 'high']);
+    expect(groups.map((group) => group.tier)).toEqual(['high', 'medium', 'low']);
     expect(
       groups.find((group) => group.tier === 'medium')?.matches.map((m) => m.id),
     ).toEqual([2, 4]);
