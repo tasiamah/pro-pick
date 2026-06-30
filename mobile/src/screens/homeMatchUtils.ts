@@ -2,6 +2,7 @@ import type { MatchDetail, ValueBet } from '../api/types';
 import {
   addLocalDays,
   filterMatchesByDate,
+  parseMatchDate,
   startOfLocalDay,
 } from '../utils/matchDates';
 import { hasKickedOff } from './matchesFilterUtils';
@@ -26,7 +27,7 @@ export function filterUpcomingMatchesForDay(
 }
 
 function kickoffTime(match: MatchDetail): number {
-  return match.kickoff ? new Date(match.kickoff).getTime() : 0;
+  return match.kickoff ? parseMatchDate(match.kickoff).getTime() : 0;
 }
 
 /**
