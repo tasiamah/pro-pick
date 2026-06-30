@@ -28,7 +28,6 @@ export { DisclaimerBanner } from './DisclaimerBanner';
 export { AsyncState } from './AsyncState';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
-export { FavoriteToggle } from './FavoriteToggle';
 export { LoadingState } from './LoadingState';
 export { MatchCardV2 } from './matchCard/MatchCardV2';
 export { ValueBetCard } from './ValueBetCard';

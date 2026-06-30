@@ -11,7 +11,7 @@ import {
   InsightBullet,
   OddsTierBadge,
 } from '../demo';
-import { buildFavoriteTeamIds, useFavoritesStore } from '../../store';
+import { useFavoritesStore } from '../../store';
 import { MATCH_DETAILS_FOOTER } from '../../constants/matchCardDetails';
 import { colors, radii, spacing, typography } from '../../theme';
 import { getTeamName } from '../../utils/matchDisplay';
@@ -40,22 +40,17 @@ type TeamRowProps = {
   compact?: boolean;
 };
 
-function HeaderFavoriteStar({ team }: { team: Team }) {
-  const teams = useFavoritesStore((state) => state.teams);
-  const toggleTeam = useFavoritesStore((state) => state.toggleTeam);
-  const favoriteTeamIds = buildFavoriteTeamIds(teams);
-  const isFavorite = team.id != null && favoriteTeamIds.has(team.id);
-
-  if (team.id == null) {
-    return null;
-  }
+function MatchFavoriteStar({ matchId, label }: { matchId: number; label: string }) {
+  const matchIds = useFavoritesStore((state) => state.matchIds);
+  const toggleMatch = useFavoritesStore((state) => state.toggleMatch);
+  const isFavorite = matchIds.includes(matchId);
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Favorite ${getTeamName(team, 'team')}`}
+      accessibilityLabel={`Favorite ${label}`}
       accessibilityState={{ selected: isFavorite }}
-      onPress={() => toggleTeam(team)}
+      onPress={() => toggleMatch(matchId)}
       style={({ pressed }) => pressed && styles.pressed}
     >
       <Ionicons
@@ -129,7 +124,7 @@ export function MatchCardV2({
             <View accessibilityElementsHidden>
               <Ionicons name="notifications-outline" size={18} color={colors.textMuted} />
             </View>
-            <HeaderFavoriteStar team={match.home_team} />
+            <MatchFavoriteStar matchId={match.id} label={`${homeName} vs ${awayName}`} />
             {!compact ? (
               <Text numberOfLines={1} style={styles.kickoff}>
                 {formatKickoff(match.kickoff)}
