@@ -1,122 +1,58 @@
-import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback } from 'react';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useQueries } from '@tanstack/react-query';
 
-import { useMatches } from '../api/hooks';
-import {
-  AsyncState,
-  DatePickerRow,
-  EmptyState,
-  ErrorState,
-  FavoriteToggle,
-  LoadingState,
-  MatchCardV2,
-} from '../components';
-import { useLocalDayKey } from '../hooks/useLocalDayKey';
+import { api } from '../api/client';
+import { queryKeys } from '../api/queryKeys';
+import type { MatchDetail } from '../api/types';
+import { EmptyState, ErrorState, LoadingState, MatchCardV2 } from '../components';
 import type { FavoritesStackParamList } from '../navigation/types';
-import { filterMatchesByFavorites, useFavoritesStore } from '../store';
-import { colors, screenStyles, spacing, typography } from '../theme';
-import {
-  buildDateRange,
-  buildDateWindowParams,
-  DATE_RANGE_DAYS,
-  filterMatchesByDate,
-  localDayKeyToDate,
-} from '../utils/matchDates';
-import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
+import { useFavoritesStore } from '../store';
+import { colors, screenStyles } from '../theme';
+import { sortMatchesByKickoff } from './favoritesUtils';
 
 type Props = NativeStackScreenProps<FavoritesStackParamList, 'Favorites'>;
 
-function SavedFavoritesRow() {
-  const teams = useFavoritesStore((state) => state.teams);
-  const competitions = useFavoritesStore((state) => state.competitions);
-  const removeTeam = useFavoritesStore((state) => state.removeTeam);
-  const removeCompetition = useFavoritesStore((state) => state.removeCompetition);
-
-  if (teams.length === 0 && competitions.length === 0) {
-    return null;
-  }
-
-  return (
-    <View style={styles.savedSection}>
-      <Text style={styles.savedTitle}>Saved favorites</Text>
-      <ScrollView
-        horizontal
-        contentContainerStyle={styles.savedRow}
-        showsHorizontalScrollIndicator={false}
-      >
-        {teams.map((team) => (
-          <FavoriteToggle
-            key={`team-${team.id}`}
-            label={team.name}
-            active
-            onToggle={() => removeTeam(team.id)}
-          />
-        ))}
-        {competitions.map((competition) => (
-          <FavoriteToggle
-            key={`competition-${competition.name}`}
-            label={competition.name}
-            active
-            onToggle={() => removeCompetition(competition.name)}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
-
 export function FavoritesScreen({ navigation }: Props) {
-  const localDayKey = useLocalDayKey();
-  const [selectedDate, setSelectedDate] = useState(() => localDayKeyToDate(localDayKey));
-  const [prevDayKey, setPrevDayKey] = useState(localDayKey);
-  const teams = useFavoritesStore((state) => state.teams);
-  const competitions = useFavoritesStore((state) => state.competitions);
-  const hasFavorites = teams.length > 0 || competitions.length > 0;
-  const matchListParams = useMemo(
-    () => buildDateWindowParams(localDayKeyToDate(localDayKey)),
-    [localDayKey],
-  );
-  const matchesQuery = useMatches(matchListParams, { enabled: hasFavorites });
+  const matchIds = useFavoritesStore((state) => state.matchIds);
 
-  const dateRange = useMemo(
-    () => buildDateRange(localDayKeyToDate(localDayKey), DATE_RANGE_DAYS),
-    [localDayKey],
-  );
-
-  if (localDayKey !== prevDayKey) {
-    setPrevDayKey(localDayKey);
-    setSelectedDate(localDayKeyToDate(localDayKey));
-  }
-
-  const filteredMatches = useMemo(() => {
-    const favoriteMatches = filterMatchesByFavorites(
-      matchesQuery.data ?? [],
-      teams,
-      competitions,
-    );
-    return filterMatchesByDate(favoriteMatches, selectedDate);
-  }, [matchesQuery.data, teams, competitions, selectedDate]);
+  const favoriteQueries = useQueries({
+    queries: matchIds.map((matchId) => ({
+      queryKey: queryKeys.match(matchId),
+      queryFn: () => api.getMatch(matchId),
+    })),
+  });
 
   const onRefresh = useCallback(() => {
-    void matchesQuery.refetch();
-  }, [matchesQuery]);
+    favoriteQueries.forEach((query) => {
+      void query.refetch();
+    });
+  }, [favoriteQueries]);
 
-  if (!hasFavorites) {
+  if (matchIds.length === 0) {
     return (
       <View style={screenStyles.screenContainer}>
-        <EmptyState message="Favorite teams or competitions from a match to see them here." />
+        <EmptyState message="No favorites yet. Tap the star on any match to add it here." />
       </View>
     );
   }
 
-  if (isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)) {
+  const matches = sortMatchesByKickoff(
+    favoriteQueries
+      .map((query) => query.data)
+      .filter((match): match is MatchDetail => match != null),
+  );
+
+  if (matches.length === 0 && favoriteQueries.some((query) => query.isLoading)) {
     return <LoadingState message="Loading favorites…" />;
   }
 
-  if (queryErrorForDisplay(matchesQuery.error, matchesQuery.data)) {
+  if (matches.length === 0 && favoriteQueries.every((query) => query.isError)) {
     return <ErrorState message="Could not load favorite matches" onRetry={onRefresh} />;
   }
+
+  const isRefetching = favoriteQueries.some((query) => query.isRefetching);
 
   return (
     <ScrollView
@@ -124,54 +60,26 @@ export function FavoritesScreen({ navigation }: Props) {
       contentContainerStyle={screenStyles.scrollContent}
       refreshControl={
         <RefreshControl
-          refreshing={matchesQuery.isRefetching}
+          refreshing={isRefetching}
           onRefresh={onRefresh}
           tintColor={colors.primary}
           colors={[colors.primary]}
         />
       }
     >
-      <SavedFavoritesRow />
-
-      <DatePickerRow
-        dates={dateRange}
-        selectedDate={selectedDate}
-        onSelectDate={setSelectedDate}
-      />
-
-      <AsyncState
-        isLoading={false}
-        error={null}
-        isEmpty={filteredMatches.length === 0}
-        emptyMessage="No favorite matches on this day"
-      >
-        <View style={screenStyles.cardList}>
-          {filteredMatches.map((match) => (
-            <MatchCardV2
-              key={match.id}
-              match={match}
-              odds={match.odds}
-              prediction={match.prediction}
-              onDetailsPress={() =>
-                navigation.navigate('MatchDetail', { matchId: String(match.id) })
-              }
-            />
-          ))}
-        </View>
-      </AsyncState>
+      <View style={screenStyles.cardList}>
+        {matches.map((match) => (
+          <MatchCardV2
+            key={match.id}
+            match={match}
+            odds={match.odds}
+            prediction={match.prediction}
+            onDetailsPress={() =>
+              navigation.navigate('MatchDetail', { matchId: String(match.id) })
+            }
+          />
+        ))}
+      </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  savedSection: {
-    gap: spacing.sm,
-  },
-  savedTitle: {
-    ...typography.bodySemibold,
-    color: colors.text,
-  },
-  savedRow: {
-    gap: spacing.sm,
-  },
-});

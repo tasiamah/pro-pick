@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   environment (`app/services/demo_seed.py`, PP-108).
 
 ### Changed
+- Favorites now star a whole match instead of a team: the card star toggles the
+  match, and the Favorites tab lists those starred matches (fetched by id, sorted
+  by earliest kickoff) to match the design. Removed the unused team/competition
+  favoriting code (`mobile/src/store/favoritesStore.ts`,
+  `mobile/src/screens/FavoritesScreen.tsx`,
+  `mobile/src/components/matchCard/MatchCardV2.tsx`).
 - Analytics dashboard restores the demo chart layout (confidence trend, risk
   distribution, prediction outcomes, model performance) wired to real `/analytics`
   data with empty states when sections have no data yet.
