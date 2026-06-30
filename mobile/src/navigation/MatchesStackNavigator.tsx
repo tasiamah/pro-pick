@@ -16,6 +16,7 @@ export function MatchesStackNavigator() {
         name="Matches"
         getComponent={getMatchesScreen}
         options={{
+          headerTitleAlign: 'left',
           headerTitle: () => (
             <StackHeaderTitle
               subtitle={screenSubtitles.matches}

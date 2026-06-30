@@ -24,7 +24,7 @@ export function StackHeaderTitle({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   title: {
     ...typography.title,
