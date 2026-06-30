@@ -25,7 +25,12 @@ class Settings(BaseSettings):
     football_api_min_request_interval_seconds: float = 0.6
 
     sync_league_ids: str = "39,140,1"
-    sync_date_offsets: str = "-1,0,1"
+    # Days (relative to today) the live sync fetches fixtures + odds for. -1 keeps
+    # yesterday for settling finished matches; the forward week gives upcoming
+    # matches (e.g. a World Cup bracket) odds ahead of kickoff instead of only the
+    # next day. Each forward day costs ~1 fixtures call + 1 /odds call per match,
+    # so widen further only on a paid API tier.
+    sync_date_offsets: str = "-1,0,1,2,3,4,5,6,7"
     scheduler_enabled: bool = False
     scheduler_daily_hour: int = Field(default=6, ge=0, le=23)
     scheduler_import_odds: bool = True
