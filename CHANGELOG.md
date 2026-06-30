@@ -56,6 +56,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   design reference (`mobile/src/screens/HomeScreen.tsx`).
 
 ### Changed
+- Home tab now shows a fuller slate: the match floor was raised from 3 to 12, so
+  a quiet day tops up to ~12 (≈ four per odds tier) from upcoming days while a
+  busy day still renders its full slate (`mobile/src/screens/homeMatchUtils.ts`).
+- Removed the "Confident picks" caption under the Home hero "Win Rate" stat
+  (`mobile/src/screens/homeHeroUtils.ts`,
+  `mobile/src/components/demo/AiPredictionsHero.tsx`).
 - Analytics now headlines the high-confidence accuracy (~70%) instead of the
   full-slate accuracy: the "Model Accuracy" summary card and the AI Model
   Performance "Accuracy" column both read from `confident_accuracy` and are

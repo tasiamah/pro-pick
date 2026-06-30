@@ -12,8 +12,13 @@ import {
 } from '../utils/matchDates';
 import { hasKickedOff } from './matchesFilterUtils';
 
-/** Minimum number of matches the Home tab tries to show. */
-export const HOME_MATCH_TARGET = 3;
+/**
+ * Floor for how many matches the Home tab shows. A busy day renders its full
+ * slate (this is only a minimum); a quiet day is topped up to this many from the
+ * soonest upcoming days so Home never looks sparse. The Matches tab remains the
+ * complete browse. ~12 ≈ a full-looking slate, roughly four per odds tier.
+ */
+export const HOME_MATCH_TARGET = 12;
 
 export type HomeOddsTierGroup = {
   tier: OddsTier;
