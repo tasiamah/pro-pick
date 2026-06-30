@@ -13,11 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- Home and Matches now only show high-confidence picks: matches whose top model
-  probability clears the confidence threshold (0.70, the same cut-off behind the
-  reported confident accuracy). Low-confidence and prediction-less matches are
-  hidden, with a dedicated empty state, so the app surfaces only the calls the AI
-  is genuinely confident about (`mobile/src/utils/confidence.ts`,
+- Home and Matches now only show high-confidence picks, using an odds-aware
+  threshold: short-priced picks must clear 0.70 (the cut-off behind the reported
+  confident accuracy), while high-odds (underdog) picks are allowed through at a
+  relaxed 0.50 since even a sub-70% probability on a long price is a meaningful
+  edge. Low-confidence and prediction-less matches are hidden, with a dedicated
+  empty state, so the app surfaces only the calls the AI is genuinely confident
+  about (`mobile/src/utils/confidence.ts`,
   `mobile/src/screens/HomeScreen.tsx`, `mobile/src/screens/MatchesScreen.tsx`,
   `mobile/src/screens/matchesFilterUtils.ts`).
 - Expo push notifications end-to-end: device token registration, per-match
