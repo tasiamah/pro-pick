@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -28,8 +28,9 @@ import { colors, screenStyles, spacing } from '../theme';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
 import {
+  filterUpcomingMatchesForDay,
   groupHomeMatchesByOddsTier,
-  selectHomeMatches,
+  selectHomeWeekMatches,
 } from './homeMatchUtils';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
@@ -60,10 +61,26 @@ export function HomeScreen({ navigation }: Props) {
   const matchesQuery = useMatches(matchListParams);
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
   const now = useNow();
+  const [isWeekSelected, setIsWeekSelected] = useState(false);
+
+  const selectDate = useCallback(
+    (date: Date) => {
+      setIsWeekSelected(false);
+      setSelectedDate(date);
+    },
+    [setSelectedDate],
+  );
+
+  const selectWeek = useCallback(() => {
+    setIsWeekSelected(true);
+  }, []);
 
   const filteredMatches = useMemo(
-    () => selectHomeMatches(matchesQuery.data ?? [], selectedDate, now),
-    [matchesQuery.data, selectedDate, now],
+    () =>
+      isWeekSelected
+        ? selectHomeWeekMatches(matchesQuery.data ?? [], now)
+        : filterUpcomingMatchesForDay(matchesQuery.data ?? [], selectedDate, now),
+    [isWeekSelected, matchesQuery.data, selectedDate, now],
   );
 
   const oddsTierGroups = useMemo(
@@ -140,7 +157,9 @@ export function HomeScreen({ navigation }: Props) {
       <DatePickerRow
         dates={dateRange}
         selectedDate={selectedDate}
-        onSelectDate={setSelectedDate}
+        onSelectDate={selectDate}
+        isWeekSelected={isWeekSelected}
+        onSelectWeek={selectWeek}
       />
 
       <AiPredictionsHero stats={heroStats} />
@@ -150,7 +169,7 @@ export function HomeScreen({ navigation }: Props) {
           isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
           error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
           isEmpty={oddsTierGroups.length === 0}
-          emptyMessage="No matches on this day"
+          emptyMessage={isWeekSelected ? 'No matches this week' : 'No matches on this day'}
           errorMessage="Could not load matches"
           onRetry={() => void matchesQuery.refetch()}
         >

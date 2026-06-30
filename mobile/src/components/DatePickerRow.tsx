@@ -7,9 +7,17 @@ type DatePickerRowProps = {
   dates: Date[];
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
+  isWeekSelected: boolean;
+  onSelectWeek: () => void;
 };
 
-export function DatePickerRow({ dates, selectedDate, onSelectDate }: DatePickerRowProps) {
+export function DatePickerRow({
+  dates,
+  selectedDate,
+  onSelectDate,
+  isWeekSelected,
+  onSelectWeek,
+}: DatePickerRowProps) {
   const selectedKey = toLocalDateKey(selectedDate);
 
   return (
@@ -18,9 +26,19 @@ export function DatePickerRow({ dates, selectedDate, onSelectDate }: DatePickerR
       contentContainerStyle={styles.content}
       showsHorizontalScrollIndicator={false}
     >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: isWeekSelected }}
+        onPress={onSelectWeek}
+        style={[styles.chip, isWeekSelected && styles.chipSelected]}
+      >
+        <Text style={[styles.chipText, isWeekSelected && styles.chipTextSelected]}>
+          This week
+        </Text>
+      </Pressable>
       {dates.map((date) => {
         const dateKey = toLocalDateKey(date);
-        const isSelected = dateKey === selectedKey;
+        const isSelected = !isWeekSelected && dateKey === selectedKey;
 
         return (
           <Pressable

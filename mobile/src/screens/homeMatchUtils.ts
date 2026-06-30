@@ -7,6 +7,7 @@ import {
 import {
   addLocalDays,
   filterMatchesByDate,
+  filterMatchesByWeek,
   parseMatchDate,
   startOfLocalDay,
 } from '../utils/matchDates';
@@ -94,6 +95,20 @@ export function filterUpcomingMatchesForDay(
 
 function kickoffTime(match: MatchDetail): number {
   return match.kickoff ? parseMatchDate(match.kickoff).getTime() : 0;
+}
+
+/**
+ * Upcoming matches for the current calendar week (Mon–Sun) containing `now`.
+ * Mirrors the day view's "upcoming only" rule so the Home tab stays a forward
+ * looking slate while widening the window from a single day to the whole week.
+ */
+export function selectHomeWeekMatches(
+  matches: MatchDetail[],
+  now: Date,
+): MatchDetail[] {
+  return filterMatchesByWeek(matches, now).filter(
+    (match) => !hasKickedOff(match.kickoff, now),
+  );
 }
 
 /**
