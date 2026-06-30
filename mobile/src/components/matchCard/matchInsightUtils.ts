@@ -62,17 +62,17 @@ export function buildDynamicMatchInsight(
       return pickVariant(
         [
           'Tight, low-scoring affair on the cards',
-          'Cagey one — stalemate on the cards',
-          'Few clear chances — spoils likely shared',
+          'Cagey one, stalemate on the cards',
+          'Few clear chances, spoils likely shared',
         ],
         match,
       );
     }
     return pickVariant(
       [
-        'Evenly matched — honours likely shared',
+        'Evenly matched, honours likely shared',
         'Nothing to separate these two',
-        'Could go either way — leaning to a draw',
+        'Could go either way, leaning to a draw',
       ],
       match,
     );
@@ -86,7 +86,7 @@ export function buildDynamicMatchInsight(
     return pickVariant(
       [
         `${winnerName} unstoppable right now`,
-        `${winnerName} rolling — hard to stop`,
+        `${winnerName} rolling and hard to stop`,
         `${winnerName} in red-hot form`,
       ],
       match,
@@ -123,7 +123,7 @@ export function buildDynamicMatchInsight(
         `Slim lean towards ${winnerName}`,
         `${winnerName} the marginal pick over ${loserName}`,
         `${winnerName} just about edge it`,
-        `Tight call — ${winnerName} the value side`,
+        `Tight call, ${winnerName} the value side`,
       ],
       match,
     );
@@ -133,8 +133,8 @@ export function buildDynamicMatchInsight(
     return pickVariant(
       [
         'Neither side in convincing form',
-        'Both stuttering — wide open',
-        'Little to choose — both out of sorts',
+        'Both stuttering, wide open',
+        'Little to choose, both out of sorts',
       ],
       match,
     );
@@ -142,9 +142,9 @@ export function buildDynamicMatchInsight(
 
   return pickVariant(
     [
-      `Too close to call — slight lean to ${winnerName}`,
+      `Too close to call, slight lean to ${winnerName}`,
       `Coin-flip, narrow nod to ${winnerName}`,
-      `Wide open — ${winnerName} the slight pick`,
+      `Wide open, ${winnerName} the slight pick`,
     ],
     match,
   );

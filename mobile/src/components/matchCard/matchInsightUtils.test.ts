@@ -30,20 +30,21 @@ function pred(home: number, draw: number, away: number): Prediction {
 }
 
 const VENUE_WORDS = /\b(home|away|road)\b/i;
+const DASHES = /—|–|\s-\s/;
 
 const DRAW_SHARED = [
-  'Evenly matched — honours likely shared',
+  'Evenly matched, honours likely shared',
   'Nothing to separate these two',
-  'Could go either way — leaning to a draw',
+  'Could go either way, leaning to a draw',
 ];
 const DRAW_LOW = [
   'Tight, low-scoring affair on the cards',
-  'Cagey one — stalemate on the cards',
-  'Few clear chances — spoils likely shared',
+  'Cagey one, stalemate on the cards',
+  'Few clear chances, spoils likely shared',
 ];
 const STREAK = [
   'Alpha unstoppable right now',
-  'Alpha rolling — hard to stop',
+  'Alpha rolling and hard to stop',
   'Alpha in red-hot form',
 ];
 const UNBEATEN = [
@@ -59,8 +60,8 @@ const CONFIDENT = [
 ];
 const NEITHER = [
   'Neither side in convincing form',
-  'Both stuttering — wide open',
-  'Little to choose — both out of sorts',
+  'Both stuttering, wide open',
+  'Little to choose, both out of sorts',
 ];
 
 describe('buildDynamicMatchInsight', () => {
@@ -140,19 +141,22 @@ describe('buildDynamicMatchInsight', () => {
     expect(insights.size).toBeGreaterThan(1);
   });
 
-  it('never uses home/away venue language for any outcome', () => {
+  it('never uses venue language or dashes for any outcome', () => {
     const scenarios: Prediction[] = [
       pred(0.7, 0.2, 0.1),
       pred(0.5, 0.3, 0.2),
       pred(0.2, 0.3, 0.5),
       pred(0.34, 0.33, 0.33),
     ];
-    for (const prediction of scenarios) {
-      const insight = buildDynamicMatchInsight(
-        makeMatch(['W', 'L', 'D', 'W', 'L'], ['L', 'D', 'W', 'L', 'W']),
-        prediction,
-      );
-      expect(insight).not.toMatch(VENUE_WORDS);
+    for (let id = 1; id <= 6; id += 1) {
+      for (const prediction of scenarios) {
+        const insight = buildDynamicMatchInsight(
+          makeMatch(['W', 'L', 'D', 'W', 'L'], ['L', 'D', 'W', 'L', 'W'], id),
+          prediction,
+        );
+        expect(insight).not.toMatch(VENUE_WORDS);
+        expect(insight).not.toMatch(DASHES);
+      }
     }
   });
 });
