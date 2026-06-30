@@ -114,7 +114,7 @@ export function toAnalyticsSummaryStats(
     },
     {
       label: 'Model Accuracy',
-      value: formatAccuracyMetric(analytics.accuracy),
+      value: formatAccuracyMetric(analytics.confident_accuracy),
       icon: 'trending-up-outline',
       iconColor: colors.oddsLow,
     },
@@ -126,11 +126,9 @@ export function toModelPerformanceStats(
 ): ModelPerformanceStat[] {
   return [
     {
-      label: 'Overall Accuracy',
-      value: formatAccuracyMetric(analytics.accuracy),
-      caption: analytics.confident_coverage != null
-        ? `${formatCoverageMetric(analytics.confident_coverage)} high-confidence picks`
-        : 'Across settled predictions',
+      label: 'Accuracy',
+      value: formatAccuracyMetric(analytics.confident_accuracy),
+      caption: 'With high confidence',
       valueColor: colors.primary,
     },
     {
@@ -171,14 +169,6 @@ export function formatAccuracyMetric(value: number | null | undefined): string {
 }
 
 export function formatAvgConfidenceMetric(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) {
-    return '—';
-  }
-
-  return `${(value * 100).toFixed(1)}%`;
-}
-
-export function formatCoverageMetric(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) {
     return '—';
   }
