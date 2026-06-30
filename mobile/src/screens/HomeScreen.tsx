@@ -19,11 +19,15 @@ import {
   ValueBetCard,
 } from '../components';
 import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
+import { useNow } from '../hooks/useNow';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors, screenStyles } from '../theme';
-import { filterMatchesByDate } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
+import {
+  filterUpcomingMatchesForDay,
+  filterUpcomingValueBets,
+} from './homeMatchUtils';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -37,10 +41,21 @@ export function HomeScreen({ navigation }: Props) {
   } = useMatchDateAnchor();
   const matchesQuery = useMatches(matchListParams);
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
+  const now = useNow();
 
   const filteredMatches = useMemo(
-    () => filterMatchesByDate(matchesQuery.data ?? [], selectedDate),
-    [matchesQuery.data, selectedDate],
+    () => filterUpcomingMatchesForDay(matchesQuery.data ?? [], selectedDate, now),
+    [matchesQuery.data, selectedDate, now],
+  );
+
+  const visibleValueBets = useMemo(
+    () =>
+      filterUpcomingValueBets(
+        dashboardQuery.data?.top_value_bets ?? [],
+        matchesQuery.data ?? [],
+        now,
+      ),
+    [dashboardQuery.data, matchesQuery.data, now],
   );
 
   const heroStats = useMemo(
@@ -148,11 +163,11 @@ export function HomeScreen({ navigation }: Props) {
         <AsyncState
           isLoading={false}
           error={null}
-          isEmpty={(dashboard.top_value_bets ?? []).length === 0}
+          isEmpty={visibleValueBets.length === 0}
           emptyMessage="No value bets yet"
         >
           <View style={screenStyles.cardList}>
-            {(dashboard.top_value_bets ?? []).map((valueBet) => (
+            {visibleValueBets.map((valueBet) => (
               <ValueBetCard
                 key={valueBet.id}
                 valueBet={valueBet}
