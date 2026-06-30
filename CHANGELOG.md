@@ -13,14 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- "High-confidence picks only" toggle on the Home and Matches tabs. When on, the
-  list shows only matches whose top model probability clears the confidence
-  threshold (0.70, the same cut-off behind the reported confident accuracy);
-  low-confidence and prediction-less matches are hidden, with a dedicated empty
-  state. On by default so the app leads with the picks the AI is most confident
-  about; turn it off to see the full slate
-  (`mobile/src/utils/confidence.ts`,
-  `mobile/src/components/HighConfidenceToggle.tsx`,
+- Home and Matches now only show high-confidence picks: matches whose top model
+  probability clears the confidence threshold (0.70, the same cut-off behind the
+  reported confident accuracy). Low-confidence and prediction-less matches are
+  hidden, with a dedicated empty state, so the app surfaces only the calls the AI
+  is genuinely confident about (`mobile/src/utils/confidence.ts`,
   `mobile/src/screens/HomeScreen.tsx`, `mobile/src/screens/MatchesScreen.tsx`,
   `mobile/src/screens/matchesFilterUtils.ts`).
 - Expo push notifications end-to-end: device token registration, per-match

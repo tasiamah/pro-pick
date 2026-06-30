@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -16,7 +16,6 @@ import {
   DatePickerRow,
   EmptyState,
   ErrorState,
-  HighConfidenceToggle,
   LoadingState,
   MatchCardV2,
   SectionHeader,
@@ -62,7 +61,6 @@ export function HomeScreen({ navigation }: Props) {
   const matchesQuery = useMatches(matchListParams);
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
   const now = useNow();
-  const [highConfidenceOnly, setHighConfidenceOnly] = useState(true);
 
   const filteredMatches = useMemo(
     () => selectHomeMatches(matchesQuery.data ?? [], selectedDate, now),
@@ -70,11 +68,8 @@ export function HomeScreen({ navigation }: Props) {
   );
 
   const visibleMatches = useMemo(
-    () =>
-      highConfidenceOnly
-        ? filterHighConfidenceMatches(filteredMatches)
-        : filteredMatches,
-    [filteredMatches, highConfidenceOnly],
+    () => filterHighConfidenceMatches(filteredMatches),
+    [filteredMatches],
   );
 
   const oddsTierGroups = useMemo(
@@ -162,22 +157,11 @@ export function HomeScreen({ navigation }: Props) {
       <AiPredictionsHero stats={heroStats} />
 
       <View style={screenStyles.section}>
-        <HighConfidenceToggle
-          value={highConfidenceOnly}
-          onValueChange={setHighConfidenceOnly}
-        />
-      </View>
-
-      <View style={screenStyles.section}>
         <AsyncState
           isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
           error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
           isEmpty={oddsTierGroups.length === 0}
-          emptyMessage={
-            highConfidenceOnly
-              ? 'No high-confidence picks on this day'
-              : 'No matches on this day'
-          }
+          emptyMessage="No confident picks on this day"
           errorMessage="Could not load matches"
           onRetry={() => void matchesQuery.refetch()}
         >

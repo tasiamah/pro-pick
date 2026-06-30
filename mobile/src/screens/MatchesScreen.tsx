@@ -15,7 +15,6 @@ import {
   AsyncState,
   ErrorState,
   FilterChipRow,
-  HighConfidenceToggle,
   MatchCardV2,
   SearchInput,
   SegmentedControl,
@@ -61,7 +60,6 @@ export function MatchesScreen({ navigation }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('upcoming');
   const [oddsTierFilter, setOddsTierFilter] = useState<MatchOddsTierFilter>('all');
-  const [highConfidenceOnly, setHighConfidenceOnly] = useState(true);
   const debouncedSearchQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
   const now = useNow();
   const localDayKey = toLocalDateKey(now);
@@ -106,11 +104,8 @@ export function MatchesScreen({ navigation }: Props) {
   );
 
   const visibleMatches = useMemo(
-    () =>
-      highConfidenceOnly
-        ? filterHighConfidenceMatches(filteredMatches)
-        : filteredMatches,
-    [filteredMatches, highConfidenceOnly],
+    () => filterHighConfidenceMatches(filteredMatches),
+    [filteredMatches],
   );
 
   const gridRows = useMemo(
@@ -124,9 +119,9 @@ export function MatchesScreen({ navigation }: Props) {
         statusFilter,
         oddsTierFilter,
         debouncedSearchQuery,
-        highConfidenceOnly,
+        true,
       ),
-    [debouncedSearchQuery, oddsTierFilter, statusFilter, highConfidenceOnly],
+    [debouncedSearchQuery, oddsTierFilter, statusFilter],
   );
 
   const onRefresh = useCallback(() => {
@@ -180,10 +175,6 @@ export function MatchesScreen({ navigation }: Props) {
             { value: 'high', label: 'High' },
           ]}
           value={oddsTierFilter}
-        />
-        <HighConfidenceToggle
-          value={highConfidenceOnly}
-          onValueChange={setHighConfidenceOnly}
         />
       </View>
 
