@@ -19,11 +19,12 @@ import {
   ValueBetCard,
 } from '../components';
 import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
+import { useNow } from '../hooks/useNow';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors, screenStyles } from '../theme';
-import { filterMatchesByDate } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
+import { filterUpcomingValueBets, selectHomeMatches } from './homeMatchUtils';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -37,10 +38,23 @@ export function HomeScreen({ navigation }: Props) {
   } = useMatchDateAnchor();
   const matchesQuery = useMatches(matchListParams);
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
+  const now = useNow();
 
   const filteredMatches = useMemo(
-    () => filterMatchesByDate(matchesQuery.data ?? [], selectedDate),
-    [matchesQuery.data, selectedDate],
+    () => selectHomeMatches(matchesQuery.data ?? [], selectedDate, now),
+    [matchesQuery.data, selectedDate, now],
+  );
+
+  const visibleValueBets = useMemo(
+    () =>
+      matchesQuery.data
+        ? filterUpcomingValueBets(
+            dashboardQuery.data?.top_value_bets ?? [],
+            matchesQuery.data,
+            now,
+          )
+        : [],
+    [dashboardQuery.data, matchesQuery.data, now],
   );
 
   const heroStats = useMemo(
@@ -146,13 +160,15 @@ export function HomeScreen({ navigation }: Props) {
           title="Top Value Bets"
         />
         <AsyncState
-          isLoading={false}
-          error={null}
-          isEmpty={(dashboard.top_value_bets ?? []).length === 0}
+          isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
+          error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
+          isEmpty={visibleValueBets.length === 0}
           emptyMessage="No value bets yet"
+          errorMessage="Could not load value bets"
+          onRetry={() => void matchesQuery.refetch()}
         >
           <View style={screenStyles.cardList}>
-            {(dashboard.top_value_bets ?? []).map((valueBet) => (
+            {visibleValueBets.map((valueBet) => (
               <ValueBetCard
                 key={valueBet.id}
                 valueBet={valueBet}

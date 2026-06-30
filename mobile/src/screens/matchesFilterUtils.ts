@@ -18,7 +18,7 @@ const STATUS_FILTERS: Record<MatchStatusFilter, Set<string>> = {
   completed: new Set(['finished']),
 };
 
-function hasKickedOff(kickoff: string | null, now: Date): boolean {
+export function hasKickedOff(kickoff: string | null, now: Date): boolean {
   if (!kickoff) {
     return false;
   }
