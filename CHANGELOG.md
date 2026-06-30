@@ -27,7 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   seeded demo fixtures like Bournemouth vs Luton can be cleared from any
   environment (`app/services/demo_seed.py`, PP-108).
 
-### Fixed
+### Changed
+- Analytics dashboard restores the demo chart layout (confidence trend, risk
+  distribution, prediction outcomes, model performance) wired to real `/analytics`
+  data with empty states when sections have no data yet.
 - Matches and Analytics stack headers left-align title and subtitle to match
   Home and Favorites.
 - Live sync now includes FIFA World Cup (league id 1) so finished World Cup

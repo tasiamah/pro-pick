@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 
-import { ANALYTICS_DEMO_RISK_DISTRIBUTION } from './analyticsDemoData';
 import {
   buildDonutSegmentPath,
   buildRiskDistributionArcs,
@@ -57,7 +56,7 @@ describe('riskDistributionChartLayout', () => {
   it('resolves hover for demo data on a phone-width chart', () => {
     const chartWidth = 327;
     const metrics = getRiskDistributionChartMetrics(chartWidth);
-    const arcs = buildRiskDistributionArcs(ANALYTICS_DEMO_RISK_DISTRIBUTION);
+    const arcs = buildRiskDistributionArcs(segments);
     const mediumPoint = getPointOnArcMidline(arcs[1], metrics);
 
     expect(
@@ -65,7 +64,7 @@ describe('riskDistributionChartLayout', () => {
         mediumPoint.x,
         mediumPoint.y,
         chartWidth,
-        ANALYTICS_DEMO_RISK_DISTRIBUTION,
+        segments,
       ).activeIndex,
     ).toBe(1);
   });
@@ -79,7 +78,7 @@ describe('riskDistributionChartLayout', () => {
         metrics.centerX,
         metrics.centerY,
         chartWidth,
-        ANALYTICS_DEMO_RISK_DISTRIBUTION,
+        segments,
       ).activeIndex,
     ).toBeNull();
   });

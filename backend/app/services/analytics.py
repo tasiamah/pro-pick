@@ -204,7 +204,9 @@ def build_roi_trend(settled_bets: list[SettledBetSnapshot]) -> list[RoiTrendPoin
     return points
 
 
-def prediction_confidence(prob_home: float, prob_draw: float, prob_away: float) -> float:
+def prediction_confidence(
+    prob_home: float, prob_draw: float, prob_away: float
+) -> float:
     return max(prob_home, prob_draw, prob_away)
 
 
