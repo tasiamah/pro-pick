@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   across the API, list enrichment, and value-bet engine
   (`backend/app/services/value_bets.py`, `backend/app/api/matches.py`,
   `backend/app/services/match_list_enrichment.py`).
+- Analytics "Prediction Outcomes" now stretches its three cards (Home / Draw /
+  Away) evenly across the full width instead of left-aligning fixed-width cards
+  in a horizontal scroll, removing the empty space on the right left after the
+  Both Teams Score / Over 2.5 cards were dropped
+  (`mobile/src/screens/AnalyticsScreen.tsx`).
 - Home "Top Value Bets" cards now show the fixture (teams, league, kickoff) and
   the picked 1X2 outcome alongside edge, EV, odds, and stake, instead of a bare
   stat line. The separate margin-based "Confidence" figure was removed so
