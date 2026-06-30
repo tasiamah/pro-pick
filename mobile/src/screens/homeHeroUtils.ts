@@ -1,4 +1,8 @@
-import type { Analytics, Dashboard, MatchDetail } from '../api/types';
+import type { Dashboard, MatchDetail } from '../api/types';
+import {
+  getOddForOutcome,
+  getRecommendedOutcome,
+} from '../components/matchCard/matchCardUtils';
 
 export type HeroStats = {
   winRate: string;
@@ -35,19 +39,18 @@ export function formatPredictionsSubtitle(count: number): string {
   return `${count} upcoming prediction${count === 1 ? '' : 's'}`;
 }
 
-export function computeAverageOdds(matches: MatchDetail[]): number | null {
+export function computeAveragePickOdds(matches: MatchDetail[]): number | null {
   const prices: number[] = [];
 
   for (const match of matches) {
     const odds = match.odds[0];
-    if (!odds) {
+    if (!odds || !match.prediction) {
       continue;
     }
 
-    for (const price of [odds.home, odds.draw, odds.away]) {
-      if (Number.isFinite(price) && price > 0) {
-        prices.push(price);
-      }
+    const price = getOddForOutcome(odds, getRecommendedOutcome(match.prediction));
+    if (Number.isFinite(price) && price > 0) {
+      prices.push(price);
     }
   }
 
@@ -61,17 +64,14 @@ export function computeAverageOdds(matches: MatchDetail[]): number | null {
 
 export function buildHeroStats(
   dashboard: Dashboard,
-  analytics: Analytics | null | undefined,
   matches: MatchDetail[],
   shownPredictionCount = 0,
 ): HeroStats {
   const confidentAccuracy = dashboard.confident_accuracy;
   return {
     winRate: formatHeroWinRate(confidentAccuracy ?? dashboard.model_accuracy),
-    avgOdds: formatHeroAvgOdds(computeAverageOdds(matches)),
-    valueBets: formatHeroValueBetCount(
-      analytics?.total_value_bets ?? dashboard.top_value_bets?.length,
-    ),
+    avgOdds: formatHeroAvgOdds(computeAveragePickOdds(matches)),
+    valueBets: formatHeroValueBetCount(dashboard.top_value_bets?.length),
     subtitle: formatPredictionsSubtitle(shownPredictionCount),
   };
 }

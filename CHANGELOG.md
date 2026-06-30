@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   back to the configured interval otherwise) so those events fire close to real
   time (`backend/app/services/match_notification_events.py`,
   `backend/app/scheduler/jobs.py`).
+- Home hero "Avg Odds" now averages the odds of each match's recommended 1X2
+  pick across the matches actually shown (instead of blending every
+  home/draw/away price, which skewed high), and "Value Bets" now counts today's
+  value bets instead of the all-time database total
+  (`mobile/src/screens/homeHeroUtils.ts`, `mobile/src/screens/HomeScreen.tsx`).
 
 ### Added
 - Expo push notifications end-to-end: device token registration, per-match

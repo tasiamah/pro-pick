@@ -1,8 +1,8 @@
-import type { Analytics, Dashboard, MatchDetail } from '../api/types';
+import type { Dashboard, MatchDetail, ValueBet } from '../api/types';
 
 import {
   buildHeroStats,
-  computeAverageOdds,
+  computeAveragePickOdds,
   formatHeroAvgOdds,
   formatHeroValueBetCount,
   formatHeroWinRate,
@@ -17,28 +17,37 @@ const baseMatch: MatchDetail = {
   away_team: { id: 2, name: 'Away', logo_url: null },
   competition_name: 'Premier League',
   odds: [{ bookmaker: 'Bet365', home: 2, draw: 3, away: 4 }],
-  prediction: null,
+  prediction: {
+    match_id: 1,
+    model_version: 'v1',
+    prob_home: 0.5,
+    prob_draw: 0.3,
+    prob_away: 0.2,
+  },
+};
+
+const valueBet: ValueBet = {
+  id: 1,
+  match_id: 1,
+  outcome: 'home',
+  model_prob: 0.5,
+  odd: 2,
+  expected_value: 0.05,
+  edge: 0.04,
+  recommended_stake: 0.02,
+  confidence: 0.2,
 };
 
 const dashboard: Dashboard = {
   matches_today: 2,
   upcoming_matches: 5,
   latest_kickoff: '2026-06-28T15:00:00Z',
-  top_value_bets: [],
+  top_value_bets: [valueBet, valueBet, valueBet],
   model_accuracy: 0.513,
   roi: 0.12,
   confident_accuracy: 0.71,
   confident_coverage: 0.19,
   confidence_threshold: 0.7,
-};
-
-const analytics: Analytics = {
-  accuracy: 0.873,
-  log_loss: 0.9,
-  roi: 0.12,
-  total_value_bets: 3,
-  settled_value_bets: 1,
-  roi_trend: [],
 };
 
 describe('homeHeroUtils', () => {
@@ -51,10 +60,11 @@ describe('homeHeroUtils', () => {
     expect(formatHeroValueBetCount(undefined)).toBe('—');
   });
 
-  it('computes average odds across loaded matches', () => {
-    expect(computeAverageOdds([])).toBeNull();
-    expect(computeAverageOdds([baseMatch])).toBe(3);
-    expect(computeAverageOdds([{ ...baseMatch, odds: [] }])).toBeNull();
+  it('averages the recommended pick odd across predicted matches', () => {
+    expect(computeAveragePickOdds([])).toBeNull();
+    expect(computeAveragePickOdds([baseMatch])).toBe(2);
+    expect(computeAveragePickOdds([{ ...baseMatch, odds: [] }])).toBeNull();
+    expect(computeAveragePickOdds([{ ...baseMatch, prediction: null }])).toBeNull();
   });
 
   it('pluralizes the predictions subtitle', () => {
@@ -64,9 +74,9 @@ describe('homeHeroUtils', () => {
   });
 
   it('builds hero stats from the high-confidence win rate', () => {
-    expect(buildHeroStats(dashboard, analytics, [baseMatch], 12)).toEqual({
+    expect(buildHeroStats(dashboard, [baseMatch], 12)).toEqual({
       winRate: '71.0%',
-      avgOdds: '3.0',
+      avgOdds: '2.0',
       valueBets: '3',
       subtitle: '12 upcoming predictions',
     });
@@ -80,9 +90,9 @@ describe('homeHeroUtils', () => {
       confidence_threshold: null,
     };
 
-    expect(buildHeroStats(withoutConfident, analytics, [baseMatch])).toEqual({
+    expect(buildHeroStats(withoutConfident, [baseMatch])).toEqual({
       winRate: '51.3%',
-      avgOdds: '3.0',
+      avgOdds: '2.0',
       valueBets: '3',
       subtitle: '0 upcoming predictions',
     });
