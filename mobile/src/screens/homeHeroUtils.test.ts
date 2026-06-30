@@ -3,7 +3,6 @@ import type { Analytics, Dashboard, MatchDetail } from '../api/types';
 import {
   buildHeroStats,
   computeAverageOdds,
-  countVerifiedPredictionsToday,
   formatHeroAvgOdds,
   formatHeroValueBetCount,
   formatHeroWinRate,
@@ -59,39 +58,17 @@ describe('homeHeroUtils', () => {
   });
 
   it('pluralizes the predictions subtitle', () => {
-    expect(formatPredictionsSubtitle(0)).toBe('0 verified predictions today');
-    expect(formatPredictionsSubtitle(1)).toBe('1 verified prediction today');
-    expect(formatPredictionsSubtitle(3)).toBe('3 verified predictions today');
-  });
-
-  it('counts only predicted matches kicking off on the local day', () => {
-    const now = new Date('2026-06-28T12:00:00Z');
-    const todayKickoff = now.toISOString();
-    const otherDayKickoff = new Date(
-      now.getTime() + 2 * 24 * 60 * 60 * 1000,
-    ).toISOString();
-    const prediction = {
-      match_id: 1,
-      model_version: 'v1',
-      prob_home: 0.5,
-      prob_draw: 0.3,
-      prob_away: 0.2,
-    };
-    const matches: MatchDetail[] = [
-      { ...baseMatch, id: 1, kickoff: todayKickoff, prediction },
-      { ...baseMatch, id: 2, kickoff: todayKickoff, prediction: null },
-      { ...baseMatch, id: 3, kickoff: otherDayKickoff, prediction },
-    ];
-
-    expect(countVerifiedPredictionsToday(matches, now)).toBe(1);
+    expect(formatPredictionsSubtitle(0)).toBe('0 upcoming predictions');
+    expect(formatPredictionsSubtitle(1)).toBe('1 upcoming prediction');
+    expect(formatPredictionsSubtitle(3)).toBe('3 upcoming predictions');
   });
 
   it('builds hero stats from the high-confidence win rate', () => {
-    expect(buildHeroStats(dashboard, analytics, [baseMatch])).toEqual({
+    expect(buildHeroStats(dashboard, analytics, [baseMatch], 12)).toEqual({
       winRate: '71.0%',
       avgOdds: '3.0',
       valueBets: '3',
-      subtitle: '0 verified predictions today',
+      subtitle: '12 upcoming predictions',
     });
   });
 
@@ -107,7 +84,7 @@ describe('homeHeroUtils', () => {
       winRate: '51.3%',
       avgOdds: '3.0',
       valueBets: '3',
-      subtitle: '0 verified predictions today',
+      subtitle: '0 upcoming predictions',
     });
   });
 });

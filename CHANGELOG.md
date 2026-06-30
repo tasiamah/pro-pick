@@ -58,9 +58,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   replacing the backend's repetitive templated line
   (`mobile/src/components/matchCard/matchInsightUtils.ts`,
   `mobile/src/components/matchCard/MatchCardV2.tsx`).
-- Home "AI Predictions" hero now shows a live status pill and a
-  "N verified predictions today" subtitle (count of matches kicking off today
-  that carry a model prediction), and the Home "Matches" section shows an
+- Home "AI Predictions" hero now shows a live status pill and an
+  "N upcoming predictions" subtitle that counts the predictions actually shown
+  on the Home slate (previously it said "N verified predictions today", which
+  only counted today's kickoffs and read as wrong next to the multi-day slate),
+  and the Home "Matches" section shows an
   "N matches available" count — closing visual gaps against the design
   reference (`mobile/src/components/demo/AiPredictionsHero.tsx`,
   `mobile/src/components/demo/LiveBadge.tsx`,
