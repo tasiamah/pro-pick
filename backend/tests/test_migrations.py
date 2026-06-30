@@ -51,4 +51,8 @@ def test_alembic_upgrade_head_creates_tables(fresh_sqlite_db):
     assert "odds" in tables
     assert "predictions" in tables
     assert "value_bets" in tables
+    assert "device_push_tokens" in tables
+    assert "match_notification_preferences" in tables
+    assert "sent_notifications" in tables
+    assert "match_state_snapshots" in tables
     assert "alembic_version" in tables

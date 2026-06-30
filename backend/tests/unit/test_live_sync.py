@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -35,6 +36,12 @@ def _fixture_item(
         },
         "goals": {"home": None, "away": None},
     }
+
+
+@pytest.fixture(autouse=True)
+def disable_live_sync_notifications() -> None:
+    with patch("app.services.live_sync.settings.notifications_enabled", False):
+        yield
 
 
 @pytest.fixture

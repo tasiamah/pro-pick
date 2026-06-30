@@ -210,8 +210,19 @@ def test_import_league_season_is_idempotent(db_session: Session) -> None:
     assert db_session.query(Match).count() == 1
 
 
-def test_scheduled_fixture_does_not_store_goals(db_session: Session) -> None:
-    fixture = sample_fixture(status="NS", home_goals=None, away_goals=None)
+@pytest.mark.parametrize(
+    ("home_goals", "away_goals"),
+    [
+        (0, 0),
+        (None, None),
+    ],
+)
+def test_scheduled_fixture_persists_provider_goals(
+    db_session: Session,
+    home_goals: int | None,
+    away_goals: int | None,
+) -> None:
+    fixture = sample_fixture(status="NS", home_goals=home_goals, away_goals=away_goals)
     client = StubFootballApiClient(fixtures={(39, 2024): [fixture]})
     importer = HistoricalDataImporter(db_session, client=client, import_odds=False)
 
@@ -219,5 +230,5 @@ def test_scheduled_fixture_does_not_store_goals(db_session: Session) -> None:
 
     match = db_session.query(Match).one()
     assert match.status == "scheduled"
-    assert match.home_goals is None
-    assert match.away_goals is None
+    assert match.home_goals == home_goals
+    assert match.away_goals == away_goals

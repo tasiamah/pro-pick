@@ -300,12 +300,14 @@ def test_start_scheduler_registers_daily_job_when_enabled(
     mock_settings.scheduler_enabled = True
     mock_settings.scheduler_daily_hour = 7
     mock_settings.model_retraining_enabled = False
+    mock_settings.scheduler_live_notifications_enabled = False
 
     start_scheduler()
 
     assert scheduler.running
     assert scheduler.get_job("daily_update") is not None
     assert scheduler.get_job("retrain_model") is None
+    assert scheduler.get_job("live_notification_poll") is None
 
 
 @patch("app.scheduler.jobs.settings")
@@ -316,8 +318,25 @@ def test_start_scheduler_registers_retrain_job_when_enabled(
     mock_settings.scheduler_daily_hour = 6
     mock_settings.model_retraining_enabled = True
     mock_settings.model_retraining_interval_days = 7
+    mock_settings.scheduler_live_notifications_enabled = False
 
     start_scheduler()
 
     assert scheduler.running
     assert scheduler.get_job("retrain_model") is not None
+
+
+@patch("app.scheduler.jobs.settings")
+def test_start_scheduler_registers_live_notification_poll_when_enabled(
+    mock_settings: MagicMock,
+) -> None:
+    mock_settings.scheduler_enabled = True
+    mock_settings.scheduler_daily_hour = 6
+    mock_settings.model_retraining_enabled = False
+    mock_settings.notifications_enabled = True
+    mock_settings.scheduler_live_notifications_enabled = True
+    mock_settings.live_notification_poll_minutes = 3
+
+    start_scheduler()
+
+    assert scheduler.get_job("live_notification_poll") is not None

@@ -62,6 +62,12 @@ class Settings(BaseSettings):
 
     cors_origins: str = "*"
 
+    notifications_enabled: bool = True
+    expo_access_token: str = ""
+    notification_test_secret: str = ""
+    live_notification_poll_minutes: int = Field(default=3, ge=1, le=60)
+    scheduler_live_notifications_enabled: bool = True
+
     @property
     def is_production(self) -> bool:
         return self.environment.strip().lower() in {"production", "prod"}

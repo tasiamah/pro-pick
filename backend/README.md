@@ -277,5 +277,55 @@ alembic/               # database migrations
 | GET | `/predictions` | Predictions |
 | GET | `/value-bets` | Value bets |
 | GET | `/analytics` | Model performance & ROI |
+| POST | `/notifications/register` | Register an Expo push token for a device |
+| GET | `/notifications/preferences` | Fetch per-match notification toggles |
+| PUT | `/notifications/preferences` | Save per-match notification toggles |
+| POST | `/notifications/test` | Send a test push (requires `NOTIFICATION_TEST_SECRET` in production) |
 
 > ML model training is stubbed; live sync and scheduler are implemented in PP-51.
+
+## Push notifications
+
+The backend stores device push tokens and per-match notification preferences,
+polls live fixtures/events, and sends real push notifications through the
+[Expo Push API](https://docs.expo.dev/push-notifications/sending-notifications/).
+
+### Environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NOTIFICATIONS_ENABLED` | No (default `true`) | Master switch for sending pushes |
+| `NOTIFICATION_TEST_SECRET` | Yes in production for `/notifications/test` | Shared secret for the test endpoint |
+| `EXPO_ACCESS_TOKEN` | No | Optional Expo access token for higher push rate limits |
+| `LIVE_NOTIFICATION_POLL_MINUTES` | No (default `3`) | How often to poll live matches when the scheduler is enabled |
+| `SCHEDULER_LIVE_NOTIFICATIONS_ENABLED` | No (default `true`) | Run the live notification poll job |
+| `SCHEDULER_ENABLED` | No (default `false` locally) | Must be `true` on Render for automatic live event delivery |
+
+### Test a push notification
+
+1. Deploy/run migrations: `alembic upgrade head`
+2. Open the mobile app on a **physical device**, accept notification permission, and toggle at least one notification for a match (this registers the token and saves preferences).
+3. Find your device id in mobile AsyncStorage (`pro-pick-device-id`) or log it temporarily during development.
+4. Send a test push:
+
+```bash
+# HTTP (set NOTIFICATION_TEST_SECRET in production)
+curl -X POST https://pro-pick.onrender.com/notifications/test \
+  -H 'Content-Type: application/json' \
+  -d '{"device_id":"YOUR_DEVICE_ID","match_id":1,"event_type":"goal","secret":"YOUR_SECRET"}'
+
+# CLI
+python -m app.scripts.test_push_notification --device-id YOUR_DEVICE_ID --match-id 1 --event-type goal
+```
+
+### Live match events
+
+When `SCHEDULER_ENABLED=true`, the backend:
+
+- runs the existing daily fixture sync
+- polls live matches every `LIVE_NOTIFICATION_POLL_MINUTES` for API-Football fixture events (goals, cards, VAR, etc.)
+- detects status transitions (kick-off, half-time, full-time, penalty shootout)
+- checks each user's enabled toggles before sending
+- deduplicates using the `sent_notifications` table
+
+**Note:** Real-time delivery depends on API-Football fixture/event data being available for your synced leagues. If the provider lags or your plan limits live endpoints, notifications may be delayed until the next poll.

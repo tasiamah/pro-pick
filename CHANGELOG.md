@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/api/types.ts`).
 
 ### Added
+- Expo push notifications end-to-end: device token registration, per-match
+  notification preferences stored in the backend, live match event detection
+  (goals, cards, kick-off, full-time, line-ups, etc.), deduplicated delivery
+  via the Expo Push API, a `POST /notifications/test` endpoint, and a
+  `python -m app.scripts.test_push_notification` CLI helper. Mobile registers
+  push tokens on launch, syncs modal toggles to the API, and opens match detail
+  when a notification is tapped.
 - Home tab now groups matches into Low / Medium / High **Odds** tier sections,
   each with a tier icon and an "N matches available" count (replacing the single
   flat "Matches" list), matching the design reference. Tier is derived from the

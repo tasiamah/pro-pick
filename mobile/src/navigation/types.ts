@@ -27,7 +27,7 @@ export type RootTabParamList = {
 };
 
 export type RootStackParamList = {
-  Tabs: undefined;
+  Tabs: NavigatorScreenParams<RootTabParamList> | undefined;
   About: undefined;
   PrivacyPolicy: undefined;
 };

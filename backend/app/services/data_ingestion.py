@@ -148,3 +148,23 @@ class FootballApiClient:
         if not isinstance(response, list):
             raise FootballApiError("Unexpected odds response shape")
         return response
+
+    def get_fixture_events(self, fixture_id: int) -> list[dict[str, Any]]:
+        payload = self._request(
+            "fixtures/events",
+            {"fixture": fixture_id},
+        )
+        response = payload.get("response", [])
+        if not isinstance(response, list):
+            raise FootballApiError("Unexpected fixture events response shape")
+        return response
+
+    def get_fixture_lineups(self, fixture_id: int) -> list[dict[str, Any]]:
+        payload = self._request(
+            "fixtures/lineups",
+            {"fixture": fixture_id},
+        )
+        response = payload.get("response", [])
+        if not isinstance(response, list):
+            raise FootballApiError("Unexpected fixture lineups response shape")
+        return response
