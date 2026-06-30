@@ -22,8 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Match cards now show a dynamic, fixture-specific headline insight derived from
   the recommended outcome, model confidence and each side's recent form (e.g.
   "Alpha unstoppable right now", "Evenly matched — honours likely shared"),
-  replacing the backend's repetitive templated line
-  (`mobile/src/components/matchCard/matchInsightUtils.ts`,
+  replacing the backend's repetitive templated line. Each confidence band has
+  several variants picked deterministically per fixture so different matches read
+  differently instead of all repeating one line, and the copy is venue-neutral
+  (no "at home"/"on the road") since tournament fixtures are played at neutral
+  grounds (`mobile/src/components/matchCard/matchInsightUtils.ts`,
   `mobile/src/components/matchCard/MatchCardV2.tsx`).
 - Home "AI Predictions" hero now shows a live status pill and an
   "N upcoming predictions" subtitle that counts the predictions actually shown
