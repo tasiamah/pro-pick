@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timedelta
 from typing import NamedTuple
 
 import pytest
@@ -42,16 +42,17 @@ def value_bets_api(client: TestClient, db_session: Session) -> ValueBetFixture:
     db_session.add_all([home, away])
     db_session.flush()
 
+    now = datetime.utcnow()
     match_one = Match(
         home_team_id=home.id,
         away_team_id=away.id,
-        kickoff=datetime(2026, 6, 24, 15, 0, tzinfo=UTC),
+        kickoff=now + timedelta(hours=2),
         status="scheduled",
     )
     match_two = Match(
         home_team_id=home.id,
         away_team_id=away.id,
-        kickoff=datetime(2026, 6, 25, 15, 0, tzinfo=UTC),
+        kickoff=now + timedelta(days=1),
         status="scheduled",
     )
     db_session.add_all([match_one, match_two])
@@ -107,6 +108,43 @@ def test_list_value_bets_returns_all_sorted_by_edge(
     assert len(match_two_bets) == 1
     assert [bet["edge"] for bet in match_one_bets] == [0.15, 0.1]
     assert match_two_bets[0]["edge"] == 0.05
+
+
+def test_list_value_bets_excludes_past_matches_unless_filtered(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    home = Team(name="Past VB Home", logo_url=None)
+    away = Team(name="Past VB Away", logo_url=None)
+    db_session.add_all([home, away])
+    db_session.flush()
+
+    past_match = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=datetime.utcnow() - timedelta(hours=2),
+        status="scheduled",
+    )
+    db_session.add(past_match)
+    db_session.flush()
+
+    db_session.add(
+        ValueBet(
+            match_id=past_match.id,
+            outcome="home",
+            model_prob=0.9,
+            odd=2.0,
+            expected_value=0.8,
+            edge=0.99,
+        )
+    )
+    db_session.commit()
+
+    unfiltered = client.get("/value-bets").json()
+    assert all(bet["match_id"] != past_match.id for bet in unfiltered)
+
+    filtered = client.get("/value-bets", params={"match_id": past_match.id}).json()
+    assert [bet["match_id"] for bet in filtered] == [past_match.id]
 
 
 def test_list_value_bets_filters_by_match_id(

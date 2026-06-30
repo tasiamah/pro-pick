@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models import ValueBet
+from app.models import Match, ValueBet
 from app.schemas.common import ValueBetOut
 
 router = APIRouter()
@@ -21,6 +23,10 @@ def list_value_bets(
     stmt = select(ValueBet).order_by(ValueBet.edge.desc())
     if match_id is not None:
         stmt = stmt.where(ValueBet.match_id == match_id)
+    else:
+        stmt = stmt.join(Match, ValueBet.match_id == Match.id).where(
+            Match.kickoff >= datetime.utcnow()
+        )
     stmt = stmt.limit(limit)
     value_bets = db.execute(stmt).scalars().all()
     return [ValueBetOut.model_validate(v) for v in value_bets]

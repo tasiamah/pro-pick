@@ -13,11 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
-- Home value bets now reflect only upcoming fixtures: the dashboard scopes both
-  the "Top Value Bets" list and the new uncapped `upcoming_value_bets` count to
-  matches that have not kicked off yet (`kickoff >= now`), instead of including
-  matches that already started earlier today. The Home hero "Value Bets" stat
-  reads this count so it can exceed five (`backend/app/api/dashboard.py`,
+- Value bets now reflect only upcoming fixtures. The dashboard scopes both the
+  "Top Value Bets" list and the new uncapped `upcoming_value_bets` count to
+  matches that have not kicked off yet (`kickoff >= now`), and the `GET
+  /value-bets` list hides bets for already-started matches (except when a
+  `match_id` is supplied, so a match's detail page still shows its bet). The
+  Home hero "Value Bets" stat reads `upcoming_value_bets` so it can exceed five
+  (`backend/app/api/dashboard.py`, `backend/app/api/value_bets.py`,
   `backend/app/schemas/common.py`, `mobile/src/api/types.ts`,
   `mobile/src/screens/homeHeroUtils.ts`).
 - Lowered the value-bet edge threshold from 5% to 3% so more genuine edges are
