@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- Value bets, odds-tier classification, and the displayed odds now use the
+  best-price bookmaker for each match (the book with the lowest margin /
+  overround) instead of the alphabetically first one. This stops understating
+  edge/EV and missing value bets, and keeps a single, deterministic odds source
+  across the API, list enrichment, and value-bet engine
+  (`backend/app/services/value_bets.py`, `backend/app/api/matches.py`,
+  `backend/app/services/match_list_enrichment.py`).
 - Home "Top Value Bets" cards now show the fixture (teams, league, kickoff) and
   the picked 1X2 outcome alongside edge, EV, odds, and stake, instead of a bare
   stat line. The separate margin-based "Confidence" figure was removed so

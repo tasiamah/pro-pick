@@ -1,5 +1,6 @@
 import pytest
 
+from app.models import Odds
 from app.services.value_bets import (
     confidence_score,
     evaluate_match,
@@ -7,11 +8,24 @@ from app.services.value_bets import (
     expected_value,
     full_kelly_fraction,
     implied_probability,
+    odds_margin,
+    primary_odds,
     recommended_stake,
     settlement_profit,
+    sort_odds_by_value,
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _odds(
+    bookmaker: str,
+    home: float,
+    draw: float,
+    away: float,
+    odds_id: int = 0,
+) -> Odds:
+    return Odds(id=odds_id, bookmaker=bookmaker, home=home, draw=draw, away=away)
 
 
 def test_expected_value_matches_example():
@@ -155,3 +169,35 @@ def test_evaluate_match_sets_margin_based_confidence():
 
     home_bet = next(result for result in results if result.outcome == "home")
     assert home_bet.confidence == 0.35
+
+
+def test_odds_margin_is_summed_implied_probability():
+    assert odds_margin(_odds("A", 2.0, 3.0, 4.0)) == pytest.approx(
+        0.5 + 1.0 / 3.0 + 0.25
+    )
+
+
+def test_odds_margin_pushes_invalid_prices_last():
+    assert odds_margin(_odds("A", 2.0, 0.0, 4.0)) == float("inf")
+
+
+def test_sort_odds_by_value_orders_sharpest_book_first():
+    juiced = _odds("Alpha", 2.0, 3.0, 4.0, odds_id=1)
+    sharp = _odds("Zeta", 2.1, 3.1, 3.9, odds_id=2)
+    assert sort_odds_by_value([juiced, sharp]) == [sharp, juiced]
+
+
+def test_sort_odds_by_value_breaks_equal_margins_by_bookmaker_then_id():
+    later = _odds("alpha", 2.0, 3.0, 4.0, odds_id=2)
+    earlier = _odds("Alpha", 2.0, 3.0, 4.0, odds_id=1)
+    assert sort_odds_by_value([later, earlier]) == [earlier, later]
+
+
+def test_primary_odds_returns_best_price_row():
+    juiced = _odds("Alpha", 2.0, 3.0, 4.0, odds_id=1)
+    sharp = _odds("Zeta", 2.1, 3.1, 3.9, odds_id=2)
+    assert primary_odds([juiced, sharp]) is sharp
+
+
+def test_primary_odds_returns_none_without_rows():
+    assert primary_odds([]) is None
