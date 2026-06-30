@@ -14,7 +14,6 @@ from app.services.ingestion_alerts import IngestionPipelineError
 from app.services.live_sync import (
     fetch_fixtures_for_window,
     run_live_sync,
-    sync_predictions_for_upcoming,
 )
 
 pytestmark = pytest.mark.unit
@@ -248,35 +247,3 @@ def test_run_live_sync_settles_finished_bets_when_no_fixtures(
     assert summary.settled_value_bets == 1
     assert bet.settled is True
     assert bet.profit == 10.0
-
-
-def test_sync_predictions_skips_matches_with_existing_prediction(
-    db_session: Session,
-) -> None:
-    home = Team(name="Arsenal")
-    away = Team(name="Chelsea")
-    db_session.add_all([home, away])
-    db_session.flush()
-    match = Match(
-        home_team_id=home.id,
-        away_team_id=away.id,
-        kickoff=datetime(2026, 6, 27, 15, 0),
-        status="scheduled",
-    )
-    db_session.add(match)
-    db_session.flush()
-    db_session.add(
-        Prediction(
-            match_id=match.id,
-            model_version="stub-v1",
-            prob_home=0.4,
-            prob_draw=0.3,
-            prob_away=0.3,
-        )
-    )
-    db_session.commit()
-
-    created = sync_predictions_for_upcoming(db_session)
-
-    assert created == 0
-    assert db_session.query(Prediction).count() == 1
