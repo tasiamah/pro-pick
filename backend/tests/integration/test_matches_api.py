@@ -90,7 +90,7 @@ def test_list_matches_returns_upcoming_with_prediction_and_odds(
     assert all(item["id"] != past_match.id for item in payload)
 
 
-def test_list_matches_returns_odds_in_stable_bookmaker_order(
+def test_list_matches_returns_odds_best_price_first(
     client: TestClient,
     db_session: Session,
 ) -> None:
@@ -134,7 +134,7 @@ def test_list_matches_returns_odds_in_stable_bookmaker_order(
 
     assert response.status_code == 200
     match_payload = next(item for item in response.json() if item["id"] == match.id)
-    assert [odds["bookmaker"] for odds in match_payload["odds"]] == ["Alpha", "Zeta"]
+    assert [odds["bookmaker"] for odds in match_payload["odds"]] == ["Zeta", "Alpha"]
 
 
 def test_list_matches_filters_by_kickoff_window(

@@ -136,11 +136,35 @@ def evaluate_match(
     return results
 
 
+def odds_margin(odds: Odds) -> float:
+    """Bookmaker overround: the summed implied probabilities of the 1X2 prices.
+
+    A lower margin means sharper, less-juiced prices, so the book pays out more
+    on average and is the better one to quote for a bettor. Rows with a missing
+    or non-positive price are treated as worst (sorted last).
+    """
+    prices = (odds.home, odds.draw, odds.away)
+    if any(price is None or price <= 0 for price in prices):
+        return float("inf")
+    return sum(1.0 / price for price in prices)
+
+
+def sort_odds_by_value(odds_rows: list[Odds]) -> list[Odds]:
+    """Order odds best-price first: lowest margin, then bookmaker and id.
+
+    Bookmaker and id break ties so the order stays deterministic when two books
+    quote the same margin.
+    """
+    return sorted(
+        odds_rows,
+        key=lambda item: (odds_margin(item), item.bookmaker.lower(), item.id),
+    )
+
+
 def primary_odds(odds_rows: list[Odds]) -> Odds | None:
-    """Deterministically pick one odds row per match (by bookmaker, then id)."""
-    if not odds_rows:
-        return None
-    return sorted(odds_rows, key=lambda item: (item.bookmaker.lower(), item.id))[0]
+    """Best-price odds row for a match: the book with the lowest margin."""
+    ordered = sort_odds_by_value(odds_rows)
+    return ordered[0] if ordered else None
 
 
 def generate_value_bets(db: Session, match: Match) -> list[ValueBet]:

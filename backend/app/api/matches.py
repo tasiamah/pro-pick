@@ -20,6 +20,7 @@ from app.services.match_enrichment import (
     to_team_out,
 )
 from app.services.match_list_enrichment import enrich_match_list
+from app.services.value_bets import sort_odds_by_value
 
 router = APIRouter()
 
@@ -30,12 +31,8 @@ def _latest_prediction(match: Match) -> Prediction | None:
     return max(match.predictions, key=lambda prediction: prediction.created_at)
 
 
-def _sorted_odds(match: Match) -> list[Odds]:
-    return sorted(match.odds, key=lambda odds: (odds.bookmaker.lower(), odds.id))
-
-
 def _primary_odds(match: Match) -> Odds | None:
-    odds_rows = _sorted_odds(match)
+    odds_rows = sort_odds_by_value(match.odds)
     if not odds_rows:
         return None
     return odds_rows[0]
@@ -50,7 +47,7 @@ def _to_match_detail(db: Session, match: Match) -> MatchDetailOut:
         home_team=to_team_out(db, match.home_team, match.kickoff),
         away_team=to_team_out(db, match.away_team, match.kickoff),
         competition_name=match.competition.name if match.competition else None,
-        odds=[to_odds_out(odds) for odds in _sorted_odds(match)],
+        odds=[to_odds_out(odds) for odds in sort_odds_by_value(match.odds)],
         prediction=(
             to_prediction_out(db, match, latest_prediction)
             if latest_prediction
