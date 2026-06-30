@@ -1,4 +1,9 @@
 import type { MatchDetail, ValueBet } from '../api/types';
+import { classifyOddsTier, type OddsTier } from '../components/demo/demoUtils';
+import {
+  getOddForOutcome,
+  getRecommendedOutcome,
+} from '../components/matchCard/matchCardUtils';
 import {
   addLocalDays,
   filterMatchesByDate,
@@ -9,6 +14,62 @@ import { hasKickedOff } from './matchesFilterUtils';
 
 /** Minimum number of matches the Home tab tries to show. */
 export const HOME_MATCH_TARGET = 3;
+
+export type HomeOddsTierGroup = {
+  tier: OddsTier;
+  matches: MatchDetail[];
+};
+
+/** Display order of the Home odds-tier sections (safest first). */
+const ODDS_TIER_ORDER: readonly OddsTier[] = ['low', 'medium', 'high'];
+
+/**
+ * Odds tier of a match, classified from the price of the model's recommended
+ * outcome (the same value that drives the card's odds-tier badge). Returns
+ * ``null`` when the match has no prediction or odds to classify.
+ */
+export function classifyMatchOddsTier(match: MatchDetail): OddsTier | null {
+  const prediction = match.prediction;
+  const primaryOdds = match.odds[0];
+  if (!prediction || !primaryOdds) {
+    return null;
+  }
+
+  return classifyOddsTier(
+    getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)),
+  );
+}
+
+/**
+ * Group matches into Low/Medium/High odds-tier buckets (in that order),
+ * preserving the incoming order within each bucket and dropping empty tiers.
+ * Matches that can't be classified (no prediction/odds) are omitted, mirroring
+ * the Matches tab's odds-tier filter.
+ */
+export function groupHomeMatchesByOddsTier(
+  matches: MatchDetail[],
+): HomeOddsTierGroup[] {
+  const buckets = new Map<OddsTier, MatchDetail[]>();
+  for (const match of matches) {
+    const tier = classifyMatchOddsTier(match);
+    if (tier === null) {
+      continue;
+    }
+    const bucket = buckets.get(tier);
+    if (bucket) {
+      bucket.push(match);
+    } else {
+      buckets.set(tier, [match]);
+    }
+  }
+
+  return ODDS_TIER_ORDER.flatMap((tier) => {
+    const tierMatches = buckets.get(tier);
+    return tierMatches && tierMatches.length > 0
+      ? [{ tier, matches: tierMatches }]
+      : [];
+  });
+}
 
 /**
  * Matches on the selected local day that have not kicked off yet. The Home tab
