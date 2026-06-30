@@ -68,6 +68,9 @@ export type Dashboard = {
   top_value_bets: ValueBet[];
   model_accuracy: number | null;
   roi: number | null;
+  confident_accuracy: number | null;
+  confident_coverage: number | null;
+  confidence_threshold: number | null;
 };
 
 export type MatchListParams = {
