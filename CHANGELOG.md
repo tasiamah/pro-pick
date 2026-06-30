@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   environment (`app/services/demo_seed.py`, PP-108).
 
 ### Fixed
+- Completed matches list returns the most recent fixtures first so the Matches
+  tab Completed filter shows latest results instead of the oldest page of fifty.
 - Home match card Details opens the selected match detail screen instead of
   switching to the Matches tab.
 - Matches list API latency: batch enrichment (one history query per page) and

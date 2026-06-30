@@ -398,6 +398,48 @@ def test_list_matches_filters_by_status_completed(
     assert upcoming_match.id not in match_ids
 
 
+def test_list_matches_completed_returns_most_recent_first(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    home_team = Team(name="Recent Home", logo_url=None)
+    away_team = Team(name="Recent Away", logo_url=None)
+    db_session.add_all([home_team, away_team])
+    db_session.flush()
+
+    oldest = Match(
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() - timedelta(days=10),
+        status="finished",
+        home_goals=1,
+        away_goals=0,
+    )
+    middle = Match(
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() - timedelta(days=5),
+        status="finished",
+        home_goals=2,
+        away_goals=1,
+    )
+    newest = Match(
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() - timedelta(days=1),
+        status="finished",
+        home_goals=3,
+        away_goals=2,
+    )
+    db_session.add_all([oldest, middle, newest])
+    db_session.commit()
+
+    response = client.get("/matches", params={"status": "completed", "limit": 2})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()] == [newest.id, middle.id]
+
+
 def test_list_matches_filters_by_search_query(
     client: TestClient,
     db_session: Session,
