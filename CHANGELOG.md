@@ -50,6 +50,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   seeded demo fixtures like Bournemouth vs Luton can be cleared from any
   environment (`app/services/demo_seed.py`, PP-108).
 
+### Removed
+- Dropped the standalone "Top Value Bets" section from the Home tab; matches are
+  now presented purely as the Low/Medium/High odds-tier groups, matching the
+  design reference (`mobile/src/screens/HomeScreen.tsx`).
+
 ### Changed
 - Analytics now headlines the high-confidence accuracy (~70%) instead of the
   full-slate accuracy: the "Model Accuracy" summary card and the AI Model
