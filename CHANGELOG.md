@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   list shows only matches whose top model probability clears the confidence
   threshold (0.70, the same cut-off behind the reported confident accuracy);
   low-confidence and prediction-less matches are hidden, with a dedicated empty
-  state. Default off so the app still shows the full slate
+  state. On by default so the app leads with the picks the AI is most confident
+  about; turn it off to see the full slate
   (`mobile/src/utils/confidence.ts`,
   `mobile/src/components/HighConfidenceToggle.tsx`,
   `mobile/src/screens/HomeScreen.tsx`, `mobile/src/screens/MatchesScreen.tsx`,

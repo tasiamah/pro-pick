@@ -62,7 +62,7 @@ export function HomeScreen({ navigation }: Props) {
   const matchesQuery = useMatches(matchListParams);
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
   const now = useNow();
-  const [highConfidenceOnly, setHighConfidenceOnly] = useState(false);
+  const [highConfidenceOnly, setHighConfidenceOnly] = useState(true);
 
   const filteredMatches = useMemo(
     () => selectHomeMatches(matchesQuery.data ?? [], selectedDate, now),

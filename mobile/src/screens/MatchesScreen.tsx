@@ -61,7 +61,7 @@ export function MatchesScreen({ navigation }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>('upcoming');
   const [oddsTierFilter, setOddsTierFilter] = useState<MatchOddsTierFilter>('all');
-  const [highConfidenceOnly, setHighConfidenceOnly] = useState(false);
+  const [highConfidenceOnly, setHighConfidenceOnly] = useState(true);
   const debouncedSearchQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
   const now = useNow();
   const localDayKey = toLocalDateKey(now);
