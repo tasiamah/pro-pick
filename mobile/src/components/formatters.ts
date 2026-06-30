@@ -1,9 +1,11 @@
+import { parseMatchDate } from '../utils/matchDates';
+
 export function formatKickoff(kickoff: string | null): string {
   if (!kickoff) {
     return 'Kickoff TBD';
   }
 
-  const date = new Date(kickoff);
+  const date = parseMatchDate(kickoff);
   if (Number.isNaN(date.getTime())) {
     return 'Kickoff TBD';
   }

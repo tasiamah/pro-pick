@@ -26,7 +26,7 @@ from app.services.match_notification_events import (
     process_match_fixture_update,
     run_live_notification_sync,
 )
-from app.services.prediction import generate_prediction
+from app.services.prediction import refresh_predictions_for_upcoming
 from app.services.value_bets import generate_value_bets, settlement_profit
 
 logger = logging.getLogger(__name__)
@@ -100,35 +100,6 @@ def fetch_fixtures_for_window(
         dates_attempted=dates_attempted,
         dates_failed=dates_failed,
     )
-
-
-def sync_predictions_for_upcoming(
-    db: Session,
-    *,
-    now: datetime | None = None,
-) -> int:
-    cutoff = _resolve_sync_now(now)
-    matches = db.scalars(
-        select(Match)
-        .options(selectinload(Match.predictions))
-        .where(
-            Match.status.in_(UPCOMING_MATCH_STATUSES),
-            Match.kickoff >= cutoff,
-        )
-    ).all()
-    created = 0
-
-    for match in matches:
-        if match.predictions:
-            continue
-
-        generate_prediction(db, match)
-        created += 1
-
-    if created:
-        db.commit()
-
-    return created
 
 
 def sync_value_bets_for_upcoming(
@@ -276,7 +247,7 @@ def run_live_sync(
             upcoming_odds_only=True,
         )
         summary.merge_import(importer.import_fixture_items(fixtures))
-        summary.predictions = sync_predictions_for_upcoming(db, now=resolved_now)
+        summary.predictions = refresh_predictions_for_upcoming(db, now=resolved_now)
         summary.value_bets = sync_value_bets_for_upcoming(db, now=resolved_now)
     else:
         logger.info("Live sync found no fixtures for leagues %s", resolved_league_ids)

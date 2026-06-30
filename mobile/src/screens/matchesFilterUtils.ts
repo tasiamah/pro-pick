@@ -7,6 +7,7 @@ import {
   getOddForOutcome,
   getRecommendedOutcome,
 } from '../components/matchCard/matchCardUtils';
+import { parseMatchDate } from '../utils/matchDates';
 
 export type MatchStatusFilter = 'upcoming' | 'live' | 'completed';
 
@@ -23,7 +24,7 @@ export function hasKickedOff(kickoff: string | null, now: Date): boolean {
     return false;
   }
 
-  const kickoffTime = new Date(kickoff).getTime();
+  const kickoffTime = parseMatchDate(kickoff).getTime();
   if (Number.isNaN(kickoffTime)) {
     return false;
   }
@@ -99,8 +100,10 @@ export function filterMatchesForBrowse(
         matchesOddsTierFilter(match, oddsTierFilter),
     )
     .sort((left, right) => {
-      const leftTime = left.kickoff ? new Date(left.kickoff).getTime() : null;
-      const rightTime = right.kickoff ? new Date(right.kickoff).getTime() : null;
+      const leftTime = left.kickoff ? parseMatchDate(left.kickoff).getTime() : null;
+      const rightTime = right.kickoff
+        ? parseMatchDate(right.kickoff).getTime()
+        : null;
       if (leftTime === null && rightTime === null) {
         return 0;
       }

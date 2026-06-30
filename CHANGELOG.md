@@ -20,6 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `python -m app.scripts.test_push_notification` CLI helper. Mobile registers
   push tokens on launch, syncs modal toggles to the API, and opens match detail
   when a notification is tapped.
+- Home "AI Predictions" hero now shows a live status pill and a
+  "N verified predictions today" subtitle (count of matches kicking off today
+  that carry a model prediction), and the Home "Matches" section shows an
+  "N matches available" count — closing visual gaps against the design
+  reference (`mobile/src/components/demo/AiPredictionsHero.tsx`,
+  `mobile/src/components/demo/LiveBadge.tsx`,
+  `mobile/src/screens/homeHeroUtils.ts`, `mobile/src/screens/HomeScreen.tsx`).
+- Analytics screen header now carries the
+  "Deep insights into AI model performance" subtitle, matching the Home and
+  Matches headers (`mobile/src/navigation/screenTitles.ts`,
+  `mobile/src/navigation/RootNavigator.tsx`).
 - Ship a small, version-controlled baseline model bundle
   (`backend/app/ml/pretrained_model.pkl`, ~6 KB) so a fresh deploy serves real
   predictions and honest metrics (walk-forward accuracy ~0.51, high-confidence
@@ -41,6 +52,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   favoriting code (`mobile/src/store/favoritesStore.ts`,
   `mobile/src/screens/FavoritesScreen.tsx`,
   `mobile/src/components/matchCard/MatchCardV2.tsx`).
+- Daily live sync now refreshes upcoming predictions instead of skipping any
+  match that already has one, so picks stop going stale between retrains as new
+  results shift form/Elo/table features. A fresh prediction is written only when
+  the active model or probabilities change, and value bets follow the refreshed
+  prediction (`app/services/prediction.py`, `app/services/live_sync.py`).
 - Analytics dashboard restores the demo chart layout (confidence trend, risk
   distribution, prediction outcomes, model performance) wired to real `/analytics`
   data with empty states when sections have no data yet.
@@ -138,6 +154,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   label-strong text (PP-90).
 
 ### Fixed
+- Kickoff times now display in the user's local timezone. The API serializes
+  naive UTC timestamps with no timezone (e.g. `2026-06-30T17:00:00`), which
+  `new Date()` parsed as local time — showing times off by the device's UTC
+  offset (e.g. Ivory Coast vs Norway as 5pm instead of 7pm in NL). Added a
+  shared `parseMatchDate` helper that treats a missing timezone as UTC and used
+  it everywhere kickoff strings are parsed for display, grouping, sorting, and
+  the kicked-off guard (`mobile/src/utils/matchDates.ts`,
+  `mobile/src/components/formatters.ts`, `mobile/src/screens/matchesFilterUtils.ts`,
+  `mobile/src/screens/homeMatchUtils.ts`, `mobile/src/screens/favoritesUtils.ts`).
 - Root tab navigation types so Home Details can navigate to the nested Matches
   tab route without TypeScript errors.
 
