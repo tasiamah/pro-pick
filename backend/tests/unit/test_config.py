@@ -60,6 +60,12 @@ def test_validate_for_runtime_rejects_invalid_sync_league_ids() -> None:
         settings.validate_for_runtime()
 
 
+def test_default_sync_league_ids_include_world_cup() -> None:
+    settings = Settings()
+
+    assert settings.sync_league_id_list == (39, 140, 1)
+
+
 def test_validate_for_runtime_rejects_empty_sync_date_offsets() -> None:
     settings = Settings(sync_date_offsets="")
 

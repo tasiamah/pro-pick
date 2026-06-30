@@ -164,7 +164,7 @@ python -m app.scripts.sync_live_fixtures
 Configure in `.env`:
 
 ```env
-SYNC_LEAGUE_IDS=39,140
+SYNC_LEAGUE_IDS=39,140,1
 SYNC_DATE_OFFSETS=-1,0,1
 SCHEDULER_ENABLED=true
 SCHEDULER_DAILY_HOUR=6
