@@ -47,11 +47,13 @@ export function HomeScreen({ navigation }: Props) {
 
   const visibleValueBets = useMemo(
     () =>
-      filterUpcomingValueBets(
-        dashboardQuery.data?.top_value_bets ?? [],
-        matchesQuery.data ?? [],
-        now,
-      ),
+      matchesQuery.data
+        ? filterUpcomingValueBets(
+            dashboardQuery.data?.top_value_bets ?? [],
+            matchesQuery.data,
+            now,
+          )
+        : [],
     [dashboardQuery.data, matchesQuery.data, now],
   );
 
@@ -158,10 +160,12 @@ export function HomeScreen({ navigation }: Props) {
           title="Top Value Bets"
         />
         <AsyncState
-          isLoading={false}
-          error={null}
+          isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
+          error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
           isEmpty={visibleValueBets.length === 0}
           emptyMessage="No value bets yet"
+          errorMessage="Could not load value bets"
+          onRetry={() => void matchesQuery.refetch()}
         >
           <View style={screenStyles.cardList}>
             {visibleValueBets.map((valueBet) => (

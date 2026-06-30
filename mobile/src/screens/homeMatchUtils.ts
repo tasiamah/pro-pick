@@ -63,10 +63,12 @@ export function selectHomeMatches(
 }
 
 /**
- * Value bets whose match has not kicked off yet. ``ValueBet`` carries no
- * kickoff, so we resolve it from the loaded matches by ``match_id``; bets whose
- * match is unknown are kept rather than hidden, to avoid dropping picks we can't
- * place in time.
+ * Value bets whose match is loaded and has not kicked off yet. ``ValueBet``
+ * carries no kickoff, so we resolve it from the loaded matches by ``match_id``.
+ * A bet is only shown when its match is present in ``matches`` and still
+ * upcoming; bets whose match is unknown (not yet loaded or outside the window)
+ * are hidden so an already-started pick can't leak onto Home. Callers should
+ * therefore pass the matches only once they have loaded.
  */
 export function filterUpcomingValueBets(
   valueBets: ValueBet[],
@@ -78,6 +80,6 @@ export function filterUpcomingValueBets(
   );
   return valueBets.filter((bet) => {
     const kickoff = kickoffByMatchId.get(bet.match_id);
-    return kickoff === undefined || !hasKickedOff(kickoff, now);
+    return kickoff !== undefined && !hasKickedOff(kickoff, now);
   });
 }

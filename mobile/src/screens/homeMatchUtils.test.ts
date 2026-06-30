@@ -123,7 +123,7 @@ describe('selectHomeMatches', () => {
 });
 
 describe('filterUpcomingValueBets', () => {
-  it('hides bets whose match has kicked off and keeps the rest', () => {
+  it('keeps only bets whose match is loaded and still upcoming', () => {
     const now = new Date(2026, 5, 24, 16, 0);
     const matches = [
       createMatch(1, new Date(2026, 5, 24, 15, 0).toISOString()),
@@ -132,11 +132,18 @@ describe('filterUpcomingValueBets', () => {
     const bets = [
       createValueBet(10, 1), // match kicked off -> hidden
       createValueBet(20, 2), // match upcoming -> kept
-      createValueBet(30, 99), // match not loaded -> kept
+      createValueBet(30, 99), // match not loaded -> hidden (can't confirm upcoming)
     ];
 
     const result = filterUpcomingValueBets(bets, matches, now);
 
-    expect(result.map((bet) => bet.id)).toEqual([20, 30]);
+    expect(result.map((bet) => bet.id)).toEqual([20]);
+  });
+
+  it('hides all bets until matches are loaded', () => {
+    const now = new Date(2026, 5, 24, 16, 0);
+    const bets = [createValueBet(10, 1), createValueBet(20, 2)];
+
+    expect(filterUpcomingValueBets(bets, [], now)).toEqual([]);
   });
 });
