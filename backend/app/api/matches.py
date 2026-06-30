@@ -91,11 +91,7 @@ def list_matches(
 ) -> list[MatchDetailOut]:
     """Upcoming matches with enriched prediction, odds, and filters (PP-107)."""
     now = datetime.utcnow()
-    order_by = (
-        Match.kickoff.desc()
-        if status == "completed"
-        else Match.kickoff.asc()
-    )
+    order_by = Match.kickoff.desc() if status == "completed" else Match.kickoff.asc()
     stmt = (
         select(Match)
         .options(
