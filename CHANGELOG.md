@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Home "Top Value Bets" cards now show the fixture (teams, league, kickoff) and
+  the picked 1X2 outcome alongside edge, EV, odds, and stake, instead of a bare
+  stat line. The separate margin-based "Confidence" figure was removed so
+  "confidence" means one thing app-wide (the match-card top-pick probability)
+  (`mobile/src/components/ValueBetCard.tsx`, `mobile/src/screens/HomeScreen.tsx`).
+
 ### Added
 - Home "AI Predictions" hero now shows a live status pill and a
   "N verified predictions today" subtitle (count of matches kicking off today

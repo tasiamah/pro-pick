@@ -57,6 +57,11 @@ export function HomeScreen({ navigation }: Props) {
     [dashboardQuery.data, matchesQuery.data, now],
   );
 
+  const matchesById = useMemo(
+    () => new Map((matchesQuery.data ?? []).map((match) => [match.id, match])),
+    [matchesQuery.data],
+  );
+
   const heroStats = useMemo(
     () =>
       dashboardQuery.data
@@ -176,13 +181,20 @@ export function HomeScreen({ navigation }: Props) {
           onRetry={() => void matchesQuery.refetch()}
         >
           <View style={screenStyles.cardList}>
-            {visibleValueBets.map((valueBet) => (
-              <ValueBetCard
-                key={valueBet.id}
-                valueBet={valueBet}
-                onPress={() => openMatchDetail(valueBet.match_id)}
-              />
-            ))}
+            {visibleValueBets.map((valueBet) => {
+              const match = matchesById.get(valueBet.match_id);
+              if (!match) {
+                return null;
+              }
+              return (
+                <ValueBetCard
+                  key={valueBet.id}
+                  valueBet={valueBet}
+                  match={match}
+                  onPress={() => openMatchDetail(valueBet.match_id)}
+                />
+              );
+            })}
           </View>
         </AsyncState>
       </View>
