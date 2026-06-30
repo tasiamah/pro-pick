@@ -1,14 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, spacing, typography } from '../../theme';
-import { AiPickLabel } from './AiPickLabel';
 import { HeroStat } from './HeroStat';
+import { LiveBadge } from './LiveBadge';
 
 export type AiPredictionsHeroStats = {
   winRate: string;
   winRateCaption?: string | null;
   avgOdds: string;
   valueBets: string;
+  subtitle?: string | null;
 };
 
 type AiPredictionsHeroProps = {
@@ -19,8 +20,13 @@ export function AiPredictionsHero({ stats }: AiPredictionsHeroProps) {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>AI Predictions</Text>
-        <AiPickLabel />
+        <View style={styles.headerCopy}>
+          <Text style={styles.title}>AI Predictions</Text>
+          {stats.subtitle ? (
+            <Text style={styles.subtitle}>{stats.subtitle}</Text>
+          ) : null}
+        </View>
+        <LiveBadge />
       </View>
       <View style={styles.statsRow}>
         <HeroStat
@@ -47,11 +53,20 @@ const styles = StyleSheet.create({
   headerRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
+  },
+  headerCopy: {
+    flex: 1,
+    gap: spacing.xs,
   },
   title: {
     ...typography.hero,
     color: colors.text,
+  },
+  subtitle: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
   statsRow: {
     flexDirection: 'row',

@@ -14,7 +14,7 @@ import {
 } from './lazyScreens';
 import { StackHeaderTitle } from './StackHeaderTitle';
 import { buildTabBarScreenOptions } from './tabBarOptions';
-import { screenTitles } from './screenTitles';
+import { screenSubtitles, screenTitles } from './screenTitles';
 import { stackScreenOptions } from './stackScreenOptions';
 import type { RootTabParamList } from './types';
 
@@ -90,7 +90,10 @@ export function RootNavigator() {
           headerShadowVisible: false,
           headerTitleAlign: 'left',
           headerTitle: () => (
-            <StackHeaderTitle title={screenTitles.analytics} />
+            <StackHeaderTitle
+              subtitle={screenSubtitles.analytics}
+              title={screenTitles.analytics}
+            />
           ),
           tabBarIcon: ({ focused }) => (
             <TabBarIcon name="bar-chart-outline" focused={focused} />

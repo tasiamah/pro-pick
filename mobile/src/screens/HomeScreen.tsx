@@ -64,9 +64,10 @@ export function HomeScreen({ navigation }: Props) {
             dashboardQuery.data,
             analyticsQuery.data,
             matchesQuery.data ?? [],
+            now,
           )
         : null,
-    [analyticsQuery.data, dashboardQuery.data, matchesQuery.data],
+    [analyticsQuery.data, dashboardQuery.data, matchesQuery.data, now],
   );
 
   const isInitialLoading = isInitialQueryLoad(
@@ -131,7 +132,14 @@ export function HomeScreen({ navigation }: Props) {
       <AiPredictionsHero stats={heroStats} />
 
       <View style={screenStyles.section}>
-        <SectionHeader title="Matches" />
+        <SectionHeader
+          title="Matches"
+          subtitle={
+            filteredMatches.length > 0
+              ? `${filteredMatches.length} matches available`
+              : undefined
+          }
+        />
         <AsyncState
           isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
           error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
