@@ -71,7 +71,7 @@ export function buildHeroStats(
   return {
     winRate: formatHeroWinRate(confidentAccuracy ?? dashboard.model_accuracy),
     avgOdds: formatHeroAvgOdds(computeAveragePickOdds(matches)),
-    valueBets: formatHeroValueBetCount(dashboard.top_value_bets?.length),
+    valueBets: formatHeroValueBetCount(dashboard.value_bets_today),
     subtitle: formatPredictionsSubtitle(shownPredictionCount),
   };
 }
