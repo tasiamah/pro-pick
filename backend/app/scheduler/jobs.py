@@ -144,7 +144,8 @@ def live_notification_poll() -> None:
         with _scheduler_lock() as acquired:
             if not acquired:
                 logger.info(
-                    "Another worker holds the scheduler lock; skipping notification poll"
+                    "Another worker holds the scheduler lock; "
+                    "skipping notification poll"
                 )
                 return
 

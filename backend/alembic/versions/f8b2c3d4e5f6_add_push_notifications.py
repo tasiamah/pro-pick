@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "f8b2c3d4e5f6"
@@ -156,8 +157,14 @@ def downgrade() -> None:
         table_name="match_state_snapshots",
     )
     op.drop_table("match_state_snapshots")
-    op.drop_index(op.f("ix_sent_notifications_match_id"), table_name="sent_notifications")
-    op.drop_index(op.f("ix_sent_notifications_device_id"), table_name="sent_notifications")
+    op.drop_index(
+        op.f("ix_sent_notifications_match_id"),
+        table_name="sent_notifications",
+    )
+    op.drop_index(
+        op.f("ix_sent_notifications_device_id"),
+        table_name="sent_notifications",
+    )
     op.drop_table("sent_notifications")
     op.drop_index(
         op.f("ix_match_notification_preferences_match_id"),

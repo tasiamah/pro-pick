@@ -419,9 +419,7 @@ def process_lineups_confirmed(
     try:
         lineups = api_client.get_fixture_lineups(match.external_id)
     except (FootballApiError, Exception):
-        logger.exception(
-            "Failed to fetch lineups for match %s", match.external_id
-        )
+        logger.exception("Failed to fetch lineups for match %s", match.external_id)
         return NotificationDispatchSummary()
 
     if len(lineups) < 2:

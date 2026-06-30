@@ -11,7 +11,7 @@ from app.services.notification_keys import MATCH_NOTIFICATION_KEYS
 
 
 def default_settings() -> dict[str, bool]:
-    return {key: False for key in MATCH_NOTIFICATION_KEYS}
+    return dict.fromkeys(MATCH_NOTIFICATION_KEYS, False)
 
 
 def get_match_notification_settings(

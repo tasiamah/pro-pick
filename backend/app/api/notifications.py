@@ -15,11 +15,11 @@ from app.schemas.notifications import (
     TestNotificationOut,
 )
 from app.services.match_notification_events import send_test_notification
+from app.services.notification_keys import MATCH_NOTIFICATION_KEYS
 from app.services.notification_preferences import (
     get_match_notification_settings,
     save_match_notification_settings,
 )
-from app.services.notification_keys import MATCH_NOTIFICATION_KEYS
 from app.services.push_token_registry import register_push_token
 
 router = APIRouter()
@@ -97,7 +97,9 @@ def send_test_push_notification(
     elif settings.is_production:
         raise HTTPException(
             status_code=403,
-            detail="Set NOTIFICATION_TEST_SECRET to use the test endpoint in production",
+            detail=(
+                "Set NOTIFICATION_TEST_SECRET to use the test endpoint in production"
+            ),
         )
 
     try:

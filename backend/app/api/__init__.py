@@ -1,6 +1,14 @@
 from fastapi import APIRouter
 
-from app.api import analytics, dashboard, health, matches, notifications, predictions, value_bets
+from app.api import (
+    analytics,
+    dashboard,
+    health,
+    matches,
+    notifications,
+    predictions,
+    value_bets,
+)
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
