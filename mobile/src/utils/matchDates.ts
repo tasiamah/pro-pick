@@ -2,6 +2,19 @@ import type { Match } from '../api/types';
 
 export const DATE_RANGE_DAYS = 7;
 
+const TIMEZONE_SUFFIX = /([zZ]|[+-]\d{2}:?\d{2})$/;
+
+/**
+ * Parse an API datetime into a `Date`. The backend serializes naive UTC
+ * timestamps with no timezone (e.g. "2026-06-30T17:00:00"), which `new Date()`
+ * would otherwise interpret in the device's local zone — showing kickoff times
+ * off by the local UTC offset. Treat a missing timezone as UTC so times render
+ * correctly once converted back to the user's local zone for display.
+ */
+export function parseMatchDate(value: string): Date {
+  return new Date(TIMEZONE_SUFFIX.test(value) ? value : `${value}Z`);
+}
+
 export function startOfLocalDay(date = new Date()): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
@@ -13,7 +26,7 @@ export function addLocalDays(date: Date, days: number): Date {
 }
 
 export function toLocalDateKey(value: string | Date): string {
-  const date = typeof value === 'string' ? new Date(value) : value;
+  const date = typeof value === 'string' ? parseMatchDate(value) : value;
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -62,7 +75,7 @@ export function resolveMatchAnchorDate(
   }
 
   if (latestKickoff) {
-    return startOfLocalDay(new Date(latestKickoff));
+    return startOfLocalDay(parseMatchDate(latestKickoff));
   }
 
   return now;
@@ -82,8 +95,8 @@ export function filterMatchesByDate<T extends Match>(
   return matches
     .filter((match) => match.kickoff && toLocalDateKey(match.kickoff) === selectedKey)
     .sort((left, right) => {
-      const leftTime = left.kickoff ? new Date(left.kickoff).getTime() : 0;
-      const rightTime = right.kickoff ? new Date(right.kickoff).getTime() : 0;
+      const leftTime = left.kickoff ? parseMatchDate(left.kickoff).getTime() : 0;
+      const rightTime = right.kickoff ? parseMatchDate(right.kickoff).getTime() : 0;
       return leftTime - rightTime;
     });
 }

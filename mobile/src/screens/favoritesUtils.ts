@@ -1,9 +1,12 @@
 import type { Match } from '../api/types';
+import { parseMatchDate } from '../utils/matchDates';
 
 export function sortMatchesByKickoff<T extends Match>(matches: T[]): T[] {
   return [...matches].sort((left, right) => {
-    const leftTime = left.kickoff ? new Date(left.kickoff).getTime() : null;
-    const rightTime = right.kickoff ? new Date(right.kickoff).getTime() : null;
+    const leftTime = left.kickoff ? parseMatchDate(left.kickoff).getTime() : null;
+    const rightTime = right.kickoff
+      ? parseMatchDate(right.kickoff).getTime()
+      : null;
     if (leftTime === null && rightTime === null) {
       return 0;
     }

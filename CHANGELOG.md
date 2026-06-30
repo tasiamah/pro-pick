@@ -131,6 +131,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   label-strong text (PP-90).
 
 ### Fixed
+- Kickoff times now display in the user's local timezone. The API serializes
+  naive UTC timestamps with no timezone (e.g. `2026-06-30T17:00:00`), which
+  `new Date()` parsed as local time — showing times off by the device's UTC
+  offset (e.g. Ivory Coast vs Norway as 5pm instead of 7pm in NL). Added a
+  shared `parseMatchDate` helper that treats a missing timezone as UTC and used
+  it everywhere kickoff strings are parsed for display, grouping, sorting, and
+  the kicked-off guard (`mobile/src/utils/matchDates.ts`,
+  `mobile/src/components/formatters.ts`, `mobile/src/screens/matchesFilterUtils.ts`,
+  `mobile/src/screens/homeMatchUtils.ts`, `mobile/src/screens/favoritesUtils.ts`).
 - Root tab navigation types so Home Details can navigate to the nested Matches
   tab route without TypeScript errors.
 

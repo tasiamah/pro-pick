@@ -5,6 +5,7 @@ import {
   buildDateWindowParams,
   filterMatchesByDate,
   localDayKeyToDate,
+  parseMatchDate,
   resolveMatchAnchorDate,
   startOfLocalDay,
   toLocalDateKey,
@@ -21,6 +22,27 @@ function createMatch(id: number, kickoff: string): Match {
     competition_name: 'League',
   };
 }
+
+describe('parseMatchDate', () => {
+  it('treats a naive API timestamp (no timezone) as UTC', () => {
+    // The backend serializes naive UTC, e.g. 17:00 UTC for Ivory Coast vs Norway.
+    expect(parseMatchDate('2026-06-30T17:00:00').toISOString()).toBe(
+      '2026-06-30T17:00:00.000Z',
+    );
+  });
+
+  it('parses a naive timestamp identically to its explicit-UTC form', () => {
+    expect(parseMatchDate('2026-06-30T17:00:00').getTime()).toBe(
+      parseMatchDate('2026-06-30T17:00:00Z').getTime(),
+    );
+  });
+
+  it('respects an explicit timezone offset when present', () => {
+    expect(parseMatchDate('2026-06-30T17:00:00+02:00').toISOString()).toBe(
+      '2026-06-30T15:00:00.000Z',
+    );
+  });
+});
 
 describe('matchDates', () => {
   it('round-trips a local day key back to the start of that local day', () => {
