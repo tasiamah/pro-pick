@@ -147,6 +147,32 @@ def test_refresh_predictions_for_upcoming_is_version_aware(db_session: Session) 
     assert versions == {"test-v1", "test-v2"}
 
 
+def test_refresh_predictions_for_upcoming_rewrites_on_feature_change(
+    db_session: Session,
+) -> None:
+    upcoming = _seed(db_session)
+    bundle = _trained_bundle(db_session)
+
+    assert (
+        refresh_predictions_for_upcoming(db_session, now=BASE, model_bundle=bundle) == 1
+    )
+
+    stored = db_session.scalars(
+        select(Prediction).where(Prediction.match_id == upcoming.id)
+    ).one()
+    stored.prob_home = 0.98
+    stored.prob_draw = 0.01
+    stored.prob_away = 0.01
+    db_session.commit()
+
+    refreshed = refresh_predictions_for_upcoming(
+        db_session, now=BASE, model_bundle=bundle
+    )
+
+    assert refreshed == 1
+    assert db_session.query(Prediction).filter_by(match_id=upcoming.id).count() == 2
+
+
 def test_predict_match_falls_back_without_model(
     db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

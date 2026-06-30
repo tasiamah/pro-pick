@@ -23,6 +23,7 @@ from app.services.historical_import import UPCOMING_MATCH_STATUSES
 
 NEUTRAL_PROBABILITIES = {"home": 0.40, "draw": 0.28, "away": 0.32}
 FALLBACK_VERSION = "fallback"
+PREDICTION_REFRESH_EPSILON = 1e-4
 
 _model_cache: tuple[float, ModelBundle | None] | None = None
 
@@ -75,10 +76,9 @@ def predict_match(
     )
 
 
-def generate_prediction(
-    db: Session, match: Match, *, model_bundle: ModelBundle | None = None
+def _persist_prediction(
+    db: Session, match: Match, result: MatchPrediction
 ) -> Prediction:
-    result = predict_match(db, match, model_bundle=model_bundle)
     prediction = Prediction(
         match_id=match.id,
         model_version=result.model_version,
@@ -91,10 +91,25 @@ def generate_prediction(
     return prediction
 
 
+def generate_prediction(
+    db: Session, match: Match, *, model_bundle: ModelBundle | None = None
+) -> Prediction:
+    return _persist_prediction(
+        db, match, predict_match(db, match, model_bundle=model_bundle)
+    )
+
+
 def refresh_predictions_for_upcoming(
     db: Session, *, now: datetime | None = None, model_bundle: ModelBundle | None = None
 ) -> int:
-    """Generate predictions for upcoming matches that lack the active version."""
+    """Refresh upcoming predictions when the active model or latest features change.
+
+    Stored predictions are append-only and callers serve the most recent row per
+    match. Re-running this on every daily sync keeps upcoming picks current as new
+    results shift form/Elo/table features, instead of freezing them until the next
+    retrain. A fresh prediction is written only when it differs from the stored one
+    (model version or probabilities), so unchanged matches add no churn.
+    """
     bundle = model_bundle if model_bundle is not None else load_active_model()
     if bundle is None:
         return 0
@@ -108,23 +123,36 @@ def refresh_predictions_for_upcoming(
         )
     ).all()
 
-    created = 0
+    refreshed = 0
     for match in matches:
-        if _has_prediction_for_version(match, bundle.metadata.version):
+        result = predict_match(db, match, model_bundle=bundle)
+        if not _prediction_changed(_latest_prediction(match), result):
             continue
-        generate_prediction(db, match, model_bundle=bundle)
-        created += 1
+        _persist_prediction(db, match, result)
+        refreshed += 1
 
-    if created:
+    if refreshed:
         db.commit()
-    return created
+    return refreshed
 
 
-def _has_prediction_for_version(match: Match, version: str) -> bool:
+def _latest_prediction(match: Match) -> Prediction | None:
     if not match.predictions:
-        return False
-    latest = max(match.predictions, key=lambda prediction: prediction.created_at)
-    return latest.model_version == version
+        return None
+    return max(
+        match.predictions,
+        key=lambda prediction: (prediction.created_at, prediction.id),
+    )
+
+
+def _prediction_changed(latest: Prediction | None, result: MatchPrediction) -> bool:
+    if latest is None or latest.model_version != result.model_version:
+        return True
+    return (
+        abs(latest.prob_home - result.prob_home) > PREDICTION_REFRESH_EPSILON
+        or abs(latest.prob_draw - result.prob_draw) > PREDICTION_REFRESH_EPSILON
+        or abs(latest.prob_away - result.prob_away) > PREDICTION_REFRESH_EPSILON
+    )
 
 
 def _naive_utc_now(now: datetime | None) -> datetime:

@@ -34,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   favoriting code (`mobile/src/store/favoritesStore.ts`,
   `mobile/src/screens/FavoritesScreen.tsx`,
   `mobile/src/components/matchCard/MatchCardV2.tsx`).
+- Daily live sync now refreshes upcoming predictions instead of skipping any
+  match that already has one, so picks stop going stale between retrains as new
+  results shift form/Elo/table features. A fresh prediction is written only when
+  the active model or probabilities change, and value bets follow the refreshed
+  prediction (`app/services/prediction.py`, `app/services/live_sync.py`).
 - Analytics dashboard restores the demo chart layout (confidence trend, risk
   distribution, prediction outcomes, model performance) wired to real `/analytics`
   data with empty states when sections have no data yet.
