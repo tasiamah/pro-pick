@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- Recent-form indicators on match cards now render as circular **W/D/L** letter
+  badges (muted, semi-transparent fills with a bright letter) instead of plain
+  colored dots, matching the design reference across Home and Matches
+  (`mobile/src/components/demo/FormIndicator.tsx`).
 - Value bets, odds-tier classification, and the displayed odds now use the
   best-price bookmaker for each match (the book with the lowest margin /
   overround) instead of the alphabetically first one. This stops understating
