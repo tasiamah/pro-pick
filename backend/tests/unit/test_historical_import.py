@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base
 from app.models import Competition, Match, Odds, Team
+from app.services.data_ingestion import FootballApiError
 from app.services.historical_import import (
+    MAX_CONSECUTIVE_ODDS_FAILURES,
     HistoricalDataImporter,
     extract_match_winner_odds,
     map_fixture_status,
@@ -63,19 +65,47 @@ def sample_fixture(
     }
 
 
+def odds_payload() -> list[dict]:
+    return [
+        {
+            "bookmakers": [
+                {
+                    "name": "Bet365",
+                    "bets": [
+                        {
+                            "name": "Match Winner",
+                            "values": [
+                                {"value": "Home", "odd": "1.85"},
+                                {"value": "Draw", "odd": "3.40"},
+                                {"value": "Away", "odd": "4.20"},
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+    ]
+
+
 class StubFootballApiClient:
     def __init__(
         self,
         fixtures: dict[tuple[int, int], list[dict]] | None = None,
         odds: dict[int, list[dict]] | None = None,
+        failing_odds_ids: frozenset[int] = frozenset(),
     ) -> None:
         self.fixtures = fixtures or {}
         self.odds = odds or {}
+        self.failing_odds_ids = set(failing_odds_ids)
+        self.odds_calls: list[int] = []
 
     def get_fixtures(self, league: int, season: int) -> list[dict]:
         return self.fixtures.get((league, season), [])
 
     def get_odds(self, fixture_id: int) -> list[dict]:
+        self.odds_calls.append(fixture_id)
+        if fixture_id in self.failing_odds_ids:
+            raise FootballApiError(f"odds fetch failed for {fixture_id}")
         return self.odds.get(fixture_id, [])
 
 
@@ -208,6 +238,48 @@ def test_import_league_season_is_idempotent(db_session: Session) -> None:
     assert db_session.query(Competition).count() == 1
     assert db_session.query(Team).count() == 2
     assert db_session.query(Match).count() == 1
+
+
+def test_odds_failure_does_not_abort_batch(db_session: Session) -> None:
+    failing = sample_fixture(fixture_id=1001)
+    ok = sample_fixture(fixture_id=1002)
+    client = StubFootballApiClient(
+        odds={1002: odds_payload()},
+        failing_odds_ids=frozenset({1001}),
+    )
+    importer = HistoricalDataImporter(db_session, client=client)
+
+    summary = importer.import_fixture_items([failing, ok], default_season=2024)
+
+    # Both fixtures persist even though one odds call raised.
+    assert summary.matches == 2
+    assert db_session.query(Match).count() == 2
+    # The healthy match still got its odds; the failure is counted, not fatal.
+    assert summary.odds == 1
+    assert summary.odds_failed == 1
+    assert db_session.query(Odds).count() == 1
+
+
+def test_odds_circuit_breaker_stops_after_repeated_failures(
+    db_session: Session,
+) -> None:
+    fixture_count = MAX_CONSECUTIVE_ODDS_FAILURES + 3
+    fixtures = [
+        sample_fixture(fixture_id=2000 + index) for index in range(fixture_count)
+    ]
+    failing_ids = frozenset(fixture["fixture"]["id"] for fixture in fixtures)
+    client = StubFootballApiClient(failing_odds_ids=failing_ids)
+    importer = HistoricalDataImporter(db_session, client=client)
+
+    summary = importer.import_fixture_items(fixtures, default_season=2024)
+
+    # All fixtures still imported.
+    assert summary.matches == fixture_count
+    assert db_session.query(Match).count() == fixture_count
+    # Odds attempts stop once the breaker opens, so we don't keep burning quota.
+    assert len(client.odds_calls) == MAX_CONSECUTIVE_ODDS_FAILURES
+    assert summary.odds_failed == MAX_CONSECUTIVE_ODDS_FAILURES
+    assert summary.odds == 0
 
 
 @pytest.mark.parametrize(

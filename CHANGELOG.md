@@ -261,6 +261,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
+- Live sync now covers a 7-day forward window by default
+  (`SYNC_DATE_OFFSETS=-1,0,1,2,3,4,5,6,7` instead of `-1,0,1`), so upcoming
+  fixtures (e.g. a full World Cup bracket) get odds — and therefore predictions
+  surfaced on Home/Matches — ahead of kickoff instead of only the next day. Each
+  forward day costs ~1 fixtures call plus one `/odds` call per match, so narrow it
+  on the free API tier (set the env var on Render to override the default)
+  (`backend/app/core/config.py`, `backend/.env.example`, `backend/README.md`).
+- Odds import is now resilient: a provider error on a single match's `/odds` call
+  is logged and skipped instead of rolling back the whole sync batch, and after
+  several consecutive failures (e.g. quota exhaustion) the importer stops fetching
+  odds for the rest of the batch while still committing the fixtures it imported.
+  The live-sync summary/log now reports the number of failed odds fetches
+  (`backend/app/services/historical_import.py`,
+  `backend/app/services/live_sync.py`).
 - Recent-form indicators on match cards now render as circular **W/D/L** letter
   badges (muted, semi-transparent fills with a bright letter) instead of plain
   colored dots, matching the design reference across Home and Matches

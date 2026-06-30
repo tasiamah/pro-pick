@@ -269,10 +269,12 @@ def run_live_sync(
 
     logger.info(
         "Live sync complete: %s fixtures, %s new matches, %s odds rows, "
-        "%s predictions, %s value bets, %s settled bets, %s push sent",
+        "%s odds failed, %s predictions, %s value bets, %s settled bets, "
+        "%s push sent",
         summary.fixtures_fetched,
         summary.import_summary.matches if summary.import_summary else 0,
         summary.import_summary.odds if summary.import_summary else 0,
+        summary.import_summary.odds_failed if summary.import_summary else 0,
         summary.predictions,
         summary.value_bets,
         summary.settled_value_bets,
