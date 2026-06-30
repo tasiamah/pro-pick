@@ -51,10 +51,9 @@ describe('homeHeroUtils', () => {
     expect(formatHeroValueBetCount(undefined)).toBe('—');
   });
 
-  it('captions the win rate with confident-pick coverage', () => {
-    expect(formatHeroWinRateCaption(0.71, 0.19)).toBe('Top 19% confident picks');
-    expect(formatHeroWinRateCaption(0.71, null)).toBe('High-confidence picks');
-    expect(formatHeroWinRateCaption(null, 0.19)).toBeNull();
+  it('captions the win rate as confident picks when a confident metric exists', () => {
+    expect(formatHeroWinRateCaption(0.71)).toBe('Confident picks');
+    expect(formatHeroWinRateCaption(null)).toBeNull();
   });
 
   it('computes average odds across loaded matches', () => {
@@ -66,7 +65,7 @@ describe('homeHeroUtils', () => {
   it('builds hero stats from the high-confidence win rate', () => {
     expect(buildHeroStats(dashboard, analytics, [baseMatch])).toEqual({
       winRate: '71.0%',
-      winRateCaption: 'Top 19% confident picks',
+      winRateCaption: 'Confident picks',
       avgOdds: '3.0',
       valueBets: '3',
     });
