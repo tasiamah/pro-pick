@@ -25,10 +25,26 @@ function isWinStreak(form: FormResult[] | undefined, minGames = 4): boolean {
 }
 
 /**
+ * Pick a deterministic variant for a fixture so the same match always shows the
+ * same line, but different matches in the same confidence band get different
+ * wording. Seeded by the match id (falls back to the team names) so it is stable
+ * across renders.
+ */
+function pickVariant(variants: string[], match: Match): string {
+  const idSeed = Math.abs(Math.trunc(match.id ?? 0));
+  const nameSeed = `${match.home_team.name}${match.away_team.name}`
+    .split('')
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const seed = idSeed > 0 ? idSeed : nameSeed;
+  return variants[seed % variants.length];
+}
+
+/**
  * Build a concise, match-specific headline for the card from the signals we have
  * client-side (recommended outcome, model confidence and each side's recent
- * form). It replaces the backend's repetitive templated insight with something
- * that varies per fixture. Always returns a non-empty string.
+ * form). Venue-neutral on purpose — tournaments like the World Cup are played at
+ * neutral grounds, so there is no "home" or "away" advantage to lean on. Returns
+ * a non-empty string that varies per fixture rather than repeating a template.
  */
 export function buildDynamicMatchInsight(
   match: Match,
@@ -43,37 +59,93 @@ export function buildDynamicMatchInsight(
 
   if (outcome === 'draw') {
     if (winCount(homeForm) <= 1 && winCount(awayForm) <= 1) {
-      return 'Tight, low-scoring affair on the cards';
+      return pickVariant(
+        [
+          'Tight, low-scoring affair on the cards',
+          'Cagey one, stalemate on the cards',
+          'Few clear chances, spoils likely shared',
+        ],
+        match,
+      );
     }
-    return 'Evenly matched — honours likely shared';
+    return pickVariant(
+      [
+        'Evenly matched, honours likely shared',
+        'Nothing to separate these two',
+        'Could go either way, leaning to a draw',
+      ],
+      match,
+    );
   }
 
   const winnerName = outcome === 'home' ? homeName : awayName;
+  const loserName = outcome === 'home' ? awayName : homeName;
   const winnerForm = outcome === 'home' ? homeForm : awayForm;
 
   if (confidence >= 0.65 && isWinStreak(winnerForm)) {
-    return `${winnerName} unstoppable right now`;
+    return pickVariant(
+      [
+        `${winnerName} unstoppable right now`,
+        `${winnerName} rolling and hard to stop`,
+        `${winnerName} in red-hot form`,
+      ],
+      match,
+    );
   }
 
   if (confidence >= 0.6 && isUnbeaten(winnerForm)) {
-    return `${winnerName} in excellent form`;
+    return pickVariant(
+      [
+        `${winnerName} in excellent form`,
+        `${winnerName} flying into this one`,
+        `${winnerName} unbeaten and dangerous`,
+      ],
+      match,
+    );
   }
 
   if (confidence >= 0.6) {
-    return outcome === 'home'
-      ? `${homeName} firm favourites at home`
-      : `${awayName} fancied to win on the road`;
+    return pickVariant(
+      [
+        `${winnerName} firm favourites here`,
+        `${winnerName} should have too much`,
+        `${winnerName} hold a clear edge`,
+        `Expect ${winnerName} to take charge`,
+      ],
+      match,
+    );
   }
 
   if (confidence >= 0.45) {
-    return outcome === 'home'
-      ? `${homeName} edge a tight one at home`
-      : `${awayName} hold a slight edge away`;
+    return pickVariant(
+      [
+        `${winnerName} shade a tight one`,
+        `Slim lean towards ${winnerName}`,
+        `${winnerName} the marginal pick over ${loserName}`,
+        `${winnerName} just about edge it`,
+        `Tight call, ${winnerName} the value side`,
+      ],
+      match,
+    );
   }
 
   if (winCount(homeForm) <= 1 && winCount(awayForm) <= 1) {
-    return 'Neither side in convincing form';
+    return pickVariant(
+      [
+        'Neither side in convincing form',
+        'Both stuttering, wide open',
+        'Little to choose, both out of sorts',
+      ],
+      match,
+    );
   }
 
-  return `Too close to call — slight lean to ${winnerName}`;
+  return pickVariant(
+    [
+      `Too close to call, slight lean to ${winnerName}`,
+      `Coin-flip, narrow nod to ${winnerName}`,
+      `Wide open, ${winnerName} the slight pick`,
+    ],
+    match,
+  );
 }

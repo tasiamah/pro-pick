@@ -95,6 +95,7 @@ describe('selectHomeMatches', () => {
       [startedToday, upcomingTodayA, upcomingTodayB, tomorrow, dayAfter],
       selectedToday,
       now,
+      3,
     );
 
     // Two upcoming today (started one dropped) + soonest later match.
@@ -108,7 +109,7 @@ describe('selectHomeMatches', () => {
     const d = createMatch(4, new Date(2026, 5, 24, 22, 0).toISOString());
     const tomorrow = createMatch(5, new Date(2026, 5, 25, 13, 0).toISOString());
 
-    const result = selectHomeMatches([a, b, c, d, tomorrow], selectedToday, now);
+    const result = selectHomeMatches([a, b, c, d, tomorrow], selectedToday, now, 3);
 
     expect(result.map((match) => match.id)).toEqual([1, 2, 3, 4]);
   });
@@ -117,7 +118,7 @@ describe('selectHomeMatches', () => {
     const a = createMatch(1, new Date(2026, 5, 24, 17, 0).toISOString());
     const b = createMatch(2, new Date(2026, 5, 24, 20, 0).toISOString());
 
-    const result = selectHomeMatches([a, b], selectedToday, now);
+    const result = selectHomeMatches([a, b], selectedToday, now, 3);
 
     expect(result.map((match) => match.id)).toEqual([1, 2]);
   });
@@ -133,6 +134,7 @@ describe('selectHomeMatches', () => {
       [earlierToday, onSelectedDay, laterA, laterB],
       selectedTomorrow,
       now,
+      3,
     );
 
     // The earlier (today) match is not borrowed; fills forward from later days.
@@ -154,7 +156,7 @@ describe('classifyMatchOddsTier', () => {
 });
 
 describe('groupHomeMatchesByOddsTier', () => {
-  it('buckets matches into low/medium/high order, preserving input order', () => {
+  it('buckets matches into high/medium/low order, preserving input order', () => {
     const medium = createTieredMatch(2, 2.5);
     const high = createTieredMatch(3, 4.0);
     const low = createTieredMatch(1, 1.5);
@@ -162,7 +164,7 @@ describe('groupHomeMatchesByOddsTier', () => {
 
     const groups = groupHomeMatchesByOddsTier([medium, high, low, medium2]);
 
-    expect(groups.map((group) => group.tier)).toEqual(['low', 'medium', 'high']);
+    expect(groups.map((group) => group.tier)).toEqual(['high', 'medium', 'low']);
     expect(
       groups.find((group) => group.tier === 'medium')?.matches.map((m) => m.id),
     ).toEqual([2, 4]);

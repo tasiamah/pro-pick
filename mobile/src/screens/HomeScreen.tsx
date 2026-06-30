@@ -19,7 +19,6 @@ import {
   LoadingState,
   MatchCardV2,
   SectionHeader,
-  ValueBetCard,
 } from '../components';
 import type { OddsTier } from '../components/demo/demoUtils';
 import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
@@ -29,7 +28,6 @@ import { colors, screenStyles, spacing } from '../theme';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
 import {
-  filterUpcomingValueBets,
   groupHomeMatchesByOddsTier,
   selectHomeMatches,
 } from './homeMatchUtils';
@@ -73,21 +71,9 @@ export function HomeScreen({ navigation }: Props) {
     [filteredMatches],
   );
 
-  const visibleValueBets = useMemo(
-    () =>
-      matchesQuery.data
-        ? filterUpcomingValueBets(
-            dashboardQuery.data?.top_value_bets ?? [],
-            matchesQuery.data,
-            now,
-          )
-        : [],
-    [dashboardQuery.data, matchesQuery.data, now],
-  );
-
-  const matchesById = useMemo(
-    () => new Map((matchesQuery.data ?? []).map((match) => [match.id, match])),
-    [matchesQuery.data],
+  const shownPredictionCount = useMemo(
+    () => oddsTierGroups.reduce((total, group) => total + group.matches.length, 0),
+    [oddsTierGroups],
   );
 
   const heroStats = useMemo(
@@ -97,10 +83,10 @@ export function HomeScreen({ navigation }: Props) {
             dashboardQuery.data,
             analyticsQuery.data,
             matchesQuery.data ?? [],
-            now,
+            shownPredictionCount,
           )
         : null,
-    [analyticsQuery.data, dashboardQuery.data, matchesQuery.data, now],
+    [analyticsQuery.data, dashboardQuery.data, matchesQuery.data, shownPredictionCount],
   );
 
   const isInitialLoading = isInitialQueryLoad(
@@ -196,38 +182,6 @@ export function HomeScreen({ navigation }: Props) {
                     ))}
                   </View>
                 </View>
-              );
-            })}
-          </View>
-        </AsyncState>
-      </View>
-
-      <View style={screenStyles.section}>
-        <SectionHeader
-          subtitle="Highest edge picks kicking off today"
-          title="Top Value Bets"
-        />
-        <AsyncState
-          isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
-          error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
-          isEmpty={visibleValueBets.length === 0}
-          emptyMessage="No value bets yet"
-          errorMessage="Could not load value bets"
-          onRetry={() => void matchesQuery.refetch()}
-        >
-          <View style={screenStyles.cardList}>
-            {visibleValueBets.map((valueBet) => {
-              const match = matchesById.get(valueBet.match_id);
-              if (!match) {
-                return null;
-              }
-              return (
-                <ValueBetCard
-                  key={valueBet.id}
-                  valueBet={valueBet}
-                  match={match}
-                  onPress={() => openMatchDetail(valueBet.match_id)}
-                />
               );
             })}
           </View>
