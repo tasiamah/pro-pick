@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Home tab now groups matches into Low / Medium / High **Odds** tier sections,
+  each with a tier icon and an "N matches available" count (replacing the single
+  flat "Matches" list), matching the design reference. Tier is derived from the
+  price of the model's recommended outcome
+  (`mobile/src/screens/homeMatchUtils.ts`, `mobile/src/screens/HomeScreen.tsx`,
+  `mobile/src/components/demo/SectionHeader.tsx`).
+- Match cards now show a dynamic, fixture-specific headline insight derived from
+  the recommended outcome, model confidence and each side's recent form (e.g.
+  "Alpha unstoppable right now", "Evenly matched — honours likely shared"),
+  replacing the backend's repetitive templated line
+  (`mobile/src/components/matchCard/matchInsightUtils.ts`,
+  `mobile/src/components/matchCard/MatchCardV2.tsx`).
 - Home "AI Predictions" hero now shows a live status pill and a
   "N verified predictions today" subtitle (count of matches kicking off today
   that carry a model prediction), and the Home "Matches" section shows an
