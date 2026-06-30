@@ -46,12 +46,6 @@ def upgrade() -> None:
         ["device_id"],
         unique=False,
     )
-    op.create_index(
-        op.f("ix_device_push_tokens_expo_push_token"),
-        "device_push_tokens",
-        ["expo_push_token"],
-        unique=True,
-    )
 
     op.create_table(
         "match_notification_preferences",
@@ -175,10 +169,6 @@ def downgrade() -> None:
         table_name="match_notification_preferences",
     )
     op.drop_table("match_notification_preferences")
-    op.drop_index(
-        op.f("ix_device_push_tokens_expo_push_token"),
-        table_name="device_push_tokens",
-    )
     op.drop_index(
         op.f("ix_device_push_tokens_device_id"),
         table_name="device_push_tokens",
