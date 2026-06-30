@@ -36,3 +36,8 @@ yarn-error.*
 .idea/
 .vscode/
 *.swp
+
+# Local dev worktrees and artifacts
+.*-worktree/
+mobile/expo-qr.png
+mobile/ngrok-policy.yml
