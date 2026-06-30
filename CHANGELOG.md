@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   badges (muted, semi-transparent fills with a bright letter) instead of plain
   colored dots, matching the design reference across Home and Matches
   (`mobile/src/components/demo/FormIndicator.tsx`).
+- Value bets, odds-tier classification, and the displayed odds now use the
+  best-price bookmaker for each match (the book with the lowest margin /
+  overround) instead of the alphabetically first one. This stops understating
+  edge/EV and missing value bets, and keeps a single, deterministic odds source
+  across the API, list enrichment, and value-bet engine
+  (`backend/app/services/value_bets.py`, `backend/app/api/matches.py`,
+  `backend/app/services/match_list_enrichment.py`).
 - Home "Top Value Bets" cards now show the fixture (teams, league, kickoff) and
   the picked 1X2 outcome alongside edge, EV, odds, and stake, instead of a bare
   stat line. The separate margin-based "Confidence" figure was removed so
@@ -32,6 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/api/types.ts`).
 
 ### Added
+- Expo push notifications end-to-end: device token registration, per-match
+  notification preferences stored in the backend, live match event detection
+  (goals, cards, kick-off, full-time, line-ups, etc.), deduplicated delivery
+  via the Expo Push API, a `POST /notifications/test` endpoint, and a
+  `python -m app.scripts.test_push_notification` CLI helper. Mobile registers
+  push tokens on launch, syncs modal toggles to the API, and opens match detail
+  when a notification is tapped.
 - Home tab now groups matches into Low / Medium / High **Odds** tier sections,
   each with a tier icon and an "N matches available" count (replacing the single
   flat "Matches" list), matching the design reference. Tier is derived from the

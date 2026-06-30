@@ -13,7 +13,7 @@ from app.ml.features import (
     compute_features,
     load_match_history_for_teams,
 )
-from app.models import Match, Odds, Prediction, Team
+from app.models import Match, Prediction, Team
 from app.schemas.common import MatchDetailOut
 from app.services.match_enrichment import (
     FORM_DISPLAY_WINDOW,
@@ -22,6 +22,7 @@ from app.services.match_enrichment import (
     recommended_outcome,
     to_odds_out,
 )
+from app.services.value_bets import sort_odds_by_value
 
 
 def enrich_match_list(db: Session, matches: list[Match]) -> list[MatchDetailOut]:
@@ -126,7 +127,7 @@ class _MatchListEnricher:
             home_team=self._to_team_out(match.home_team, match.kickoff),
             away_team=self._to_team_out(match.away_team, match.kickoff),
             competition_name=match.competition.name if match.competition else None,
-            odds=[to_odds_out(odds) for odds in _sorted_odds(match)],
+            odds=[to_odds_out(odds) for odds in sort_odds_by_value(match.odds)],
             prediction=(
                 self._to_prediction_out(match, latest_prediction)
                 if latest_prediction
@@ -164,7 +165,3 @@ def _latest_prediction(match: Match) -> Prediction | None:
     if not match.predictions:
         return None
     return max(match.predictions, key=lambda prediction: prediction.created_at)
-
-
-def _sorted_odds(match: Match) -> list[Odds]:
-    return sorted(match.odds, key=lambda odds: (odds.bookmaker.lower(), odds.id))

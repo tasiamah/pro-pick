@@ -230,8 +230,12 @@ class HistoricalDataImporter:
         external_id = fixture["id"]
         status = map_fixture_status(fixture_item["fixture"]["status"]["short"])
         goals = fixture_item.get("goals") or {}
-        home_goals = goals.get("home") if status == "finished" else None
-        away_goals = goals.get("away") if status == "finished" else None
+        home_goals = goals.get("home")
+        away_goals = goals.get("away")
+        if home_goals is not None:
+            home_goals = int(home_goals)
+        if away_goals is not None:
+            away_goals = int(away_goals)
         kickoff = parse_kickoff(fixture.get("date"))
 
         existing = self.db.scalar(select(Match).where(Match.external_id == external_id))

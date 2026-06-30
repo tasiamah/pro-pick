@@ -4,8 +4,11 @@ import type {
   Dashboard,
   MatchDetail,
   MatchListParams,
+  MatchNotificationSettings,
   Prediction,
   PredictionListParams,
+  PushTokenRegisterRequest,
+  PushTokenRegisterResponse,
   ValueBet,
   ValueBetListParams,
 } from './types';
@@ -47,6 +50,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       signal: controller.signal,
       headers: {
         Accept: 'application/json',
+        ...(init?.body ? { 'Content-Type': 'application/json' } : null),
         ...init?.headers,
       },
     });
@@ -98,5 +102,32 @@ export const api = {
 
   getAnalytics(): Promise<Analytics> {
     return request<Analytics>('/analytics');
+  },
+
+  registerPushToken(payload: PushTokenRegisterRequest): Promise<PushTokenRegisterResponse> {
+    return request<PushTokenRegisterResponse>('/notifications/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getNotificationPreferences(
+    deviceId: string,
+    matchId: number,
+  ): Promise<MatchNotificationSettings> {
+    return request<MatchNotificationSettings>(
+      `/notifications/preferences?device_id=${encodeURIComponent(deviceId)}&match_id=${matchId}`,
+    );
+  },
+
+  saveNotificationPreferences(payload: {
+    device_id: string;
+    match_id: number;
+    settings: Record<string, boolean>;
+  }): Promise<MatchNotificationSettings> {
+    return request<MatchNotificationSettings>('/notifications/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
   },
 };
