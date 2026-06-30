@@ -39,11 +39,17 @@ def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
 
     latest_kickoff = db.execute(select(func.max(Match.kickoff))).scalar_one()
 
+    upcoming_value_bets = db.execute(
+        select(func.count(ValueBet.id))
+        .join(Match, ValueBet.match_id == Match.id)
+        .where(Match.kickoff >= now)
+    ).scalar_one()
+
     top_bets = (
         db.execute(
             select(ValueBet)
             .join(Match, ValueBet.match_id == Match.id)
-            .where(Match.kickoff >= start_of_day, Match.kickoff < end_of_day)
+            .where(Match.kickoff >= now)
             .order_by(ValueBet.edge.desc())
             .limit(5)
         )
@@ -66,6 +72,7 @@ def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
     return DashboardOut(
         matches_today=matches_today,
         upcoming_matches=upcoming,
+        upcoming_value_bets=upcoming_value_bets,
         latest_kickoff=latest_kickoff,
         top_value_bets=[ValueBetOut.model_validate(v) for v in top_bets],
         model_accuracy=model_accuracy,

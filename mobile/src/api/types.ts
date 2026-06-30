@@ -86,6 +86,7 @@ export type Analytics = {
 export type Dashboard = {
   matches_today: number;
   upcoming_matches: number;
+  upcoming_value_bets: number;
   latest_kickoff: string | null;
   top_value_bets: ValueBet[];
   model_accuracy: number | null;

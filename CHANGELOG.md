@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- Home value bets now reflect only upcoming fixtures: the dashboard scopes both
+  the "Top Value Bets" list and the new uncapped `upcoming_value_bets` count to
+  matches that have not kicked off yet (`kickoff >= now`), instead of including
+  matches that already started earlier today. The Home hero "Value Bets" stat
+  reads this count so it can exceed five (`backend/app/api/dashboard.py`,
+  `backend/app/schemas/common.py`, `mobile/src/api/types.ts`,
+  `mobile/src/screens/homeHeroUtils.ts`).
+- Lowered the value-bet edge threshold from 5% to 3% so more genuine edges are
+  surfaced; 5% was conservative enough that very few fixtures qualified
+  (`backend/app/core/config.py`).
 - The live notification poll now fetches fresh fixture status each cycle and
   detects match status transitions (match start/end, half-time, second half,
   penalty shootout) on every run instead of only during the once-daily sync,

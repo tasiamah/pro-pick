@@ -49,7 +49,7 @@ def test_get_dashboard_summarizes_today_and_model_performance(
     today_match = Match(
         home_team_id=home.id,
         away_team_id=away.id,
-        kickoff=start_of_day + timedelta(hours=12),
+        kickoff=now + timedelta(hours=2),
         status="scheduled",
     )
     future_match = Match(
@@ -107,48 +107,48 @@ def test_get_dashboard_summarizes_today_and_model_performance(
     payload = response.json()
     assert payload["matches_today"] == 1
     assert payload["upcoming_matches"] >= 1
+    assert payload["upcoming_value_bets"] == 1
     assert payload["model_accuracy"] == 1.0
     assert payload["roi"] == 1.0
     assert [bet["match_id"] for bet in payload["top_value_bets"]] == [today_match.id]
 
 
-def test_get_dashboard_top_value_bets_scoped_to_today_ordered_by_edge(
+def test_get_dashboard_value_bets_scoped_to_upcoming_ordered_by_edge(
     client: TestClient,
     db_session: Session,
 ) -> None:
     now = datetime.utcnow()
-    start_of_day = datetime(now.year, now.month, now.day)
 
     home = Team(name="Scoped Home", logo_url=None)
     away = Team(name="Scoped Away", logo_url=None)
     db_session.add_all([home, away])
     db_session.flush()
 
-    strong_today_match = Match(
+    strong_match = Match(
         home_team_id=home.id,
         away_team_id=away.id,
-        kickoff=start_of_day + timedelta(hours=10),
+        kickoff=now + timedelta(hours=2),
         status="scheduled",
     )
-    weak_today_match = Match(
+    weak_match = Match(
         home_team_id=home.id,
         away_team_id=away.id,
-        kickoff=start_of_day + timedelta(hours=14),
+        kickoff=now + timedelta(hours=4),
         status="scheduled",
     )
-    future_match = Match(
+    started_match = Match(
         home_team_id=home.id,
         away_team_id=away.id,
-        kickoff=now + timedelta(days=2),
+        kickoff=now - timedelta(hours=3),
         status="scheduled",
     )
-    db_session.add_all([strong_today_match, weak_today_match, future_match])
+    db_session.add_all([strong_match, weak_match, started_match])
     db_session.flush()
 
     db_session.add_all(
         [
             ValueBet(
-                match_id=strong_today_match.id,
+                match_id=strong_match.id,
                 outcome="home",
                 model_prob=0.7,
                 odd=2.0,
@@ -157,7 +157,7 @@ def test_get_dashboard_top_value_bets_scoped_to_today_ordered_by_edge(
                 recommended_stake=10.0,
             ),
             ValueBet(
-                match_id=weak_today_match.id,
+                match_id=weak_match.id,
                 outcome="away",
                 model_prob=0.55,
                 odd=2.0,
@@ -166,7 +166,7 @@ def test_get_dashboard_top_value_bets_scoped_to_today_ordered_by_edge(
                 recommended_stake=10.0,
             ),
             ValueBet(
-                match_id=future_match.id,
+                match_id=started_match.id,
                 outcome="home",
                 model_prob=0.9,
                 odd=2.0,
@@ -182,9 +182,10 @@ def test_get_dashboard_top_value_bets_scoped_to_today_ordered_by_edge(
 
     assert response.status_code == 200
     payload = response.json()
+    assert payload["upcoming_value_bets"] == 2
     assert [bet["match_id"] for bet in payload["top_value_bets"]] == [
-        strong_today_match.id,
-        weak_today_match.id,
+        strong_match.id,
+        weak_match.id,
     ]
 
 
@@ -199,6 +200,7 @@ def test_get_dashboard_returns_empty_state_without_data(
     payload = response.json()
     assert payload["matches_today"] == 0
     assert payload["upcoming_matches"] == 0
+    assert payload["upcoming_value_bets"] == 0
     assert payload["latest_kickoff"] is None
     assert payload["top_value_bets"] == []
     assert payload["model_accuracy"] is None
