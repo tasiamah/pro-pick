@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- The live notification poll now fetches fresh fixture status each cycle and
+  detects match status transitions (match start/end, half-time, second half,
+  penalty shootout) on every run instead of only during the once-daily sync,
+  and automatically polls every minute while a tracked match is live (relaxing
+  back to the configured interval otherwise) so those events fire close to real
+  time (`backend/app/services/match_notification_events.py`,
+  `backend/app/scheduler/jobs.py`).
+
 ### Added
 - Expo push notifications end-to-end: device token registration, per-match
   notification preferences stored in the backend, live match event detection

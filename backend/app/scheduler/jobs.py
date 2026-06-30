@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 
 SCHEDULER_LOCK_ID = 514901
 
+# While at least one tracked match is live, poll this often (minutes) so
+# match start/end and other live events fire close to real time.
+LIVE_ACTIVE_POLL_MINUTES = 1
+
 scheduler = BackgroundScheduler(timezone=ZoneInfo("UTC"))
 
 
@@ -135,6 +139,35 @@ def retrain_model() -> None:
         logger.exception("Model retraining failed")
 
 
+def _adjust_live_poll_interval(has_live_matches: bool) -> None:
+    """Speed the poll up to 1 minute while games are live, relax it otherwise."""
+    if not scheduler.running:
+        return
+
+    desired_minutes = (
+        LIVE_ACTIVE_POLL_MINUTES
+        if has_live_matches
+        else settings.live_notification_poll_minutes
+    )
+    job = scheduler.get_job("live_notification_poll")
+    if job is None:
+        return
+
+    interval = getattr(job.trigger, "interval", None)
+    if interval is not None and interval.total_seconds() == desired_minutes * 60:
+        return
+
+    scheduler.reschedule_job(
+        "live_notification_poll",
+        trigger="interval",
+        minutes=desired_minutes,
+    )
+    logger.info(
+        "Live notification poll interval set to %s minute(s)",
+        desired_minutes,
+    )
+
+
 def live_notification_poll() -> None:
     if not settings.notifications_enabled:
         return
@@ -160,6 +193,8 @@ def live_notification_poll() -> None:
                 )
             finally:
                 db.close()
+
+            _adjust_live_poll_interval(summary.live_matches > 0)
     except Exception as exc:
         alert_ingestion_failure(
             source="scheduler.live_notification_poll",

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.config import settings
 from app.models import Match, MatchStateSnapshot, SentNotification
 from app.services.data_ingestion import FootballApiClient, FootballApiError
 from app.services.expo_push import PushMessage, send_push_messages
@@ -47,6 +49,7 @@ class NotificationDispatchSummary:
     events_detected: int = 0
     messages_sent: int = 0
     messages_failed: int = 0
+    live_matches: int = 0
 
 
 def _match_title(match: Match) -> str:
@@ -436,11 +439,51 @@ def process_lineups_confirmed(
     return dispatch_events_for_match(db, match, [event])
 
 
+def _fetch_live_fixture_window(
+    client: FootballApiClient,
+    now: datetime | None = None,
+) -> dict[int, dict]:
+    """Fetch fixtures across the configured date window, keyed by external id.
+
+    Gives the poll authoritative, up-to-the-minute fixture status so it can
+    detect status transitions (kick-off, full time, half-time, etc.) instead of
+    relying on the once-daily importer to refresh ``Match.status``.
+    """
+    resolved = now or datetime.now(UTC)
+    today = resolved.date()
+    league_set = set(settings.sync_league_id_list)
+    fixtures_by_id: dict[int, dict] = {}
+
+    for offset in settings.sync_date_offset_list:
+        sync_date = today + timedelta(days=offset)
+        try:
+            fixtures = client.get_fixtures_by_date(sync_date)
+        except (FootballApiError, httpx.HTTPError):
+            logger.exception(
+                "Failed to fetch fixtures for %s during notification poll",
+                sync_date,
+            )
+            continue
+        for item in fixtures:
+            try:
+                league_id = int((item.get("league") or {}).get("id"))
+                external_id = int((item.get("fixture") or {}).get("id"))
+            except (TypeError, ValueError):
+                continue
+            if league_id not in league_set:
+                continue
+            fixtures_by_id[external_id] = item
+
+    return fixtures_by_id
+
+
 def run_live_notification_sync(
     db: Session,
     client: FootballApiClient | None = None,
 ) -> NotificationDispatchSummary:
     """Poll live/upcoming matches and dispatch push notifications."""
+    from app.services.historical_import import map_fixture_status
+
     api_client = client or FootballApiClient()
     total = NotificationDispatchSummary()
 
@@ -453,25 +496,45 @@ def run_live_notification_sync(
         .where(Match.status.in_(("scheduled", "live")))
     ).all()
 
+    if not matches:
+        return total
+
+    fixtures_by_ext = _fetch_live_fixture_window(api_client)
+
     for match in matches:
-        if match.status == "live":
+        fixture_item = (
+            fixtures_by_ext.get(match.external_id)
+            if match.external_id is not None
+            else None
+        )
+
+        current_status = match.status
+        if fixture_item is not None:
+            status_info = (fixture_item.get("fixture") or {}).get("status") or {}
+            current_status = map_fixture_status(status_info.get("short") or "NS")
+            transition = process_match_fixture_update(db, match, fixture_item)
+            total.events_detected += transition.events_detected
+            total.messages_sent += transition.messages_sent
+            total.messages_failed += transition.messages_failed
+
+        if current_status == "live":
+            total.live_matches += 1
             result = process_live_match_events(db, match, api_client)
             total.events_detected += result.events_detected
             total.messages_sent += result.messages_sent
             total.messages_failed += result.messages_failed
-            continue
-
-        if match.status == "scheduled":
+        elif current_status == "scheduled":
             result = process_lineups_confirmed(db, match, api_client)
             total.events_detected += result.events_detected
             total.messages_sent += result.messages_sent
             total.messages_failed += result.messages_failed
 
     logger.info(
-        "Live notification sync: %s events, %s sent, %s failed",
+        "Live notification sync: %s events, %s sent, %s failed, %s live match(es)",
         total.events_detected,
         total.messages_sent,
         total.messages_failed,
+        total.live_matches,
     )
     return total
 
