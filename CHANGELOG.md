@@ -23,8 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Home hero "Avg Odds" now averages the odds of each match's recommended 1X2
   pick across the matches actually shown (instead of blending every
   home/draw/away price, which skewed high), and "Value Bets" now counts today's
-  value bets instead of the all-time database total
-  (`mobile/src/screens/homeHeroUtils.ts`, `mobile/src/screens/HomeScreen.tsx`).
+  value bets instead of the all-time database total, sourced from a new
+  `value_bets_today` dashboard field so the figure is not capped at the five top
+  bets (`mobile/src/screens/homeHeroUtils.ts`,
+  `mobile/src/screens/HomeScreen.tsx`, `backend/app/api/dashboard.py`,
+  `backend/app/schemas/common.py`).
+- Lowered the value-bet edge threshold from 5% to 3% so more genuine edges are
+  surfaced; 5% was conservative enough that very few fixtures qualified
+  (`backend/app/core/config.py`).
 
 ### Added
 - Expo push notifications end-to-end: device token registration, per-match

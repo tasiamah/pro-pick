@@ -41,6 +41,7 @@ const valueBet: ValueBet = {
 const dashboard: Dashboard = {
   matches_today: 2,
   upcoming_matches: 5,
+  value_bets_today: 8,
   latest_kickoff: '2026-06-28T15:00:00Z',
   top_value_bets: [valueBet, valueBet, valueBet],
   model_accuracy: 0.513,
@@ -77,7 +78,7 @@ describe('homeHeroUtils', () => {
     expect(buildHeroStats(dashboard, [baseMatch], 12)).toEqual({
       winRate: '71.0%',
       avgOdds: '2.0',
-      valueBets: '3',
+      valueBets: '8',
       subtitle: '12 upcoming predictions',
     });
   });
@@ -93,7 +94,7 @@ describe('homeHeroUtils', () => {
     expect(buildHeroStats(withoutConfident, [baseMatch])).toEqual({
       winRate: '51.3%',
       avgOdds: '2.0',
-      valueBets: '3',
+      valueBets: '8',
       subtitle: '0 upcoming predictions',
     });
   });
