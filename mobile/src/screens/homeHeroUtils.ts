@@ -1,10 +1,12 @@
 import type { Analytics, Dashboard, MatchDetail } from '../api/types';
+import { toLocalDateKey } from '../utils/matchDates';
 
 export type HeroStats = {
   winRate: string;
   winRateCaption: string | null;
   avgOdds: string;
   valueBets: string;
+  subtitle: string;
 };
 
 export function formatHeroWinRate(value: number | null): string {
@@ -41,6 +43,23 @@ export function formatHeroValueBetCount(value: number | null | undefined): strin
   return String(value);
 }
 
+export function countVerifiedPredictionsToday(
+  matches: MatchDetail[],
+  now: Date,
+): number {
+  const todayKey = toLocalDateKey(now);
+  return matches.filter(
+    (match) =>
+      match.prediction != null &&
+      match.kickoff != null &&
+      toLocalDateKey(match.kickoff) === todayKey,
+  ).length;
+}
+
+export function formatPredictionsSubtitle(count: number): string {
+  return `${count} verified prediction${count === 1 ? '' : 's'} today`;
+}
+
 export function computeAverageOdds(matches: MatchDetail[]): number | null {
   const prices: number[] = [];
 
@@ -69,6 +88,7 @@ export function buildHeroStats(
   dashboard: Dashboard,
   analytics: Analytics | null | undefined,
   matches: MatchDetail[],
+  now: Date = new Date(),
 ): HeroStats {
   const confidentAccuracy = dashboard.confident_accuracy;
   return {
@@ -77,6 +97,9 @@ export function buildHeroStats(
     avgOdds: formatHeroAvgOdds(computeAverageOdds(matches)),
     valueBets: formatHeroValueBetCount(
       analytics?.total_value_bets ?? dashboard.top_value_bets?.length,
+    ),
+    subtitle: formatPredictionsSubtitle(
+      countVerifiedPredictionsToday(matches, now),
     ),
   };
 }

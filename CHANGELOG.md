@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Home "AI Predictions" hero now shows a live status pill and a
+  "N verified predictions today" subtitle (count of matches kicking off today
+  that carry a model prediction), and the Home "Matches" section shows an
+  "N matches available" count — closing visual gaps against the design
+  reference (`mobile/src/components/demo/AiPredictionsHero.tsx`,
+  `mobile/src/components/demo/LiveBadge.tsx`,
+  `mobile/src/screens/homeHeroUtils.ts`, `mobile/src/screens/HomeScreen.tsx`).
+- Analytics screen header now carries the
+  "Deep insights into AI model performance" subtitle, matching the Home and
+  Matches headers (`mobile/src/navigation/screenTitles.ts`,
+  `mobile/src/navigation/RootNavigator.tsx`).
 - Ship a small, version-controlled baseline model bundle
   (`backend/app/ml/pretrained_model.pkl`, ~6 KB) so a fresh deploy serves real
   predictions and honest metrics (walk-forward accuracy ~0.51, high-confidence

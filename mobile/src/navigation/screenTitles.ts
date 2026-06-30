@@ -11,4 +11,5 @@ export const screenTitles = {
 export const screenSubtitles = {
   home: 'AI Football Insights',
   matches: 'AI-powered insights with live odds',
+  analytics: 'Deep insights into AI model performance',
 } as const;
