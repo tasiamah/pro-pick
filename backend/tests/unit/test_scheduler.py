@@ -136,6 +136,9 @@ def test_daily_update_alerts_when_live_sync_fails(
 
 
 @patch("app.scheduler.jobs.sync_value_bets_for_upcoming")
+@patch("app.scheduler.jobs.refresh_market_predictions_for_upcoming")
+@patch("app.scheduler.jobs.reset_market_model_cache")
+@patch("app.scheduler.jobs.train_all_market_models")
 @patch("app.scheduler.jobs.reset_model_cache")
 @patch("app.scheduler.jobs.refresh_predictions_for_upcoming")
 @patch("app.scheduler.jobs.train_model")
@@ -147,6 +150,9 @@ def test_retrain_model_trains_refreshes_predictions_and_value_bets(
     mock_train_model: MagicMock,
     mock_refresh: MagicMock,
     mock_reset_cache: MagicMock,
+    mock_train_markets: MagicMock,
+    mock_reset_market_cache: MagicMock,
+    mock_refresh_markets: MagicMock,
     mock_sync_value_bets: MagicMock,
 ) -> None:
     mock_settings.database_url = "sqlite:///./test.db"
@@ -154,12 +160,17 @@ def test_retrain_model_trains_refreshes_predictions_and_value_bets(
     mock_settings.model_path = ""
     mock_db = MagicMock()
     mock_session_local.return_value = mock_db
+    market_bundles = {"btts": MagicMock()}
+    mock_train_markets.return_value = market_bundles
 
     retrain_model()
 
     mock_train_model.assert_called_once()
+    mock_train_markets.assert_called_once_with(mock_db, model_path="")
     mock_reset_cache.assert_called_once_with()
+    mock_reset_market_cache.assert_called_once_with()
     mock_refresh.assert_called_once_with(mock_db)
+    mock_refresh_markets.assert_called_once_with(mock_db, model_bundles=market_bundles)
     mock_sync_value_bets.assert_called_once_with(mock_db)
     mock_db.close.assert_called_once()
 

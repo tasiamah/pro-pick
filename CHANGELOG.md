@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Multi-market predictions for **BTTS**, **Over/Under 2.5**, and **Double
+  Chance**: separate calibrated logistic models per market, persisted in
+  `market_predictions`, exposed as nested `markets` on match/prediction API
+  payloads with per-market recommended outcome and confidence
+  (`backend/app/ml/market_labels.py`, `backend/app/ml/binary_model.py`,
+  `backend/app/ml/market_train.py`, `backend/app/services/market_prediction.py`,
+  `backend/app/schemas/common.py`, Alembic migration
+  `a1b2c3d4e5f7_add_market_predictions`).
 - Home and Matches tabs are now selective: instead of showing a pick for every
   fixture, they surface only the slate's most confident picks. A slate-relative
   confidence bar keeps roughly the strongest ~28% of a day's predictions (72nd

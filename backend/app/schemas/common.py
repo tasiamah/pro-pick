@@ -41,6 +41,14 @@ class OddsOut(BaseModel):
     away_movement: str | None = None
 
 
+class MarketPickOut(BaseModel):
+    market: str
+    model_version: str
+    probabilities: dict[str, float]
+    recommended_outcome: str
+    confidence: float
+
+
 class PredictionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -52,6 +60,7 @@ class PredictionOut(BaseModel):
     confidence: float | None = None
     recommended_outcome: str | None = None
     insights: list[str] = []
+    markets: list[MarketPickOut] = []
 
 
 class MatchOut(BaseModel):

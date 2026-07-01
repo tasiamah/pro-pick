@@ -97,6 +97,7 @@ def list_matches(
             joinedload(Match.competition),
             selectinload(Match.odds),
             selectinload(Match.predictions),
+            selectinload(Match.market_predictions),
         )
         .order_by(order_by)
     )
@@ -147,6 +148,7 @@ def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchDetailOut:
             joinedload(Match.competition),
             selectinload(Match.odds),
             selectinload(Match.predictions),
+            selectinload(Match.market_predictions),
         )
         .where(Match.id == match_id)
     ).scalar_one_or_none()

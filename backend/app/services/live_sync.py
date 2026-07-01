@@ -21,6 +21,7 @@ from app.services.historical_import import (
     ImportSummary,
 )
 from app.services.ingestion_alerts import IngestionPipelineError
+from app.services.market_prediction import refresh_market_predictions_for_upcoming
 from app.services.match_notification_events import (
     NotificationDispatchSummary,
     process_match_fixture_update,
@@ -48,6 +49,7 @@ class LiveSyncSummary:
     fixtures_fetched: int = 0
     import_summary: ImportSummary | None = None
     predictions: int = 0
+    market_predictions: int = 0
     value_bets: int = 0
     settled_value_bets: int = 0
     notifications: NotificationDispatchSummary | None = None
@@ -248,6 +250,9 @@ def run_live_sync(
         )
         summary.merge_import(importer.import_fixture_items(fixtures))
         summary.predictions = refresh_predictions_for_upcoming(db, now=resolved_now)
+        summary.market_predictions = refresh_market_predictions_for_upcoming(
+            db, now=resolved_now
+        )
         summary.value_bets = sync_value_bets_for_upcoming(db, now=resolved_now)
     else:
         logger.info("Live sync found no fixtures for leagues %s", resolved_league_ids)
@@ -269,13 +274,14 @@ def run_live_sync(
 
     logger.info(
         "Live sync complete: %s fixtures, %s new matches, %s odds rows, "
-        "%s odds failed, %s predictions, %s value bets, %s settled bets, "
-        "%s push sent",
+        "%s odds failed, %s predictions, %s market predictions, %s value bets, "
+        "%s settled bets, %s push sent",
         summary.fixtures_fetched,
         summary.import_summary.matches if summary.import_summary else 0,
         summary.import_summary.odds if summary.import_summary else 0,
         summary.import_summary.odds_failed if summary.import_summary else 0,
         summary.predictions,
+        summary.market_predictions,
         summary.value_bets,
         summary.settled_value_bets,
         summary.notifications.messages_sent if summary.notifications else 0,
