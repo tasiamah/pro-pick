@@ -15,10 +15,15 @@ from sqlalchemy.engine import Connection
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
 from app.ml.features import FEATURE_COLUMNS
+from app.ml.market_train import train_all_market_models
 from app.ml.storage import active_model_path, load_model, resolve_model_path
 from app.ml.train import train_model
 from app.services.ingestion_alerts import alert_ingestion_failure
 from app.services.live_sync import run_live_sync, sync_value_bets_for_upcoming
+from app.services.market_prediction import (
+    refresh_market_predictions_for_upcoming,
+    reset_market_model_cache,
+)
 from app.services.match_notification_events import run_live_notification_sync
 from app.services.prediction import refresh_predictions_for_upcoming, reset_model_cache
 
@@ -117,15 +122,26 @@ def retrain_model() -> None:
                     algorithm=settings.model_algorithm,
                     path=resolve_model_path(settings.model_path),
                 )
+                market_bundles = train_all_market_models(
+                    db,
+                    model_path=settings.model_path,
+                )
                 reset_model_cache()
+                reset_market_model_cache()
                 refreshed = refresh_predictions_for_upcoming(db)
+                market_refreshed = refresh_market_predictions_for_upcoming(
+                    db,
+                    model_bundles=market_bundles,
+                )
                 value_bets = sync_value_bets_for_upcoming(db)
                 logger.info(
                     "Model retraining complete: version %s on %s matches; "
-                    "%s predictions refreshed, %s value bets recomputed",
+                    "%s predictions refreshed, %s market predictions refreshed, "
+                    "%s value bets recomputed",
                     bundle.metadata.version,
                     bundle.metadata.n_samples,
                     refreshed,
+                    market_refreshed,
                     value_bets,
                 )
             finally:

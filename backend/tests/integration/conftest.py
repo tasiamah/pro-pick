@@ -11,11 +11,27 @@ import pytest
 
 from app.core.database import SessionLocal
 from app.core.rate_limit import rate_limit_store
-from app.models import Competition, Match, Odds, Prediction, Team, ValueBet
+from app.models import (
+    Competition,
+    MarketPrediction,
+    Match,
+    Odds,
+    Prediction,
+    Team,
+    ValueBet,
+)
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
-CLEANUP_MODELS = (ValueBet, Odds, Prediction, Match, Team, Competition)
+CLEANUP_MODELS = (
+    ValueBet,
+    Odds,
+    MarketPrediction,
+    Prediction,
+    Match,
+    Team,
+    Competition,
+)
 
 
 @pytest.fixture(scope="session", autouse=True)

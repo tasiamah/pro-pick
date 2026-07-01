@@ -38,6 +38,9 @@ class Match(Base):
     predictions: Mapped[list["Prediction"]] = relationship(
         back_populates="match", cascade="all, delete-orphan"
     )
+    market_predictions: Mapped[list["MarketPrediction"]] = relationship(
+        back_populates="match", cascade="all, delete-orphan"
+    )
     value_bets: Mapped[list["ValueBet"]] = relationship(
         back_populates="match", cascade="all, delete-orphan"
     )

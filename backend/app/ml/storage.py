@@ -27,6 +27,17 @@ DEFAULT_MODEL_PATH = Path(__file__).resolve().parent / "model.pkl"
 # at runtime to DEFAULT_MODEL_PATH always takes precedence over this fallback.
 PRETRAINED_MODEL_PATH = Path(__file__).resolve().parent / "pretrained_model.pkl"
 
+MARKET_MODEL_FILENAMES: dict[str, str] = {
+    "btts": "btts_model.pkl",
+    "over_under_25": "over_under_25_model.pkl",
+    "double_chance": "double_chance_model.pkl",
+}
+
+MARKET_MODEL_PATHS: dict[str, Path] = {
+    market: Path(__file__).resolve().parent / filename
+    for market, filename in MARKET_MODEL_FILENAMES.items()
+}
+
 
 @dataclass(frozen=True)
 class ModelMetadata:
@@ -62,6 +73,22 @@ def active_model_path(model_path: str = "") -> Path:
     if resolved.exists():
         return resolved
     return PRETRAINED_MODEL_PATH
+
+
+def resolve_market_model_path(market: str, model_path: str = "") -> Path:
+    if market not in MARKET_MODEL_FILENAMES:
+        raise ValueError(f"unknown market: {market}")
+    if model_path:
+        base = Path(model_path).resolve().parent
+        return base / MARKET_MODEL_FILENAMES[market]
+    return MARKET_MODEL_PATHS[market]
+
+
+def active_market_model_path(market: str, model_path: str = "") -> Path:
+    resolved = resolve_market_model_path(market, model_path)
+    if resolved.exists():
+        return resolved
+    return MARKET_MODEL_PATHS[market]
 
 
 def save_model(bundle: ModelBundle, path: Path = DEFAULT_MODEL_PATH) -> Path:

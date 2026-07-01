@@ -18,6 +18,7 @@ from app.schemas.common import MatchDetailOut
 from app.services.match_enrichment import (
     FORM_DISPLAY_WINDOW,
     _result_for_team,
+    build_market_picks,
     prediction_confidence,
     recommended_outcome,
     to_odds_out,
@@ -158,6 +159,7 @@ class _MatchListEnricher:
             confidence=round(prediction_confidence(prediction), 4),
             recommended_outcome=recommended_outcome(prediction),
             insights=self._prediction_insights(match, prediction),
+            markets=build_market_picks(match, self._db),
         )
 
 

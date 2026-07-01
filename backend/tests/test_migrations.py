@@ -50,6 +50,7 @@ def test_alembic_upgrade_head_creates_tables(fresh_sqlite_db):
     assert "matches" in tables
     assert "odds" in tables
     assert "predictions" in tables
+    assert "market_predictions" in tables
     assert "value_bets" in tables
     assert "device_push_tokens" in tables
     assert "match_notification_preferences" in tables

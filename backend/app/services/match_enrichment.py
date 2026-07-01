@@ -9,8 +9,9 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.ml.features import FORM_WINDOW, build_features
-from app.models import Match, Odds, Prediction, Team
-from app.schemas.common import OddsOut, PredictionOut, TeamOut
+from app.ml.market_labels import market_confidence, recommended_market_outcome
+from app.models import MarketPrediction, Match, Odds, Prediction, Team
+from app.schemas.common import MarketPickOut, OddsOut, PredictionOut, TeamOut
 
 FormResult = Literal["W", "D", "L"]
 RecommendedOutcome = Literal["home", "draw", "away"]
@@ -75,6 +76,52 @@ def recommended_outcome(prediction: Prediction) -> RecommendedOutcome:
 
 def prediction_confidence(prediction: Prediction) -> float:
     return max(prediction.prob_home, prediction.prob_draw, prediction.prob_away)
+
+
+def latest_market_predictions(match: Match) -> list[MarketPrediction]:
+    latest_by_market: dict[str, MarketPrediction] = {}
+    for row in match.market_predictions:
+        existing = latest_by_market.get(row.market)
+        if existing is None or (row.created_at, row.id) > (
+            existing.created_at,
+            existing.id,
+        ):
+            latest_by_market[row.market] = row
+    return list(latest_by_market.values())
+
+
+def to_market_pick_out(row: MarketPrediction) -> MarketPickOut:
+    probabilities = {key: float(value) for key, value in row.probabilities.items()}
+    return MarketPickOut(
+        market=row.market,
+        model_version=row.model_version,
+        probabilities=probabilities,
+        recommended_outcome=recommended_market_outcome(row.market, probabilities),
+        confidence=round(market_confidence(row.market, probabilities), 4),
+    )
+
+
+def build_market_picks(match: Match, db: Session | None = None) -> list[MarketPickOut]:
+    stored = latest_market_predictions(match)
+    if stored:
+        return [to_market_pick_out(row) for row in stored]
+    if db is None:
+        return []
+
+    from app.services.market_prediction import predict_all_markets
+
+    return [
+        MarketPickOut(
+            market=result.market,
+            model_version=result.model_version,
+            probabilities=result.probabilities,
+            recommended_outcome=recommended_market_outcome(
+                result.market, result.probabilities
+            ),
+            confidence=round(market_confidence(result.market, result.probabilities), 4),
+        )
+        for result in predict_all_markets(db, match)
+    ]
 
 
 def _result_for_team(match: Match, team_id: int) -> FormResult:
@@ -172,6 +219,7 @@ def to_prediction_out(
         confidence=round(prediction_confidence(prediction), 4),
         recommended_outcome=recommended_outcome(prediction),
         insights=build_prediction_insights(db, match, prediction),
+        markets=build_market_picks(match, db),
     )
 
 
