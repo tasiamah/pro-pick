@@ -123,6 +123,7 @@ export function getMatchesEmptyMessage(
   statusFilter: MatchStatusFilter,
   oddsTierFilter: MatchOddsTierFilter,
   searchQuery: string,
+  highConfidenceOnly = false,
 ): string {
   if (searchQuery.trim()) {
     return 'No matches match your search.';
@@ -138,6 +139,10 @@ export function getMatchesEmptyMessage(
 
   if (statusFilter === 'completed') {
     return 'No completed matches in this list.';
+  }
+
+  if (highConfidenceOnly) {
+    return 'No confident picks in this list.';
   }
 
   return 'No upcoming matches in this list.';

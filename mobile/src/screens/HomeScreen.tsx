@@ -25,6 +25,7 @@ import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
 import { useNow } from '../hooks/useNow';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
+import { filterHighConfidenceMatches } from '../utils/confidence';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
 import {
@@ -83,9 +84,16 @@ export function HomeScreen({ navigation }: Props) {
     [isWeekSelected, matchesQuery.data, selectedDate, now],
   );
 
-  const oddsTierGroups = useMemo(
-    () => groupHomeMatchesByOddsTier(filteredMatches),
+  // Selectivity: only surface the slate's most confident picks so the AI "picks
+  // its spots" instead of predicting every match.
+  const visibleMatches = useMemo(
+    () => filterHighConfidenceMatches(filteredMatches),
     [filteredMatches],
+  );
+
+  const oddsTierGroups = useMemo(
+    () => groupHomeMatchesByOddsTier(visibleMatches),
+    [visibleMatches],
   );
 
   const shownPredictionCount = useMemo(
@@ -96,9 +104,9 @@ export function HomeScreen({ navigation }: Props) {
   const heroStats = useMemo(
     () =>
       dashboardQuery.data
-        ? buildHeroStats(dashboardQuery.data, filteredMatches, shownPredictionCount)
+        ? buildHeroStats(dashboardQuery.data, visibleMatches, shownPredictionCount)
         : null,
-    [dashboardQuery.data, filteredMatches, shownPredictionCount],
+    [dashboardQuery.data, visibleMatches, shownPredictionCount],
   );
 
   const isInitialLoading = isInitialQueryLoad(
@@ -169,7 +177,11 @@ export function HomeScreen({ navigation }: Props) {
           isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
           error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
           isEmpty={oddsTierGroups.length === 0}
-          emptyMessage={isWeekSelected ? 'No matches this week' : 'No matches on this day'}
+          emptyMessage={
+            isWeekSelected
+              ? 'No confident picks this week'
+              : 'No confident picks on this day'
+          }
           errorMessage="Could not load matches"
           onRetry={() => void matchesQuery.refetch()}
         >

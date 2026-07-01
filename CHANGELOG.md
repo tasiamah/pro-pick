@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Home and Matches tabs are now selective: instead of showing a pick for every
+  fixture, they surface only the slate's most confident picks. A slate-relative
+  confidence bar keeps roughly the strongest ~28% of a day's predictions (72nd
+  percentile), clamped between a 0.50 floor and the canonical 0.70 threshold, so
+  a confident domestic slate behaves like a fixed 70% filter while a balanced
+  international slate still shows its strongest calls instead of going empty.
+  High-odds (underdog) value picks are judged against a relaxed 0.40 floor so a
+  genuine edge at a long price still surfaces. Empty states now read "No
+  confident picks…" (`mobile/src/utils/confidence.ts`,
+  `mobile/src/screens/HomeScreen.tsx`, `mobile/src/screens/MatchesScreen.tsx`,
+  `mobile/src/screens/matchesFilterUtils.ts`).
 - Home date selector now starts with a "This week" chip (styled like the day
   chips) that filters the slate to the current local calendar week (Mon–Sun),
   while a day chip filters to that exact calendar day only. Week and day

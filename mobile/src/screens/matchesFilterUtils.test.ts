@@ -165,5 +165,8 @@ describe('matchesFilterUtils', () => {
     expect(getMatchesEmptyMessage('upcoming', 'all', 'arsenal')).toBe(
       'No matches match your search.',
     );
+    expect(getMatchesEmptyMessage('upcoming', 'all', '', true)).toBe(
+      'No confident picks in this list.',
+    );
   });
 });
