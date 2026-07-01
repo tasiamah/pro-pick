@@ -17,6 +17,7 @@ import argparse
 import sys
 
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.models import Match
@@ -29,7 +30,7 @@ from app.services.historical_import import (
 STATUS_CHOICES = ("all", "finished", "upcoming")
 
 
-def _select_matches(db, status: str, limit: int | None) -> list[Match]:
+def _select_matches(db: Session, status: str, limit: int | None) -> list[Match]:
     stmt = (
         select(Match)
         .where(Match.external_id.is_not(None), ~Match.odds.any())
