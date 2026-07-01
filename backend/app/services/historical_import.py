@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Competition, Match, Odds, Team
-from app.services.data_ingestion import FootballApiClient
+from app.services.data_ingestion import FootballApiClient, FootballApiError
 from app.services.match_enrichment import capture_previous_odds
+
+logger = logging.getLogger(__name__)
 
 FINISHED_STATUS_CODES = frozenset({"FT", "AET", "PEN", "AWD", "WO"})
 LIVE_STATUS_CODES = frozenset({"1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT"})
@@ -22,6 +27,12 @@ DEFAULT_SEASONS = (2022, 2023, 2024)
 UPCOMING_MATCH_STATUSES = frozenset({"scheduled", "live"})
 FINISHED_MATCH_STATUS = "finished"
 
+# Stop fetching odds for the rest of a batch after this many consecutive provider
+# failures (e.g. quota exhaustion or an outage). Fixtures already imported are
+# still committed; the next sync retries odds. Prevents one bad call from
+# burning the remaining API quota or aborting the whole run.
+MAX_CONSECUTIVE_ODDS_FAILURES = 5
+
 
 @dataclass
 class ImportSummary:
@@ -29,12 +40,14 @@ class ImportSummary:
     teams: int = 0
     matches: int = 0
     odds: int = 0
+    odds_failed: int = 0
 
     def merge(self, other: ImportSummary) -> None:
         self.competitions += other.competitions
         self.teams += other.teams
         self.matches += other.matches
         self.odds += other.odds
+        self.odds_failed += other.odds_failed
 
 
 def map_fixture_status(short_code: str) -> str:
@@ -118,6 +131,8 @@ class HistoricalDataImporter:
         default_season: int | None = None,
     ) -> ImportSummary:
         summary = ImportSummary()
+        consecutive_odds_failures = 0
+        odds_circuit_open = False
 
         for fixture_item in fixture_items:
             league = fixture_item["league"]
@@ -155,8 +170,61 @@ class HistoricalDataImporter:
             if match_created:
                 summary.matches += 1
 
-            if self._should_import_odds(match):
+            if not odds_circuit_open and self._should_import_odds(match):
+                try:
+                    summary.odds += self._import_odds_for_match(match)
+                    consecutive_odds_failures = 0
+                except (FootballApiError, httpx.HTTPError) as exc:
+                    summary.odds_failed += 1
+                    consecutive_odds_failures += 1
+                    logger.warning(
+                        "Odds import failed for fixture %s: %s",
+                        match.external_id,
+                        exc,
+                    )
+                    if consecutive_odds_failures >= MAX_CONSECUTIVE_ODDS_FAILURES:
+                        odds_circuit_open = True
+                        logger.warning(
+                            "Pausing odds import after %s consecutive failures; "
+                            "committing fixtures and skipping odds for the rest of "
+                            "this batch.",
+                            consecutive_odds_failures,
+                        )
+
+        self.db.commit()
+        return summary
+
+    def backfill_odds(self, matches: Sequence[Match]) -> ImportSummary:
+        """Fetch and store odds for already-imported matches that lack them.
+
+        Used to populate market features for historical training data. Resilient
+        like ``import_fixture_items``: a provider error on one match is logged and
+        skipped, and after repeated failures (e.g. quota exhaustion) it stops and
+        commits what it has. Honors ``import_odds`` / ``upcoming_odds_only`` via
+        ``_should_import_odds``.
+        """
+        summary = ImportSummary()
+        consecutive_failures = 0
+
+        for match in matches:
+            if not self._should_import_odds(match):
+                continue
+            try:
                 summary.odds += self._import_odds_for_match(match)
+                consecutive_failures = 0
+            except (FootballApiError, httpx.HTTPError) as exc:
+                summary.odds_failed += 1
+                consecutive_failures += 1
+                logger.warning(
+                    "Odds backfill failed for fixture %s: %s", match.external_id, exc
+                )
+                if consecutive_failures >= MAX_CONSECUTIVE_ODDS_FAILURES:
+                    logger.warning(
+                        "Stopping odds backfill after %s consecutive failures; "
+                        "committing what was fetched.",
+                        consecutive_failures,
+                    )
+                    break
 
         self.db.commit()
         return summary

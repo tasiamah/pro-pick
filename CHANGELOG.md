@@ -48,6 +48,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`mobile/src/screens/homeHeroUtils.ts`, `mobile/src/screens/HomeScreen.tsx`).
 
 ### Added
+- Bookmaker **market features** for the 1X2 model: the margin-removed implied
+  probabilities of the best-price book (`market_prob_home/draw/away`), its
+  overround, and a `has_market_odds` flag. The market line is the sharpest
+  available prior (it already prices in injuries, line-ups, suspensions and money
+  flow) and odds are a pre-match signal, so this is a strong, leakage-free input
+  that the previous results-only model (form, H2H, table, rest days, Elo) could
+  not see. Wired into both training and inference; matches without odds get
+  zeroed market columns plus the flag so the model leans on the market only when
+  present. Changing the feature schema triggers the startup bootstrap to retrain;
+  `predict_match` now degrades to neutral instead of crashing if a loaded model's
+  schema no longer matches the code (`backend/app/ml/market_features.py`,
+  `backend/app/ml/features.py`, `backend/app/services/prediction.py`).
+- `python -m app.scripts.backfill_odds` CLI to fetch and store odds for already
+  imported matches that have none, so historical training data has market-feature
+  signal. Resilient like the live sync (skips per-match failures, stops after
+  repeated failures) and selectable by status/limit
+  (`backend/app/scripts/backfill_odds.py`,
+  `backend/app/services/historical_import.py`).
 - Expo push notifications end-to-end: device token registration, per-match
   notification preferences stored in the backend, live match event detection
   (goals, cards, kick-off, full-time, line-ups, etc.), deduplicated delivery
@@ -261,6 +279,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   matches, value-bets, predictions, analytics, and dashboard endpoints (PP-74).
 
 ### Changed
+- Live sync now covers a 7-day forward window by default
+  (`SYNC_DATE_OFFSETS=-1,0,1,2,3,4,5,6,7` instead of `-1,0,1`), so upcoming
+  fixtures (e.g. a full World Cup bracket) get odds — and therefore predictions
+  surfaced on Home/Matches — ahead of kickoff instead of only the next day. Each
+  forward day costs ~1 fixtures call plus one `/odds` call per match, so narrow it
+  on the free API tier (set the env var on Render to override the default)
+  (`backend/app/core/config.py`, `backend/.env.example`, `backend/README.md`).
+- Odds import is now resilient: a provider error on a single match's `/odds` call
+  is logged and skipped instead of rolling back the whole sync batch, and after
+  several consecutive failures (e.g. quota exhaustion) the importer stops fetching
+  odds for the rest of the batch while still committing the fixtures it imported.
+  The live-sync summary/log now reports the number of failed odds fetches
+  (`backend/app/services/historical_import.py`,
+  `backend/app/services/live_sync.py`).
 - Recent-form indicators on match cards now render as circular **W/D/L** letter
   badges (muted, semi-transparent fills with a bright letter) instead of plain
   colored dots, matching the design reference across Home and Matches

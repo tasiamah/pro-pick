@@ -165,11 +165,20 @@ Configure in `.env`:
 
 ```env
 SYNC_LEAGUE_IDS=39,140,1
-SYNC_DATE_OFFSETS=-1,0,1
+SYNC_DATE_OFFSETS=-1,0,1,2,3,4,5,6,7
 SCHEDULER_ENABLED=true
 SCHEDULER_DAILY_HOUR=6
 SCHEDULER_IMPORT_ODDS=true
 ```
+
+`SYNC_DATE_OFFSETS` is the window (in days from today) the live sync covers.
+`-1` settles yesterday's finished matches; the forward days give upcoming
+fixtures odds ahead of kickoff. Each forward day costs ~1 fixtures call plus one
+`/odds` call per match, so a 7-day forward window suits a paid API tier; narrow
+it (e.g. `-1,0,1`) on the free tier (100 requests/day). Odds import is resilient:
+a provider error on one match is logged and skipped rather than aborting the run,
+and after several consecutive failures the sync stops fetching odds for the rest
+of the batch (committing the fixtures it already imported).
 
 On Render, set the same variables in the service environment and redeploy.
 Run `sync_live_fixtures` once after deploy if you need data immediately.

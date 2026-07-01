@@ -8,7 +8,7 @@ from app.ml.features import (
     DEFAULT_REST_DAYS,
     ELO_HOME_ADVANTAGE,
     ELO_INITIAL,
-    FEATURE_COLUMNS,
+    RESULT_FEATURE_COLUMNS,
     MatchContext,
     MatchRecord,
     compute_features,
@@ -55,10 +55,10 @@ def _context(
     )
 
 
-def test_compute_features_returns_all_columns_in_order() -> None:
+def test_compute_features_returns_all_result_columns_in_order() -> None:
     features = compute_features(_context(days=10), [])
 
-    assert list(features.keys()) == FEATURE_COLUMNS
+    assert list(features.keys()) == RESULT_FEATURE_COLUMNS
 
 
 def test_empty_history_yields_neutral_defaults() -> None:
