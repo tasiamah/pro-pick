@@ -459,7 +459,7 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
         <MatchDetailModalHeader match={match} onClose={onClose} />
 
         <View style={[styles.contentGrid, twoColumn && styles.contentGridTwoColumn]}>
-          <View style={styles.leftColumn}>
+          <View style={[styles.leftColumn, twoColumn && styles.columnTwoColumn]}>
             {prediction ? (
               <>
                 <AiConfidenceSection prediction={prediction} />
@@ -489,7 +489,7 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
             ) : null}
           </View>
 
-          <View style={styles.rightColumn}>
+          <View style={[styles.rightColumn, twoColumn && styles.columnTwoColumn]}>
             {primaryOdds ? (
               <LiveMarketDataSection
                 isUpdating={isUpdatingOdds}
@@ -573,15 +573,20 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
   contentGridTwoColumn: {
+    alignItems: 'flex-start',
     flexDirection: 'row',
   },
   leftColumn: {
-    flex: 1,
     gap: spacing.xl,
+    width: '100%',
   },
   rightColumn: {
-    flex: 1,
     gap: spacing.xl,
+    width: '100%',
+  },
+  columnTwoColumn: {
+    flex: 1,
+    minWidth: 0,
   },
   sectionBlock: {
     gap: spacing.md,

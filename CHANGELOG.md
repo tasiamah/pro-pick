@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/screens/MatchDetailScreen.tsx`).
 
 ### Fixed
+- Match detail no longer overlaps "More AI Markets" cards with Live Market Data on
+  mobile: column flex only applies in the wide two-column layout
+  (`mobile/src/screens/MatchDetailScreen.tsx`).
 - Matches tab filter switches no longer block the grid behind a full-screen
   spinner while the next status query loads; Live and Completed lists show every
   match returned by the API instead of hiding fixtures that fail the Home
