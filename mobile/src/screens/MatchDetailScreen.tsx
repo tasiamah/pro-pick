@@ -25,6 +25,7 @@ import {
   ProbabilityBarChart,
   ValueStatusBadge,
 } from '../components';
+import { LiveBadge } from '../components/demo';
 import { formatOdd } from '../components/formatters';
 import {
   getConfidence,
@@ -37,6 +38,11 @@ import type {
 } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme';
 import { formatMatchTeams } from '../utils/matchDisplay';
+import {
+  formatMatchScoreline,
+  isLiveMatch,
+  shouldShowMatchScore,
+} from '../utils/matchScoreUtils';
 import {
   formatMarketPickLabel,
   formatMarketSectionTitle,
@@ -71,15 +77,24 @@ type MatchDetailModalHeaderProps = {
 };
 
 function MatchDetailModalHeader({ match, onClose }: MatchDetailModalHeaderProps) {
+  const showScore = shouldShowMatchScore(match);
+  const isLive = isLiveMatch(match);
+
   return (
     <View style={styles.modalHeader}>
       <View style={styles.modalHeaderCopy}>
         <Text style={styles.modalTitle}>
           {formatMatchTeams(match.home_team, match.away_team)}
         </Text>
-        {match.competition_name ? (
-          <Text style={styles.modalSubtitle}>{match.competition_name}</Text>
-        ) : null}
+        <View style={styles.modalHeaderMeta}>
+          {match.competition_name ? (
+            <Text style={styles.modalSubtitle}>{match.competition_name}</Text>
+          ) : null}
+          {isLive ? <LiveBadge /> : null}
+          {showScore ? (
+            <Text style={styles.modalScore}>{formatMatchScoreline(match)}</Text>
+          ) : null}
+        </View>
       </View>
       <Pressable
         accessibilityLabel="Close match detail"
@@ -529,6 +544,12 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
+  modalHeaderMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
   modalTitle: {
     ...typography.titleLarge,
     color: colors.text,
@@ -536,6 +557,12 @@ const styles = StyleSheet.create({
   modalSubtitle: {
     ...typography.body,
     color: colors.textMuted,
+  },
+  modalScore: {
+    ...typography.titleLarge,
+    color: colors.text,
+    fontSize: 22,
+    lineHeight: 28,
   },
   closeButton: {
     alignItems: 'center',

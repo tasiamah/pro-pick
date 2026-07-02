@@ -39,6 +39,8 @@ export type Match = {
   home_team: Team;
   away_team: Team;
   competition_name: string | null;
+  home_goals?: number | null;
+  away_goals?: number | null;
 };
 
 export type MatchDetail = Match & {

@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Live and finished match **scores** on match cards and detail: the API now
+  exposes `home_goals` and `away_goals`, and the mobile app shows them beside
+  team names for live and completed fixtures with a Live badge on in-play matches
+  (`backend/app/schemas/common.py`, `backend/app/api/matches.py`,
+  `mobile/src/utils/matchScoreUtils.ts`, `mobile/src/components/matchCard/MatchCardV2.tsx`,
+  `mobile/src/screens/MatchDetailScreen.tsx`).
+
 ### Fixed
 - Matches tab filter switches no longer block the grid behind a full-screen
   spinner while the next status query loads; Live and Completed lists show every

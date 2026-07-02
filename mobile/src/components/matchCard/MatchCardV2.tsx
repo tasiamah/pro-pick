@@ -10,12 +10,14 @@ import {
   DetailsLink,
   FormIndicator,
   InsightBullet,
+  LiveBadge,
   OddsTierBadge,
 } from '../demo';
 import { useFavoritesStore } from '../../store';
 import { MATCH_DETAILS_FOOTER } from '../../constants/matchCardDetails';
 import { colors, radii, spacing, typography } from '../../theme';
 import { getTeamName } from '../../utils/matchDisplay';
+import { isLiveMatch, shouldShowMatchScore } from '../../utils/matchScoreUtils';
 import { getQualifyingPicksForMatch, type DisplayPick } from '../../utils/marketPicks';
 import { formatKickoff } from '../formatters';
 import {
@@ -41,6 +43,8 @@ type TeamRowProps = {
   team: Team;
   fallbackName: string;
   compact?: boolean;
+  goals?: number | null;
+  showScore?: boolean;
 };
 
 function MatchFavoriteStar({ matchId, label }: { matchId: number; label: string }) {
@@ -65,7 +69,13 @@ function MatchFavoriteStar({ matchId, label }: { matchId: number; label: string 
   );
 }
 
-function TeamRow({ team, fallbackName, compact = false }: TeamRowProps) {
+function TeamRow({
+  team,
+  fallbackName,
+  compact = false,
+  goals = null,
+  showScore = false,
+}: TeamRowProps) {
   return (
     <View style={styles.teamRow}>
       <Text
@@ -75,7 +85,14 @@ function TeamRow({ team, fallbackName, compact = false }: TeamRowProps) {
       >
         {getTeamName(team, fallbackName)}
       </Text>
-      <FormIndicator form={team.form} />
+      <View style={styles.teamMeta}>
+        {showScore && goals != null ? (
+          <Text style={[styles.teamScore, compact && styles.teamScoreCompact]}>
+            {goals}
+          </Text>
+        ) : null}
+        <FormIndicator form={team.form} />
+      </View>
     </View>
   );
 }
@@ -158,6 +175,9 @@ export function MatchCardV2({
       ? classifyOddsTier(getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)))
       : null;
 
+  const showScore = shouldShowMatchScore(match);
+  const isLive = isLiveMatch(match);
+
   const detailsHandler = onDetailsPress ?? onPress;
 
   const hoverHandlers =
@@ -202,14 +222,29 @@ export function MatchCardV2({
         </View>
 
         {compact ? (
-          <Text numberOfLines={1} style={styles.kickoffCompact}>
-            {formatKickoff(match.kickoff)}
-          </Text>
+          <View style={styles.kickoffRowCompact}>
+            {isLive ? <LiveBadge /> : null}
+            <Text numberOfLines={1} style={styles.kickoffCompact}>
+              {formatKickoff(match.kickoff)}
+            </Text>
+          </View>
         ) : null}
 
         <View style={styles.teamsBlock}>
-          <TeamRow compact={compact} team={match.home_team} fallbackName="Home" />
-          <TeamRow compact={compact} team={match.away_team} fallbackName="Away" />
+          <TeamRow
+            compact={compact}
+            fallbackName="Home"
+            goals={match.home_goals}
+            showScore={showScore}
+            team={match.home_team}
+          />
+          <TeamRow
+            compact={compact}
+            fallbackName="Away"
+            goals={match.away_goals}
+            showScore={showScore}
+            team={match.away_team}
+          />
         </View>
 
         {showAiBlock ? (
@@ -298,8 +333,14 @@ const styles = StyleSheet.create({
   kickoffCompact: {
     ...typography.caption,
     color: colors.textMuted,
+    flex: 1,
     letterSpacing: 0,
     lineHeight: 16,
+  },
+  kickoffRowCompact: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
     marginBottom: spacing.xs,
   },
   teamsBlock: {
@@ -321,6 +362,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 18,
     marginRight: spacing.xs,
+  },
+  teamMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  teamScore: {
+    ...typography.titleLarge,
+    color: colors.text,
+    fontSize: 20,
+    lineHeight: 24,
+    minWidth: 18,
+    textAlign: 'center',
+  },
+  teamScoreCompact: {
+    fontSize: 16,
+    lineHeight: 20,
   },
   aiBlock: {
     gap: spacing.sm,

@@ -228,6 +228,68 @@ def test_get_match_returns_detail_with_prediction_and_odds(
     assert payload["prediction"]["prob_home"] == 0.6
     assert payload["odds"][0]["bookmaker"] == "Demo"
     assert payload["odds"][0]["home"] == 1.7
+    assert payload["home_goals"] is None
+    assert payload["away_goals"] is None
+
+
+def test_list_matches_includes_scores_for_live_and_finished(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    home_team = Team(name="Live Home", logo_url=None)
+    away_team = Team(name="Live Away", logo_url=None)
+    db_session.add_all([home_team, away_team])
+    db_session.flush()
+
+    live_match = Match(
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() - timedelta(minutes=30),
+        status="live",
+        home_goals=2,
+        away_goals=1,
+    )
+    finished_match = Match(
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() - timedelta(days=1),
+        status="finished",
+        home_goals=3,
+        away_goals=0,
+    )
+    scheduled_match = Match(
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow() + timedelta(days=1),
+        status="scheduled",
+    )
+    db_session.add_all([live_match, finished_match, scheduled_match])
+    db_session.commit()
+
+    live_response = client.get("/matches", params={"status": "live", "limit": 200})
+    completed_response = client.get(
+        "/matches", params={"status": "completed", "limit": 200}
+    )
+    upcoming_response = client.get("/matches", params={"limit": 200})
+
+    assert live_response.status_code == 200
+    live_payload = next(
+        item for item in live_response.json() if item["id"] == live_match.id
+    )
+    assert live_payload["home_goals"] == 2
+    assert live_payload["away_goals"] == 1
+
+    completed_payload = next(
+        item for item in completed_response.json() if item["id"] == finished_match.id
+    )
+    assert completed_payload["home_goals"] == 3
+    assert completed_payload["away_goals"] == 0
+
+    upcoming_payload = next(
+        item for item in upcoming_response.json() if item["id"] == scheduled_match.id
+    )
+    assert upcoming_payload["home_goals"] is None
+    assert upcoming_payload["away_goals"] is None
 
 
 def test_get_match_returns_404_for_unknown_id(client: TestClient) -> None:

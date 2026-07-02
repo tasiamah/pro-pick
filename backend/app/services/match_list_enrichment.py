@@ -125,6 +125,8 @@ class _MatchListEnricher:
             id=match.id,
             kickoff=match.kickoff,
             status=match.status,
+            home_goals=match.home_goals,
+            away_goals=match.away_goals,
             home_team=self._to_team_out(match.home_team, match.kickoff),
             away_team=self._to_team_out(match.away_team, match.kickoff),
             competition_name=match.competition.name if match.competition else None,

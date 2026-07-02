@@ -72,6 +72,8 @@ class MatchOut(BaseModel):
     home_team: TeamOut
     away_team: TeamOut
     competition_name: str | None = None
+    home_goals: int | None = None
+    away_goals: int | None = None
 
 
 class MatchDetailOut(MatchOut):

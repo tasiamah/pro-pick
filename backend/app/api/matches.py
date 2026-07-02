@@ -44,6 +44,8 @@ def _to_match_detail(db: Session, match: Match) -> MatchDetailOut:
         id=match.id,
         kickoff=match.kickoff,
         status=match.status,
+        home_goals=match.home_goals,
+        away_goals=match.away_goals,
         home_team=to_team_out(db, match.home_team, match.kickoff),
         away_team=to_team_out(db, match.away_team, match.kickoff),
         competition_name=match.competition.name if match.competition else None,
