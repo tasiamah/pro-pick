@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
 import {
   RefreshControl,
@@ -24,7 +25,7 @@ import { useNow } from '../hooks/useNow';
 import { TAB_BAR_BASE_HEIGHT } from '../navigation/tabBarOptions';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
-import { filterHighConfidenceMatches } from '../utils/marketPicks';
+import { filterHighConfidenceMatchesWithPicks } from '../utils/marketPicks';
 import { addLocalDays, localDayKeyToDate, toLocalDateKey } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import {
@@ -44,10 +45,13 @@ type Props = NativeStackScreenProps<MatchesStackParamList, 'Matches'>;
 const SEARCH_DEBOUNCE_MS = 300;
 const BROWSE_WINDOW_DAYS = 14;
 const MATCHES_PAGE_LIMIT = 50;
+const LIVE_REFETCH_INTERVAL_MS = 60_000;
+const KICKOFF_GUARD_EPOCH = new Date(0);
 
 export function MatchesScreen({ navigation }: Props) {
   const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const gridMetrics = useMemo(() => getMatchesGridMetrics(windowWidth), [windowWidth]);
   const scrollBottomPadding = useMemo(
     () =>
@@ -63,6 +67,7 @@ export function MatchesScreen({ navigation }: Props) {
   const debouncedSearchQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
   const now = useNow();
   const localDayKey = toLocalDateKey(now);
+  const kickoffGuardNow = statusFilter === 'upcoming' ? now : KICKOFF_GUARD_EPOCH;
 
   const matchListParams = useMemo(() => {
     const today = localDayKeyToDate(localDayKey);
@@ -88,25 +93,56 @@ export function MatchesScreen({ navigation }: Props) {
     }
 
     return params;
-  }, [debouncedSearchQuery, oddsTierFilter, statusFilter, localDayKey]);
+  }, [debouncedSearchQuery, localDayKey, oddsTierFilter, statusFilter]);
 
-  const matchesQuery = useMatches(matchListParams);
+  const matchesQuery = useMatches(matchListParams, {
+    keepPreviousData: true,
+    refetchInterval:
+      isFocused && statusFilter === 'live' ? LIVE_REFETCH_INTERVAL_MS : false,
+  });
+
+  const {
+    data: matchesData,
+    error: matchesError,
+    isLoading: isMatchesQueryLoading,
+    isRefetching: isMatchesRefetching,
+    isPlaceholderData: isMatchesPlaceholderData,
+    refetch: refetchMatches,
+  } = matchesQuery;
+
   const filteredMatches = useMemo(
     () =>
       filterMatchesForBrowse(
-        matchesQuery.data ?? [],
+        matchesData ?? [],
         statusFilter,
         oddsTierFilter,
         debouncedSearchQuery,
-        now,
+        kickoffGuardNow,
       ),
-    [matchesQuery.data, debouncedSearchQuery, oddsTierFilter, statusFilter, now],
+    [
+      debouncedSearchQuery,
+      kickoffGuardNow,
+      matchesData,
+      oddsTierFilter,
+      statusFilter,
+    ],
   );
 
-  // Selectivity: only surface the most confident picks, matching the Home tab.
-  const visibleMatches = useMemo(
-    () => filterHighConfidenceMatches(filteredMatches),
+  const upcomingBrowse = useMemo(
+    () => filterHighConfidenceMatchesWithPicks(filteredMatches),
     [filteredMatches],
+  );
+
+  const visibleMatches = useMemo(
+    () =>
+      statusFilter === 'upcoming' ? upcomingBrowse.matches : filteredMatches,
+    [filteredMatches, statusFilter, upcomingBrowse.matches],
+  );
+
+  const qualifyingPicksByMatchId = useMemo(
+    () =>
+      statusFilter === 'upcoming' ? upcomingBrowse.picksByMatchId : undefined,
+    [statusFilter, upcomingBrowse.picksByMatchId],
   );
 
   const gridRows = useMemo(
@@ -121,15 +157,12 @@ export function MatchesScreen({ navigation }: Props) {
   );
 
   const onRefresh = useCallback(() => {
-    void matchesQuery.refetch();
-  }, [matchesQuery]);
+    void refetchMatches();
+  }, [refetchMatches]);
 
-  const isMatchesLoading = isInitialQueryLoad(
-    matchesQuery.isLoading,
-    matchesQuery.data,
-  );
+  const isMatchesLoading = isInitialQueryLoad(isMatchesQueryLoading, matchesData);
 
-  if (queryErrorForDisplay(matchesQuery.error, matchesQuery.data)) {
+  if (queryErrorForDisplay(matchesError, matchesData)) {
     return (
       <ErrorState message="Could not load matches" onRetry={onRefresh} />
     );
@@ -144,7 +177,7 @@ export function MatchesScreen({ navigation }: Props) {
       ]}
       refreshControl={
         <RefreshControl
-          refreshing={matchesQuery.isRefetching}
+          refreshing={isMatchesRefetching && !isMatchesPlaceholderData}
           onRefresh={onRefresh}
           tintColor={colors.primary}
           colors={[colors.primary]}
@@ -196,6 +229,7 @@ export function MatchesScreen({ navigation }: Props) {
                     match={match}
                     odds={match.odds}
                     prediction={match.prediction}
+                    qualifyingPicks={qualifyingPicksByMatchId?.get(match.id)}
                     slate={filteredMatches}
                     onDetailsPress={() => {
                       navigation.navigate('MatchDetail', { matchId: String(match.id) });

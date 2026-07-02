@@ -6,6 +6,7 @@ import {
   matchesOddsTierFilter,
   matchesSearchFilter,
   matchesStatusFilter,
+  selectMatchesForDisplay,
 } from './matchesFilterUtils';
 
 const baseMatch: MatchDetail = {
@@ -150,6 +151,16 @@ describe('matchesFilterUtils', () => {
     );
 
     expect(filtered.map((match) => match.id)).toEqual([1]);
+  });
+
+  it('shows all live and completed matches without the confidence filter', () => {
+    const liveMatches = [
+      { ...baseMatch, id: 10, status: 'live' },
+      { ...baseMatch, id: 11, status: 'live', prediction: null },
+    ];
+
+    expect(selectMatchesForDisplay(liveMatches, 'live')).toEqual(liveMatches);
+    expect(selectMatchesForDisplay(liveMatches, 'completed')).toEqual(liveMatches);
   });
 
   it('returns contextual empty messages', () => {

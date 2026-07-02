@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { api } from './client';
 import { queryKeys } from './queryKeys';
@@ -17,12 +17,18 @@ export function useDashboard() {
 
 export function useMatches(
   params?: MatchListParams,
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    keepPreviousData?: boolean;
+    refetchInterval?: number | false;
+  },
 ) {
   return useQuery({
     queryKey: queryKeys.matches(params),
     queryFn: () => api.getMatches(params),
     enabled: options?.enabled ?? true,
+    placeholderData: options?.keepPreviousData ? keepPreviousData : undefined,
+    refetchInterval: options?.refetchInterval,
   });
 }
 

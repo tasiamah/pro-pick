@@ -71,7 +71,27 @@ export function getQualifyingPicksForMatch(
 }
 
 export function filterHighConfidenceMatches(matches: MatchDetail[]): MatchDetail[] {
-  return matches.filter(
-    (match) => getQualifyingPicksForMatch(match, matches).length > 0,
-  );
+  return filterHighConfidenceMatchesWithPicks(matches).matches;
+}
+
+export function filterHighConfidenceMatchesWithPicks(
+  matches: MatchDetail[],
+): {
+  matches: MatchDetail[];
+  picksByMatchId: Map<number, DisplayPick[]>;
+} {
+  const visible: MatchDetail[] = [];
+  const picksByMatchId = new Map<number, DisplayPick[]>();
+
+  for (const match of matches) {
+    const picks = getQualifyingPicksForMatch(match, matches);
+    if (picks.length === 0) {
+      continue;
+    }
+
+    visible.push(match);
+    picksByMatchId.set(match.id, picks);
+  }
+
+  return { matches: visible, picksByMatchId };
 }
