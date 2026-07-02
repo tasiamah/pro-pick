@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { Match, Odds, Prediction, Team } from '../../api/types';
+import type { Match, MatchDetail, Odds, Prediction, Team } from '../../api/types';
 import { MatchNotificationsModal } from '../matchNotifications/MatchNotificationsModal';
 import {
   AiPickLabel,
@@ -16,15 +16,13 @@ import { useFavoritesStore } from '../../store';
 import { MATCH_DETAILS_FOOTER } from '../../constants/matchCardDetails';
 import { colors, radii, spacing, typography } from '../../theme';
 import { getTeamName } from '../../utils/matchDisplay';
+import { getQualifyingPicksForMatch, type DisplayPick } from '../../utils/marketPicks';
 import { formatKickoff } from '../formatters';
 import {
   classifyOddsTier,
-  formatPredictedOutcomeLabel,
-  getConfidence,
   getOddForOutcome,
   getRecommendedOutcome,
 } from './matchCardUtils';
-import { buildDynamicMatchInsight } from './matchInsightUtils';
 
 type MatchCardV2Props = {
   match: Match;
@@ -33,6 +31,10 @@ type MatchCardV2Props = {
   compact?: boolean;
   onPress?: () => void;
   onDetailsPress?: () => void;
+  /** Slate used for per-market selectivity; defaults to this match alone. */
+  slate?: MatchDetail[];
+  /** Precomputed picks; when omitted they are derived from `slate`. */
+  qualifyingPicks?: DisplayPick[];
 };
 
 type TeamRowProps = {
@@ -78,6 +80,33 @@ function TeamRow({ team, fallbackName, compact = false }: TeamRowProps) {
   );
 }
 
+type AiPickRowProps = {
+  pick: DisplayPick;
+  compact: boolean;
+  oddsTier?: ReturnType<typeof classifyOddsTier>;
+};
+
+function AiPickRow({ pick, compact, oddsTier }: AiPickRowProps) {
+  return (
+    <View style={[styles.pickRow, compact && styles.pickRowCompact]}>
+      <View style={styles.pickCopy}>
+        <Text
+          numberOfLines={compact ? 2 : undefined}
+          style={[styles.predictedOutcome, compact && styles.predictedOutcomeCompact]}
+        >
+          {pick.label}
+        </Text>
+      </View>
+      <View style={[styles.badgeRow, compact && styles.badgeRowCompact]}>
+        <ConfidenceBadge compact={compact} confidence={pick.confidence} />
+        {pick.market === '1x2' && oddsTier ? (
+          <OddsTierBadge compact={compact} tier={oddsTier} />
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
 export function MatchCardV2({
   match,
   prediction,
@@ -85,22 +114,51 @@ export function MatchCardV2({
   compact = false,
   onPress,
   onDetailsPress,
+  slate,
+  qualifyingPicks,
 }: MatchCardV2Props) {
   const [hovered, setHovered] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const primaryOdds = odds?.[0];
-  const showAiBlock = prediction != null && primaryOdds != null;
   const homeName = getTeamName(match.home_team, 'Home');
   const awayName = getTeamName(match.away_team, 'Away');
 
-  const detailsHandler = onDetailsPress ?? onPress;
+  const resolvedSlate = useMemo(() => {
+    if (slate) {
+      return slate;
+    }
+    if ('prediction' in match && match.prediction != null) {
+      return [match as MatchDetail];
+    }
+    if (prediction) {
+      return [{ ...(match as MatchDetail), prediction, odds: odds ?? [] }];
+    }
+    return [];
+  }, [match, odds, prediction, slate]);
+
+  const picks = useMemo(() => {
+    if (qualifyingPicks) {
+      return qualifyingPicks;
+    }
+    if (resolvedSlate.length === 0 || !prediction) {
+      return [];
+    }
+    const enriched: MatchDetail = {
+      ...(match as MatchDetail),
+      prediction,
+      odds: odds ?? [],
+    };
+    return getQualifyingPicksForMatch(enriched, resolvedSlate);
+  }, [match, odds, prediction, qualifyingPicks, resolvedSlate]);
+
+  const showAiBlock = picks.length > 0 && primaryOdds != null;
+  const primaryPick = picks[0];
   const oddsTier =
-    prediction && primaryOdds
+    prediction && primaryOdds && primaryPick?.market === '1x2'
       ? classifyOddsTier(getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)))
       : null;
-  const cardInsight = prediction
-    ? buildDynamicMatchInsight(match, prediction)
-    : null;
+
+  const detailsHandler = onDetailsPress ?? onPress;
 
   const hoverHandlers =
     Platform.OS === 'web'
@@ -154,28 +212,22 @@ export function MatchCardV2({
           <TeamRow compact={compact} team={match.away_team} fallbackName="Away" />
         </View>
 
-        {showAiBlock && prediction && primaryOdds ? (
+        {showAiBlock ? (
           <View style={styles.aiBlock}>
-            <View style={[styles.aiHeaderRow, compact && styles.aiHeaderRowCompact]}>
-              <View style={styles.aiPickGroup}>
-                <AiPickLabel compact={compact} />
-                <Text
-                  numberOfLines={compact ? 2 : undefined}
-                  style={[styles.predictedOutcome, compact && styles.predictedOutcomeCompact]}
-                >
-                  {formatPredictedOutcomeLabel(
-                    getRecommendedOutcome(prediction),
-                    homeName,
-                    awayName,
-                  )}
-                </Text>
-              </View>
-              <View style={[styles.badgeRow, compact && styles.badgeRowCompact]}>
-                <ConfidenceBadge compact={compact} confidence={getConfidence(prediction)} />
-                {oddsTier ? <OddsTierBadge compact={compact} tier={oddsTier} /> : null}
-              </View>
+            <AiPickLabel compact={compact} />
+            <View style={styles.pickList}>
+              {picks.map((pick) => (
+                <AiPickRow
+                  compact={compact}
+                  key={pick.market}
+                  oddsTier={pick.market === '1x2' ? oddsTier : null}
+                  pick={pick}
+                />
+              ))}
             </View>
-            {cardInsight ? <InsightBullet compact={compact} text={cardInsight} /> : null}
+            {primaryPick?.insight ? (
+              <InsightBullet compact={compact} text={primaryPick.insight} />
+            ) : null}
           </View>
         ) : null}
       </View>
@@ -274,14 +326,21 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.md,
   },
-  aiHeaderRow: {
+  pickList: {
     gap: spacing.sm,
   },
-  aiHeaderRowCompact: {
+  pickRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  pickRowCompact: {
     alignItems: 'flex-start',
     flexDirection: 'column',
   },
-  aiPickGroup: {
+  pickCopy: {
+    flex: 1,
     gap: spacing.xs,
   },
   predictedOutcome: {

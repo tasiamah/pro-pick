@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Match cards and detail now surface **BTTS**, **Over/Under 2.5**, and **Double
+  Chance** picks from `prediction.markets`, each with its own slate-relative
+  confidence bar so only qualifying secondary markets appear alongside 1X2 on
+  Home and Matches (`mobile/src/utils/marketPicks.ts`,
+  `mobile/src/utils/marketLabels.ts`, `mobile/src/components/matchCard/MatchCardV2.tsx`,
+  `mobile/src/screens/MatchDetailScreen.tsx`, `mobile/src/api/types.ts`).
 - Multi-market predictions for **BTTS**, **Over/Under 2.5**, and **Double
   Chance**: separate calibrated logistic models per market, persisted in
   `market_predictions`, exposed as nested `markets` on match/prediction API
