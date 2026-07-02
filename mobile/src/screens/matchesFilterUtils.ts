@@ -1,4 +1,5 @@
 import type { MatchDetail } from '../api/types';
+import { filterHighConfidenceMatches } from '../utils/marketPicks';
 import {
   classifyOddsTier,
   type OddsTier,
@@ -117,6 +118,17 @@ export function filterMatchesForBrowse(
         ? rightTime - leftTime
         : leftTime - rightTime;
     });
+}
+
+export function selectMatchesForDisplay(
+  filteredMatches: MatchDetail[],
+  statusFilter: MatchStatusFilter,
+): MatchDetail[] {
+  if (statusFilter === 'upcoming') {
+    return filterHighConfidenceMatches(filteredMatches);
+  }
+
+  return filteredMatches;
 }
 
 export function getMatchesEmptyMessage(

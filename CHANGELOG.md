@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Matches tab filter switches no longer block the grid behind a full-screen
+  spinner while the next status query loads; Live and Completed lists show every
+  match returned by the API instead of hiding fixtures that fail the Home
+  confidence filter, and the Live segment polls for updates while focused
+  (`mobile/src/screens/MatchesScreen.tsx`, `mobile/src/api/hooks.ts`,
+  `mobile/src/screens/matchesFilterUtils.ts`, `mobile/src/utils/marketPicks.ts`).
+
 ### Added
 - Match cards and detail now surface **BTTS**, **Over/Under 2.5**, and **Double
   Chance** picks from `prediction.markets`, each with its own slate-relative
