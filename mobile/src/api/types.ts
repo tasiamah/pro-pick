@@ -18,7 +18,18 @@ export type Prediction = {
   prob_home: number;
   prob_draw: number;
   prob_away: number;
+  confidence?: number;
+  recommended_outcome?: string;
   insights?: string[];
+  markets?: MarketPick[];
+};
+
+export type MarketPick = {
+  market: 'btts' | 'over_under_25' | 'double_chance';
+  model_version: string;
+  probabilities: Record<string, number>;
+  recommended_outcome: string;
+  confidence: number;
 };
 
 export type Match = {

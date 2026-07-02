@@ -1,6 +1,8 @@
 import type { MatchDetail } from '../api/types';
 import { getConfidence } from '../components/matchCard/matchCardUtils';
 import { classifyMatchOddsTier } from '../screens/homeMatchUtils';
+import type { MarketId } from './marketLabels';
+import { isSecondaryMarketId } from './marketLabels';
 
 /**
  * Absolute minimum probability for a pick to ever be shown. Below this the model
@@ -36,6 +38,18 @@ function matchConfidence(match: MatchDetail): number | null {
   return match.prediction == null ? null : getConfidence(match.prediction);
 }
 
+function secondaryMarketConfidence(
+  match: MatchDetail,
+  market: MarketId,
+): number | null {
+  if (market === '1x2') {
+    return matchConfidence(match);
+  }
+
+  const pick = match.prediction?.markets?.find((entry) => entry.market === market);
+  return pick?.confidence ?? null;
+}
+
 function floorForMatch(match: MatchDetail): number {
   return classifyMatchOddsTier(match) === 'high'
     ? HIGH_ODDS_CONFIDENCE_FLOOR
@@ -56,6 +70,18 @@ function quantile(sortedAsc: number[], q: number): number {
   return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (pos - lo);
 }
 
+function thresholdFromConfidences(confidences: number[]): number {
+  if (confidences.length === 0) {
+    return CANONICAL_CONFIDENCE_THRESHOLD;
+  }
+  const sorted = [...confidences].sort((left, right) => left - right);
+  const relative = quantile(sorted, SELECTIVITY_QUANTILE);
+  return Math.min(
+    CANONICAL_CONFIDENCE_THRESHOLD,
+    Math.max(CONFIDENCE_FLOOR, relative),
+  );
+}
+
 /**
  * Confidence bar for the current slate. Rather than a fixed cut-off, we take the
  * top-tier quantile of the slate's confidences and clamp it between the floor and
@@ -67,16 +93,19 @@ function quantile(sortedAsc: number[], q: number): number {
 export function slateConfidenceThreshold(matches: MatchDetail[]): number {
   const confidences = matches
     .map(matchConfidence)
-    .filter((confidence): confidence is number => confidence != null)
-    .sort((left, right) => left - right);
-  if (confidences.length === 0) {
-    return CANONICAL_CONFIDENCE_THRESHOLD;
-  }
-  const relative = quantile(confidences, SELECTIVITY_QUANTILE);
-  return Math.min(
-    CANONICAL_CONFIDENCE_THRESHOLD,
-    Math.max(CONFIDENCE_FLOOR, relative),
-  );
+    .filter((confidence): confidence is number => confidence != null);
+  return thresholdFromConfidences(confidences);
+}
+
+/** Slate-relative bar for a specific market (1X2 or a secondary market). */
+export function slateConfidenceThresholdForMarket(
+  matches: MatchDetail[],
+  market: MarketId,
+): number {
+  const confidences = matches
+    .map((entry) => secondaryMarketConfidence(entry, market))
+    .filter((confidence): confidence is number => confidence != null);
+  return thresholdFromConfidences(confidences);
 }
 
 /**
@@ -94,14 +123,24 @@ export function isConfidentMatch(match: MatchDetail, bar: number): boolean {
   return confidence >= threshold;
 }
 
-/**
- * Keep the strongest, most confident picks of a slate: those clearing the
- * slate-relative bar (or, for high-odds picks, their relaxed floor).
- * Low-confidence and prediction-less matches are dropped.
- */
-export function filterHighConfidenceMatches(
-  matches: MatchDetail[],
-): MatchDetail[] {
-  const bar = slateConfidenceThreshold(matches);
-  return matches.filter((match) => isConfidentMatch(match, bar));
+/** Whether a specific market pick on a match clears its slate bar. */
+export function isConfidentMarketPick(
+  match: MatchDetail,
+  market: MarketId,
+  bar: number,
+): boolean {
+  if (market === '1x2') {
+    return isConfidentMatch(match, bar);
+  }
+
+  if (!isSecondaryMarketId(market)) {
+    return false;
+  }
+
+  const confidence = secondaryMarketConfidence(match, market);
+  if (confidence == null) {
+    return false;
+  }
+
+  return confidence >= bar;
 }

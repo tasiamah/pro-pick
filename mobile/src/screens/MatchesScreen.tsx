@@ -24,7 +24,7 @@ import { useNow } from '../hooks/useNow';
 import { TAB_BAR_BASE_HEIGHT } from '../navigation/tabBarOptions';
 import type { MatchesStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
-import { filterHighConfidenceMatches } from '../utils/confidence';
+import { filterHighConfidenceMatches } from '../utils/marketPicks';
 import { addLocalDays, localDayKeyToDate, toLocalDateKey } from '../utils/matchDates';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import {
@@ -196,6 +196,7 @@ export function MatchesScreen({ navigation }: Props) {
                     match={match}
                     odds={match.odds}
                     prediction={match.prediction}
+                    slate={filteredMatches}
                     onDetailsPress={() => {
                       navigation.navigate('MatchDetail', { matchId: String(match.id) });
                     }}

@@ -25,7 +25,7 @@ import { useMatchDateAnchor } from '../hooks/useMatchDateAnchor';
 import { useNow } from '../hooks/useNow';
 import type { HomeStackParamList } from '../navigation/types';
 import { colors, screenStyles, spacing } from '../theme';
-import { filterHighConfidenceMatches } from '../utils/confidence';
+import { filterHighConfidenceMatches } from '../utils/marketPicks';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
 import {
@@ -203,6 +203,7 @@ export function HomeScreen({ navigation }: Props) {
                         match={match}
                         odds={match.odds}
                         prediction={match.prediction}
+                        slate={filteredMatches}
                         onDetailsPress={() => openMatchDetail(match.id)}
                       />
                     ))}

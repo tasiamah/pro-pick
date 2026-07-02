@@ -12,9 +12,10 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { useMatch, useValueBets } from '../api/hooks';
-import type { MatchDetail, Odds, Prediction, ValueBet } from '../api/types';
+import type { MatchDetail, MarketPick, Odds, Prediction, ValueBet } from '../api/types';
 import {
   AlertBanner,
+  ConfidenceBadge,
   ConfidenceRing,
   EmptyState,
   ErrorState,
@@ -36,6 +37,11 @@ import type {
 } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme';
 import { formatMatchTeams } from '../utils/matchDisplay';
+import {
+  formatMarketPickLabel,
+  formatMarketSectionTitle,
+  isSecondaryMarketId,
+} from '../utils/marketLabels';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { shouldUseMatchDetailTwoColumnLayout } from './matchDetailLayoutUtils';
 import {
@@ -125,6 +131,65 @@ function KeyInsightsSection({ insights }: KeyInsightsSectionProps) {
       <View style={styles.insightsList}>
         {insights.map((insight, index) => (
           <NumberedInsightBullet index={index + 1} key={`${index}-${insight}`} text={insight} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+type SecondaryMarketCardProps = {
+  pick: MarketPick;
+  homeName: string;
+  awayName: string;
+};
+
+function SecondaryMarketCard({ pick, homeName, awayName }: SecondaryMarketCardProps) {
+  return (
+    <View style={styles.sectionCard}>
+      <View style={styles.secondaryMarketHeader}>
+        <Text style={styles.secondaryMarketTitle}>
+          {formatMarketSectionTitle(pick.market)}
+        </Text>
+        <ConfidenceBadge confidence={pick.confidence} />
+      </View>
+      <Text style={styles.secondaryMarketPick}>
+        {formatMarketPickLabel(pick, homeName, awayName)}
+      </Text>
+      <Text style={styles.secondaryMarketMeta}>
+        Model confidence {Math.round(pick.confidence * 100)}%
+      </Text>
+    </View>
+  );
+}
+
+type SecondaryMarketsSectionProps = {
+  markets: MarketPick[];
+  homeName: string;
+  awayName: string;
+};
+
+function SecondaryMarketsSection({
+  markets,
+  homeName,
+  awayName,
+}: SecondaryMarketsSectionProps) {
+  const ordered = markets.filter((pick) => isSecondaryMarketId(pick.market));
+
+  if (ordered.length === 0) {
+    return null;
+  }
+
+  return (
+    <View style={styles.sectionBlock}>
+      <Text style={styles.sectionTitle}>More AI Markets</Text>
+      <View style={styles.secondaryMarketList}>
+        {ordered.map((pick) => (
+          <SecondaryMarketCard
+            awayName={awayName}
+            homeName={homeName}
+            key={pick.market}
+            pick={pick}
+          />
         ))}
       </View>
     </View>
@@ -359,6 +424,8 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
 
   const prediction = match.prediction;
   const oddsUpdatedLabel = marketMovements ? 'just now' : 'Latest available';
+  const homeName = match.home_team.name;
+  const awayName = match.away_team.name;
 
   return (
     <ScrollView
@@ -397,6 +464,14 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
             )}
 
             {insights.length > 0 ? <KeyInsightsSection insights={insights} /> : null}
+
+            {prediction?.markets ? (
+              <SecondaryMarketsSection
+                awayName={awayName}
+                homeName={homeName}
+                markets={prediction.markets}
+              />
+            ) : null}
           </View>
 
           <View style={styles.rightColumn}>
@@ -530,6 +605,28 @@ const styles = StyleSheet.create({
   },
   insightsList: {
     gap: spacing.sm,
+  },
+  secondaryMarketList: {
+    gap: spacing.md,
+  },
+  secondaryMarketHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  secondaryMarketTitle: {
+    ...typography.bodySemibold,
+    color: colors.text,
+  },
+  secondaryMarketPick: {
+    ...typography.titleLarge,
+    color: colors.primary,
+    fontSize: 22,
+    lineHeight: 28,
+  },
+  secondaryMarketMeta: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
   sectionHeaderRow: {
     alignItems: 'center',
