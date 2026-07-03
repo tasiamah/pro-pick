@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Match cards on Home and Matches now show only the **highest-confidence** AI
+  pick plus a compact `+N more` hint when other qualifying markets exist; full
+  market breakdown stays on match detail (`mobile/src/components/matchCard/MatchCardV2.tsx`,
+  `mobile/src/utils/marketPicks.ts`).
+
 ### Added
 - Live and finished match **scores** on match cards and detail: the API now
   exposes `home_goals` and `away_goals`, and the mobile app shows them beside

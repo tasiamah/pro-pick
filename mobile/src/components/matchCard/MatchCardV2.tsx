@@ -18,7 +18,12 @@ import { MATCH_DETAILS_FOOTER } from '../../constants/matchCardDetails';
 import { colors, radii, spacing, typography } from '../../theme';
 import { getTeamName } from '../../utils/matchDisplay';
 import { isLiveMatch, shouldShowMatchScore } from '../../utils/matchScoreUtils';
-import { getQualifyingPicksForMatch, type DisplayPick } from '../../utils/marketPicks';
+import {
+  formatAdditionalPicksLabel,
+  getQualifyingPicksForMatch,
+  sortDisplayPicksByConfidence,
+  type DisplayPick,
+} from '../../utils/marketPicks';
 import { formatKickoff } from '../formatters';
 import {
   classifyOddsTier,
@@ -105,7 +110,7 @@ type AiPickRowProps = {
 
 function AiPickRow({ pick, compact, oddsTier }: AiPickRowProps) {
   return (
-    <View style={[styles.pickRow, compact && styles.pickRowCompact]}>
+    <View style={styles.pickRow}>
       <View style={styles.pickCopy}>
         <Text
           numberOfLines={compact ? 2 : undefined}
@@ -168,10 +173,12 @@ export function MatchCardV2({
     return getQualifyingPicksForMatch(enriched, resolvedSlate);
   }, [match, odds, prediction, qualifyingPicks, resolvedSlate]);
 
-  const showAiBlock = picks.length > 0 && primaryOdds != null;
-  const primaryPick = picks[0];
+  const sortedPicks = useMemo(() => sortDisplayPicksByConfidence(picks), [picks]);
+  const showAiBlock = sortedPicks.length > 0 && primaryOdds != null;
+  const topPick = sortedPicks[0];
+  const additionalPicksLabel = formatAdditionalPicksLabel(sortedPicks.length - 1);
   const oddsTier =
-    prediction && primaryOdds && primaryPick?.market === '1x2'
+    prediction && primaryOdds && topPick?.market === '1x2'
       ? classifyOddsTier(getOddForOutcome(primaryOdds, getRecommendedOutcome(prediction)))
       : null;
 
@@ -247,21 +254,21 @@ export function MatchCardV2({
           />
         </View>
 
-        {showAiBlock ? (
+        {showAiBlock && topPick ? (
           <View style={styles.aiBlock}>
             <AiPickLabel compact={compact} />
-            <View style={styles.pickList}>
-              {picks.map((pick) => (
-                <AiPickRow
-                  compact={compact}
-                  key={pick.market}
-                  oddsTier={pick.market === '1x2' ? oddsTier : null}
-                  pick={pick}
-                />
-              ))}
-            </View>
-            {primaryPick?.insight ? (
-              <InsightBullet compact={compact} text={primaryPick.insight} />
+            <AiPickRow
+              compact={compact}
+              oddsTier={topPick.market === '1x2' ? oddsTier : null}
+              pick={topPick}
+            />
+            {additionalPicksLabel ? (
+              <Text style={[styles.morePicksLabel, compact && styles.morePicksLabelCompact]}>
+                {additionalPicksLabel}
+              </Text>
+            ) : null}
+            {topPick.insight ? (
+              <InsightBullet compact={compact} text={topPick.insight} />
             ) : null}
           </View>
         ) : null}
@@ -384,18 +391,19 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.md,
   },
-  pickList: {
-    gap: spacing.sm,
+  morePicksLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  morePicksLabelCompact: {
+    letterSpacing: 0,
+    lineHeight: 16,
   },
   pickRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
     justifyContent: 'space-between',
-  },
-  pickRowCompact: {
-    alignItems: 'flex-start',
-    flexDirection: 'column',
   },
   pickCopy: {
     flex: 1,
