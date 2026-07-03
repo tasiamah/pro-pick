@@ -67,7 +67,19 @@ export function getQualifyingPicksForMatch(
     });
   }
 
-  return picks;
+  return sortDisplayPicksByConfidence(picks);
+}
+
+export function sortDisplayPicksByConfidence(picks: DisplayPick[]): DisplayPick[] {
+  return [...picks].sort((left, right) => right.confidence - left.confidence);
+}
+
+export function formatAdditionalPicksLabel(extraPickCount: number): string | null {
+  if (extraPickCount <= 0) {
+    return null;
+  }
+
+  return `+${extraPickCount} more`;
 }
 
 export function filterHighConfidenceMatches(matches: MatchDetail[]): MatchDetail[] {

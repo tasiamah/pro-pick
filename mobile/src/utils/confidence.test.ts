@@ -158,6 +158,7 @@ describe('getQualifyingPicksForMatch', () => {
 
     const picks = getQualifyingPicksForMatch(entry, slateMatches);
     expect(picks.map((pick) => pick.market)).toEqual(['1x2', 'btts']);
+    expect(picks[0].confidence).toBeGreaterThanOrEqual(picks[1].confidence);
   });
 });
 
