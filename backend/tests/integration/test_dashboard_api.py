@@ -250,9 +250,7 @@ def test_get_dashboard_next_prediction_kickoff_skips_unpredicted_matches(
 
     assert payload["next_prediction_kickoff"] is not None
     returned = datetime.fromisoformat(payload["next_prediction_kickoff"])
-    assert returned.replace(tzinfo=None) == predicted_later.kickoff.replace(
-        tzinfo=None
-    )
+    assert returned.replace(tzinfo=None) == predicted_later.kickoff.replace(tzinfo=None)
 
 
 def test_get_dashboard_surfaces_active_model_metadata(client: TestClient) -> None:
