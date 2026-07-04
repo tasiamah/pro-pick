@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Renamed the Home date selector's week chip from "This week" to "Coming up" (and
+  its empty state to "No confident picks coming up") since the selector can now
+  anchor to a future slate rather than the current calendar week
+  (`mobile/src/components/DatePickerRow.tsx`, `mobile/src/screens/HomeScreen.tsx`).
+
 ### Fixed
 - Home no longer looks empty during a fixture gap (e.g. between the World Cup and
   the domestic-season restart). The dashboard now returns

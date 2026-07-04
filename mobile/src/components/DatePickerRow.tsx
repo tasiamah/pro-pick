@@ -33,7 +33,7 @@ export function DatePickerRow({
         style={[styles.chip, isWeekSelected && styles.chipSelected]}
       >
         <Text style={[styles.chipText, isWeekSelected && styles.chipTextSelected]}>
-          This week
+          Coming up
         </Text>
       </Pressable>
       {dates.map((date) => {
