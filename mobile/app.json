@@ -15,7 +15,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.propick.app",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": ["remote-notification"],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
