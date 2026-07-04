@@ -40,6 +40,12 @@
           "defaultChannel": "match-events"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "cbc8acbd-3891-4ca3-8865-c2622dc144ad"
+      }
+    },
+    "owner": "propick1"
   }
 }

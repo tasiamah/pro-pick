@@ -25,6 +25,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "juliatewelde8@gmail.com"
+      }
+    }
   }
 }

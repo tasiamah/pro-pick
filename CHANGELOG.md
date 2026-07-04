@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/utils/marketPicks.ts`).
 
 ### Added
+- Linked the mobile app to its EAS project (`@propick1/mobile`) by recording the
+  `extra.eas.projectId` and `owner` in `app.json`, and configured the production
+  iOS `submit` profile with the signing Apple ID so EAS Build/Submit can produce
+  and upload TestFlight builds non-interactively on the Expo side
+  (`mobile/app.json`, `mobile/eas.json`).
 - Live and finished match **scores** on match cards and detail: the API now
   exposes `home_goals` and `away_goals`, and the mobile app shows them beside
   team names for live and completed fixtures with a Live badge on in-play matches
