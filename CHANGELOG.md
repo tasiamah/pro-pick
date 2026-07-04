@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Home no longer looks empty during a fixture gap (e.g. between the World Cup and
+  the domestic-season restart). The dashboard now returns
+  `next_prediction_kickoff` (the earliest upcoming match that actually has a
+  prediction), and the app anchors its date selector there instead of sitting on
+  an empty "today" when the only near fixtures are unpredicted. Falls back to
+  today (in-season) and to the latest fixture when nothing is upcoming
+  (`backend/app/api/dashboard.py`, `backend/app/schemas/common.py`,
+  `mobile/src/api/types.ts`, `mobile/src/utils/matchDates.ts`,
+  `mobile/src/hooks/useMatchDateAnchor.ts`).
+
 ### Changed
 - Match cards on Home and Matches now show only the **highest-confidence** AI
   pick plus a compact `+N more` hint when other qualifying markets exist; full

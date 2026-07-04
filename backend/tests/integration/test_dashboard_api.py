@@ -202,9 +202,57 @@ def test_get_dashboard_returns_empty_state_without_data(
     assert payload["upcoming_matches"] == 0
     assert payload["upcoming_value_bets"] == 0
     assert payload["latest_kickoff"] is None
+    assert payload["next_prediction_kickoff"] is None
     assert payload["top_value_bets"] == []
     assert payload["model_accuracy"] is None
     assert payload["roi"] is None
+
+
+def test_get_dashboard_next_prediction_kickoff_skips_unpredicted_matches(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    # Mirrors the World Cup gap: the nearest upcoming fixtures have no prediction
+    # yet, while the next predicted slate is weeks out. The dashboard should point
+    # the client at the predicted one so Home doesn't anchor on an empty day.
+    now = datetime.utcnow()
+
+    home = Team(name="Next Home", logo_url=None)
+    away = Team(name="Next Away", logo_url=None)
+    db_session.add_all([home, away])
+    db_session.flush()
+
+    unpredicted_soon = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=now + timedelta(hours=6),
+        status="scheduled",
+    )
+    predicted_later = Match(
+        home_team_id=home.id,
+        away_team_id=away.id,
+        kickoff=now + timedelta(days=30),
+        status="scheduled",
+    )
+    db_session.add_all([unpredicted_soon, predicted_later])
+    db_session.flush()
+    db_session.add(
+        Prediction(
+            match_id=predicted_later.id,
+            prob_home=0.6,
+            prob_draw=0.25,
+            prob_away=0.15,
+        )
+    )
+    db_session.commit()
+
+    payload = client.get("/dashboard").json()
+
+    assert payload["next_prediction_kickoff"] is not None
+    returned = datetime.fromisoformat(payload["next_prediction_kickoff"])
+    assert returned.replace(tzinfo=None) == predicted_later.kickoff.replace(
+        tzinfo=None
+    )
 
 
 def test_get_dashboard_surfaces_active_model_metadata(client: TestClient) -> None:

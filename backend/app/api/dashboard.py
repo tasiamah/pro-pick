@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.cache import set_cache_headers
 from app.core.database import get_db
-from app.models import Match, ValueBet
+from app.models import Match, Prediction, ValueBet
 from app.schemas.common import DashboardOut, ValueBetOut
 from app.services.analytics import (
     active_model_metrics,
@@ -38,6 +38,16 @@ def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
     ).scalar_one()
 
     latest_kickoff = db.execute(select(func.max(Match.kickoff))).scalar_one()
+
+    # Earliest upcoming match that actually has a model prediction. The client
+    # anchors its date selector here so the Home tab lands on the next real slate
+    # instead of an empty "today" when the only near fixtures are unpredicted
+    # (e.g. a World Cup gap before the domestic season resumes).
+    next_prediction_kickoff = db.execute(
+        select(func.min(Match.kickoff))
+        .join(Prediction, Prediction.match_id == Match.id)
+        .where(Match.kickoff >= now)
+    ).scalar_one()
 
     upcoming_value_bets = db.execute(
         select(func.count(ValueBet.id))
@@ -74,6 +84,7 @@ def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
         upcoming_matches=upcoming,
         upcoming_value_bets=upcoming_value_bets,
         latest_kickoff=latest_kickoff,
+        next_prediction_kickoff=next_prediction_kickoff,
         top_value_bets=[ValueBetOut.model_validate(v) for v in top_bets],
         model_accuracy=model_accuracy,
         roi=compute_roi(settled_snapshots),
