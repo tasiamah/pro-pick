@@ -6,6 +6,7 @@ import {
   HIGH_ODDS_CONFIDENCE_FLOOR,
   isConfidentMarketPick,
   isConfidentMatch,
+  isHighConfidenceSecondaryPick,
   slateConfidenceThreshold,
   slateConfidenceThresholdForMarket,
 } from './confidence';
@@ -145,6 +146,20 @@ describe('isConfidentMarketPick', () => {
     ];
     const bar = slateConfidenceThresholdForMarket(matches, 'btts');
     expect(isConfidentMarketPick(matches[0], 'btts', bar)).toBe(true);
+  });
+});
+
+describe('isHighConfidenceSecondaryPick', () => {
+  it('shows a secondary market at or above the canonical threshold', () => {
+    expect(isHighConfidenceSecondaryPick(CANONICAL_CONFIDENCE_THRESHOLD)).toBe(true);
+    expect(isHighConfidenceSecondaryPick(0.82)).toBe(true);
+  });
+
+  it('hides a secondary market below the canonical threshold', () => {
+    expect(isHighConfidenceSecondaryPick(CANONICAL_CONFIDENCE_THRESHOLD - 0.01)).toBe(
+      false,
+    );
+    expect(isHighConfidenceSecondaryPick(0.55)).toBe(false);
   });
 });
 

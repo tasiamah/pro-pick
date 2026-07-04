@@ -48,6 +48,7 @@ import {
   formatMarketSectionTitle,
   isSecondaryMarketId,
 } from '../utils/marketLabels';
+import { isHighConfidenceSecondaryPick } from '../utils/confidence';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { shouldUseMatchDetailTwoColumnLayout } from './matchDetailLayoutUtils';
 import {
@@ -180,7 +181,11 @@ type SecondaryMarketsSectionProps = {
 };
 
 function SecondaryMarketsSection({ markets }: SecondaryMarketsSectionProps) {
-  const ordered = markets.filter((pick) => isSecondaryMarketId(pick.market));
+  const ordered = markets.filter(
+    (pick) =>
+      isSecondaryMarketId(pick.market) &&
+      isHighConfidenceSecondaryPick(pick.confidence),
+  );
 
   if (ordered.length === 0) {
     return null;

@@ -47,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/hooks/useMatchDateAnchor.ts`).
 
 ### Changed
+- Match detail now only surfaces **BTTS** and **Over/Under 2.5** picks when the
+  model is genuinely confident (at or above the canonical 0.70 threshold),
+  matching the selective behaviour of the Home and Matches cards instead of
+  always listing every secondary market (`mobile/src/screens/MatchDetailScreen.tsx`,
+  `mobile/src/utils/confidence.ts`).
 - Match cards on Home and Matches now show only the **highest-confidence** AI
   pick plus a compact `+N more` hint when other qualifying markets exist; full
   market breakdown stays on match detail (`mobile/src/components/matchCard/MatchCardV2.tsx`,

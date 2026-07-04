@@ -123,6 +123,17 @@ export function isConfidentMatch(match: MatchDetail, bar: number): boolean {
   return confidence >= threshold;
 }
 
+/**
+ * Whether a secondary-market pick (BTTS, Over/Under 2.5) is confident enough to
+ * surface where there is no slate to derive a relative bar — e.g. the single
+ * match detail screen. We require the canonical high-confidence threshold so a
+ * secondary market only shows when the model is genuinely confident, not on a
+ * near coin-flip.
+ */
+export function isHighConfidenceSecondaryPick(confidence: number): boolean {
+  return confidence >= CANONICAL_CONFIDENCE_THRESHOLD;
+}
+
 /** Whether a specific market pick on a match clears its slate bar. */
 export function isConfidentMarketPick(
   match: MatchDetail,
