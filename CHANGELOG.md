@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed
+- Dropped the **Double Chance** market from the model and app. Double Chance
+  (home-or-draw / home-or-away / draw-or-away) is a low-odds safe bet that adds
+  little value, so predictions now cover only **1X2**, **BTTS**, and **Over/Under
+  2.5**. Removed its training path, per-leg binary model, prediction branch, and
+  mobile labels/types (`backend/app/ml/market_labels.py`,
+  `backend/app/ml/market_train.py`, `backend/app/ml/binary_model.py`,
+  `backend/app/ml/storage.py`, `backend/app/services/market_prediction.py`,
+  `mobile/src/utils/marketLabels.ts`, `mobile/src/api/types.ts`).
+
 ### Fixed
 - Value bet detection now compares **stats-only** model probabilities to the
   best price per outcome across all bookmakers (line shopping), and lowers the

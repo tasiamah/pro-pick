@@ -1,11 +1,9 @@
-"""Training pipeline for BTTS, Over/Under 2.5, and Double Chance market models."""
+"""Training pipeline for the BTTS and Over/Under 2.5 market models."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -18,10 +16,8 @@ from app.ml.binary_model import (
 from app.ml.evaluation import EvaluationMetrics
 from app.ml.features import FEATURE_COLUMNS
 from app.ml.market_labels import (
-    MARKET_DOUBLE_CHANCE,
     MARKET_OUTCOMES,
     SUPPORTED_MARKETS,
-    build_double_chance_binary_targets,
     build_market_training_dataset,
 )
 from app.ml.storage import (
@@ -33,13 +29,6 @@ from app.ml.storage import (
 )
 
 CALIBRATION_MIN_SAMPLES = 50
-
-
-@dataclass(frozen=True)
-class DoubleChanceModel:
-    """Three calibrated binary legs stored as one market artifact."""
-
-    models: dict[str, Any]
 
 
 def train_market_model(
@@ -54,13 +43,6 @@ def train_market_model(
 
     resolved_path = path or resolve_market_model_path(market, settings.model_path)
     should_calibrate = settings.model_calibrate if calibrate is None else calibrate
-
-    if market == MARKET_DOUBLE_CHANCE:
-        return _train_double_chance_model(
-            db,
-            should_calibrate=should_calibrate,
-            path=resolved_path,
-        )
 
     dataset = build_market_training_dataset(db, market)
     if not dataset.features:
@@ -112,57 +94,6 @@ def train_all_market_models(
             path=resolve_market_model_path(market, model_path),
         )
     return bundles
-
-
-def _train_double_chance_model(
-    db: Session,
-    *,
-    should_calibrate: bool,
-    path: Path,
-) -> ModelBundle:
-    features, targets = build_double_chance_binary_targets(db)
-    if not features:
-        raise ValueError("cannot train double chance model without training data")
-
-    outcomes = MARKET_OUTCOMES[MARKET_DOUBLE_CHANCE]
-    from app.ml.features import TrainingDataset
-
-    models: dict[str, Any] = {}
-    for outcome in outcomes:
-        labels = [str(value) for value in targets[outcome]]
-        dataset = TrainingDataset(
-            match_ids=list(range(len(features))),
-            features=features,
-            labels=labels,
-        )
-        use_calibration = should_calibrate and len(features) >= CALIBRATION_MIN_SAMPLES
-        if use_calibration and len(set(labels)) >= 2:
-            models[outcome] = train_binary_calibrated_model(
-                dataset,
-                train_fn=train_binary_model,
-                positive_label="1",
-                negative_label="0",
-            )
-        elif len(set(labels)) >= 2:
-            models[outcome] = train_binary_model(dataset)
-        else:
-            continue
-
-    bundle = ModelBundle(
-        model=DoubleChanceModel(models=models),
-        metadata=ModelMetadata(
-            version=make_version("double_chance-logistic"),
-            algorithm="logistic",
-            trained_at=datetime.now(UTC).isoformat(),
-            n_samples=len(features),
-            feature_columns=list(FEATURE_COLUMNS),
-            metrics={"accuracy": 0.0, "log_loss": 0.0, "brier": 0.0},
-            evaluation="in_sample",
-            calibrated=should_calibrate,
-        ),
-    )
-    save_model(bundle, path)
-    return bundle
 
 
 def _metrics_dict(metrics: EvaluationMetrics) -> dict[str, float]:
