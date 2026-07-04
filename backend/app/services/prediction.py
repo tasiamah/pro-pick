@@ -62,6 +62,40 @@ def _neutral_prediction() -> MatchPrediction:
     )
 
 
+def value_bet_probabilities(
+    db: Session,
+    match: Match,
+    *,
+    model_bundle: ModelBundle | None = None,
+) -> dict[str, float] | None:
+    """Probabilities for value-bet edge checks.
+
+    Uses the active model with market features zeroed so edges reflect where our
+    statistical view disagrees with bookmaker prices. The stored prediction still
+    uses the full model (including market) for match picks; only value-bet
+    detection uses this stats-only view. Falls back to the latest stored
+    prediction when no model is loaded (tests / pre-bootstrap).
+    """
+    bundle = model_bundle if model_bundle is not None else load_active_model()
+    if bundle is not None and match.kickoff is not None:
+        try:
+            return predict_outcome_probabilities(
+                bundle.model, build_features(db, match, include_market=False)
+            )
+        except (ValueError, KeyError):
+            pass
+
+    if not match.predictions:
+        return None
+
+    prediction = max(match.predictions, key=lambda item: (item.created_at, item.id))
+    return {
+        "home": prediction.prob_home,
+        "draw": prediction.prob_draw,
+        "away": prediction.prob_away,
+    }
+
+
 def predict_match(
     db: Session, match: Match, *, model_bundle: ModelBundle | None = None
 ) -> MatchPrediction:

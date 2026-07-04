@@ -38,6 +38,11 @@ _MISSING_MARKET_FEATURES: dict[str, float] = {
 }
 
 
+def zeroed_market_features() -> dict[str, float]:
+    """Market columns with no signal — used for stats-only inference."""
+    return dict(_MISSING_MARKET_FEATURES)
+
+
 class OddsLike(Protocol):
     home: float
     draw: float

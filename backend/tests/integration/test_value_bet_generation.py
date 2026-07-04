@@ -74,6 +74,25 @@ def test_generate_value_bets_persists_ev_edge_stake_confidence(
     assert bet.confidence == pytest.approx(0.55 - 0.25, abs=1e-4)
 
 
+def test_generate_value_bets_uses_best_price_per_outcome_across_books(
+    db_session: Session,
+) -> None:
+    match = _seed_match(db_session)
+    db_session.add(
+        Odds(match_id=match.id, bookmaker="Softer", home=2.25, draw=3.60, away=5.00)
+    )
+    db_session.commit()
+
+    created = generate_value_bets(db_session, match)
+    db_session.commit()
+
+    assert created
+    bet = created[0]
+    assert bet.outcome == "home"
+    assert bet.odd == pytest.approx(2.25)
+    assert bet.edge == pytest.approx(0.55 - 1.0 / 2.25, abs=1e-4)
+
+
 def test_generate_value_bets_replaces_unsettled_but_keeps_settled(
     db_session: Session,
 ) -> None:

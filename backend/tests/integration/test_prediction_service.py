@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.ml.baseline import train_baseline_model
-from app.ml.features import build_training_dataset
+from app.ml.features import MARKET_FEATURE_COLUMNS, build_features, build_training_dataset
 from app.ml.storage import ModelBundle, ModelMetadata
 from app.models import Competition, Match, Prediction, Team
 from app.services.prediction import (
@@ -22,6 +22,7 @@ from app.services.prediction import (
     predict_match,
     refresh_predictions_for_upcoming,
     reset_model_cache,
+    value_bet_probabilities,
 )
 
 pytestmark = pytest.mark.integration
@@ -189,3 +190,30 @@ def test_predict_match_falls_back_without_model(
 
     assert result.model_version == FALLBACK_VERSION
     assert (result.prob_home, result.prob_draw, result.prob_away) == (0.40, 0.28, 0.32)
+
+
+def test_value_bet_probabilities_uses_zeroed_market_features(
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    upcoming = _seed(db_session)
+    bundle = _trained_bundle(db_session)
+    captured: dict[str, float] = {}
+
+    original_build_features = build_features
+
+    def spy_build_features(db, match, **kwargs):
+        features = original_build_features(db, match, **kwargs)
+        if kwargs.get("include_market") is False:
+            captured.update(
+                {column: features[column] for column in MARKET_FEATURE_COLUMNS}
+            )
+        return features
+
+    monkeypatch.setattr("app.services.prediction.build_features", spy_build_features)
+
+    stats = value_bet_probabilities(db_session, upcoming, model_bundle=bundle)
+
+    assert stats is not None
+    assert captured["has_market_odds"] == 0.0
+    assert captured["market_prob_home"] == 0.0

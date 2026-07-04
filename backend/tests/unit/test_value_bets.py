@@ -2,6 +2,7 @@ import pytest
 
 from app.models import Odds
 from app.services.value_bets import (
+    best_outcome_odds,
     confidence_score,
     evaluate_match,
     evaluate_outcome,
@@ -201,3 +202,19 @@ def test_primary_odds_returns_best_price_row():
 
 def test_primary_odds_returns_none_without_rows():
     assert primary_odds([]) is None
+
+
+def test_best_outcome_odds_picks_max_price_per_outcome():
+    soft = _odds("Soft", home=2.20, draw=3.50, away=4.80, odds_id=1)
+    sharp = _odds("Sharp", home=2.10, draw=3.40, away=4.50, odds_id=2)
+
+    assert best_outcome_odds([soft, sharp]) == {
+        "home": 2.20,
+        "draw": 3.50,
+        "away": 4.80,
+    }
+
+
+def test_best_outcome_odds_returns_none_when_an_outcome_is_missing():
+    partial = _odds("Partial", home=2.10, draw=0.0, away=4.50, odds_id=1)
+    assert best_outcome_odds([partial]) is None
