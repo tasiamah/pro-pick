@@ -179,7 +179,7 @@ export function HomeScreen({ navigation }: Props) {
           isEmpty={oddsTierGroups.length === 0}
           emptyMessage={
             isWeekSelected
-              ? 'No confident picks this week'
+              ? 'No confident picks coming up'
               : 'No confident picks on this day'
           }
           errorMessage="Could not load matches"

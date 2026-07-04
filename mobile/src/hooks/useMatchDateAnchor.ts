@@ -17,32 +17,38 @@ export function useMatchDateAnchor() {
   const dashboardQuery = useDashboard();
   const localDayKey = useLocalDayKey();
   const hasUpcoming = (dashboardQuery.data?.upcoming_matches ?? 0) > 0;
+  const nextPredictionKickoff = dashboardQuery.data?.next_prediction_kickoff ?? null;
   const anchorDate = useMemo(
     () =>
       resolveMatchAnchorDate(
         dashboardQuery.data?.upcoming_matches ?? 0,
         dashboardQuery.data?.latest_kickoff ?? null,
         localDayKeyToDate(localDayKey),
+        nextPredictionKickoff,
       ),
     [
       dashboardQuery.data?.latest_kickoff,
       dashboardQuery.data?.upcoming_matches,
       localDayKey,
+      nextPredictionKickoff,
     ],
   );
+  // When we have (or expect) upcoming matches, show a forward week starting at
+  // the anchor; otherwise fall back to the week ending at the latest fixture.
+  const showsForwardWindow = hasUpcoming || nextPredictionKickoff != null;
   const dateRange = useMemo(() => {
-    if (hasUpcoming) {
-      return buildDateRange(localDayKeyToDate(localDayKey), DATE_RANGE_DAYS);
+    if (showsForwardWindow) {
+      return buildDateRange(anchorDate, DATE_RANGE_DAYS);
     }
     return buildDateRangeEndingAt(anchorDate);
-  }, [anchorDate, hasUpcoming, localDayKey]);
+  }, [anchorDate, showsForwardWindow]);
   const matchListParams = useMemo(() => {
-    const rangeStart = dateRange[0] ?? localDayKeyToDate(localDayKey);
-    const rangeEnd = hasUpcoming
+    const rangeStart = dateRange[0] ?? anchorDate;
+    const rangeEnd = showsForwardWindow
       ? addLocalDays(rangeStart, DATE_RANGE_DAYS)
       : addLocalDays(anchorDate, 1);
     return buildDateWindowParams(rangeStart, rangeEnd);
-  }, [anchorDate, dateRange, hasUpcoming, localDayKey]);
+  }, [anchorDate, dateRange, showsForwardWindow]);
   const anchorKey = toLocalDateKey(anchorDate);
   const [selectedDate, setSelectedDate] = useState(anchorDate);
   const [prevAnchorKey, setPrevAnchorKey] = useState(anchorKey);

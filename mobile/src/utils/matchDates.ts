@@ -69,7 +69,17 @@ export function resolveMatchAnchorDate(
   upcomingMatches: number,
   latestKickoff: string | null,
   now = startOfLocalDay(),
+  nextPredictionKickoff: string | null = null,
 ): Date {
+  // Prefer the next upcoming match that actually has a prediction so Home lands
+  // on the next real slate instead of an empty "today" during a fixture gap
+  // (e.g. between the World Cup and the domestic season). Never anchor before
+  // today.
+  if (nextPredictionKickoff) {
+    const nextDay = startOfLocalDay(parseMatchDate(nextPredictionKickoff));
+    return nextDay.getTime() > now.getTime() ? nextDay : now;
+  }
+
   if (upcomingMatches > 0) {
     return now;
   }

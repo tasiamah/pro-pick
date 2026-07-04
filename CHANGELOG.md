@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- Renamed the Home date selector's week chip from "This week" to "Coming up" (and
+  its empty state to "No confident picks coming up") since the selector can now
+  anchor to a future slate rather than the current calendar week
+  (`mobile/src/components/DatePickerRow.tsx`, `mobile/src/screens/HomeScreen.tsx`).
+
+### Fixed
+- Home no longer looks empty during a fixture gap (e.g. between the World Cup and
+  the domestic-season restart). The dashboard now returns
+  `next_prediction_kickoff` (the earliest upcoming match that actually has a
+  prediction), and the app anchors its date selector there instead of sitting on
+  an empty "today" when the only near fixtures are unpredicted. Falls back to
+  today (in-season) and to the latest fixture when nothing is upcoming
+  (`backend/app/api/dashboard.py`, `backend/app/schemas/common.py`,
+  `mobile/src/api/types.ts`, `mobile/src/utils/matchDates.ts`,
+  `mobile/src/hooks/useMatchDateAnchor.ts`).
+
+### Changed
 - Match cards on Home and Matches now show only the **highest-confidence** AI
   pick plus a compact `+N more` hint when other qualifying markets exist; full
   market breakdown stays on match detail (`mobile/src/components/matchCard/MatchCardV2.tsx`,

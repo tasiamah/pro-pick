@@ -80,6 +80,31 @@ describe('matchDates', () => {
     expect(range.map(toLocalDateKey)).toEqual(['2025-05-23', '2025-05-24', '2025-05-25']);
   });
 
+  it('jumps to the next predicted slate when the near window is unpredicted', () => {
+    const now = startOfLocalDay(new Date(2026, 6, 4, 0, 0));
+    const nextPredictionKickoff = new Date(2026, 7, 21, 19, 0).toISOString();
+    const anchor = resolveMatchAnchorDate(1069, null, now, nextPredictionKickoff);
+
+    expect(toLocalDateKey(anchor)).toBe('2026-08-21');
+  });
+
+  it('stays on today when the next predicted match is today', () => {
+    const now = startOfLocalDay(new Date(2026, 7, 21, 0, 0));
+    const nextPredictionKickoff = new Date(2026, 7, 21, 19, 0).toISOString();
+    const anchor = resolveMatchAnchorDate(50, null, now, nextPredictionKickoff);
+
+    expect(toLocalDateKey(anchor)).toBe('2026-08-21');
+    expect(anchor.getTime()).toBe(now.getTime());
+  });
+
+  it('never anchors before today even if a stale prediction kickoff is passed', () => {
+    const now = startOfLocalDay(new Date(2026, 7, 21, 0, 0));
+    const stale = new Date(2026, 6, 4, 19, 0).toISOString();
+    const anchor = resolveMatchAnchorDate(50, null, now, stale);
+
+    expect(anchor.getTime()).toBe(now.getTime());
+  });
+
   it('filters and sorts matches for the selected day', () => {
     const selectedDate = startOfLocalDay(new Date(2026, 5, 24, 0, 0));
     const matches = [
