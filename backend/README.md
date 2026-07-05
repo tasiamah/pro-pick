@@ -196,7 +196,35 @@ bash backend/scripts/release.sh   # runs `alembic upgrade head`
 
 (Use `bash scripts/release.sh` if the service root is `backend/`.) The script is
 idempotent — it is a no-op when the database is already current.
-The job runs at the configured UTC hour while the API process is running.
+
+### Auto-deploy on Render (after merge to `main`)
+
+You should not need to click **Manual Deploy** after every PR. The repo includes
+`.github/workflows/deploy-render.yml`, which triggers a Render deploy **only after
+CI passes** on `main`.
+
+**One-time setup (~5 minutes):**
+
+1. **Render →** open the `pro-pick` web service → **Settings**
+2. Confirm **Root Directory** is `backend` and **Branch** is `main`
+3. Confirm **Pre-Deploy Command** is `bash scripts/release.sh` (runs migrations)
+4. Under **Deploy Hook**, click **Create deploy hook** and copy the URL
+5. **GitHub →** repo **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `RENDER_DEPLOY_HOOK_URL`
+   - Value: paste the deploy hook URL from step 4
+6. Back on Render **Settings**, set **Auto-Deploy** to **No** (so you do not get
+   two deploys — one from Render and one from GitHub Actions)
+
+**After setup:** merge a PR to `main` → CI runs → on success, GitHub POSTs the
+deploy hook → Render builds and deploys automatically. Watch progress under
+**Events** in the Render dashboard.
+
+**Quick alternative (no GitHub secret):** leave Render **Auto-Deploy** on **Yes**
+for branch `main`. Every push to `main` deploys immediately (CI still runs in
+parallel but does not gate the deploy). Fine for small teams; the hook + CI
+workflow is safer because broken code is not deployed before tests finish.
+
+The scheduler job runs at the configured UTC hour while the API process is running.
 Only one worker runs the job in production thanks to a PostgreSQL advisory lock.
 
 Ingestion failures emit structured `ERROR` logs on the `pro_pick.ingestion`

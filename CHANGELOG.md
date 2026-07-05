@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- GitHub Actions workflow to auto-deploy Render after CI passes on `main`
+  (`.github/workflows/deploy-render.yml`; set `RENDER_DEPLOY_HOOK_URL` in repo
+  secrets — see `backend/README.md`).
+
 ### Fixed
 - Ignore legacy `double_chance` rows when building market picks so `GET /matches`
   no longer 500s after that market was removed (`backend/app/services/match_enrichment.py`).
