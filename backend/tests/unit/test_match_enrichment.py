@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base
-from app.models import Competition, Match, Odds, Prediction, Team
+from app.models import Competition, MarketPrediction, Match, Odds, Prediction, Team
 from app.services.match_enrichment import (
     build_market_picks,
     capture_previous_odds,
@@ -240,3 +240,47 @@ def test_enrich_match_list_skips_live_market_prediction(db_session: Session) -> 
     assert len(enriched) == 1
     assert enriched[0].prediction is not None
     assert enriched[0].prediction.markets == []
+
+
+def test_build_market_picks_skips_legacy_double_chance_rows(
+    db_session: Session,
+) -> None:
+    home_team = Team(name="Home", logo_url=None)
+    away_team = Team(name="Away", logo_url=None)
+    db_session.add_all([home_team, away_team])
+    db_session.flush()
+
+    match = Match(
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow(),
+        status="scheduled",
+    )
+    db_session.add(match)
+    db_session.flush()
+    db_session.add_all(
+        [
+            MarketPrediction(
+                match_id=match.id,
+                market="double_chance",
+                model_version="legacy",
+                probabilities={
+                    "home_or_draw": 0.7,
+                    "home_or_away": 0.8,
+                    "draw_or_away": 0.6,
+                },
+            ),
+            MarketPrediction(
+                match_id=match.id,
+                market="btts",
+                model_version="test-v1",
+                probabilities={"yes": 0.62, "no": 0.38},
+            ),
+        ]
+    )
+    db_session.commit()
+
+    picks = build_market_picks(match, db_session, allow_live_prediction=False)
+
+    assert len(picks) == 1
+    assert picks[0].market == "btts"
