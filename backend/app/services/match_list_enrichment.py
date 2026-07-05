@@ -161,7 +161,7 @@ class _MatchListEnricher:
             confidence=round(prediction_confidence(prediction), 4),
             recommended_outcome=recommended_outcome(prediction),
             insights=self._prediction_insights(match, prediction),
-            markets=build_market_picks(match, self._db),
+            markets=build_market_picks(match, self._db, allow_live_prediction=False),
         )
 
 

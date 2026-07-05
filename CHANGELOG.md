@@ -23,6 +23,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/utils/marketLabels.ts`, `mobile/src/api/types.ts`).
 
 ### Fixed
+- `GET /matches` no longer runs on-demand market model inference for every row;
+  list responses use persisted market predictions only, which makes the matches
+  tab load much faster on Render (`backend/app/services/match_list_enrichment.py`,
+  `backend/app/services/match_enrichment.py`).
+
+### Changed
+- Mobile loads matches only when the tab is focused, after the dashboard returns,
+  and requests 50 rows instead of 200 so Render is not hit with parallel heavy
+  queries on cold start (`mobile/src/screens/HomeScreen.tsx`,
+  `mobile/src/screens/MatchesScreen.tsx`, `mobile/src/utils/matchDates.ts`,
+  `mobile/src/api/hooks.ts`, `mobile/src/api/client.ts`).
+
+### Fixed
 - Value bet detection now compares **stats-only** model probabilities to the
   best price per outcome across all bookmakers (line shopping), and lowers the
   default edge threshold to 2%, so more genuinely mispriced lines are surfaced

@@ -61,7 +61,8 @@ export function buildDateWindowParams(
   return {
     kickoff_from: start.toISOString(),
     kickoff_to: end.toISOString(),
-    limit: 200,
+    // Keep this modest: each row is heavily enriched server-side (~15s at 200 on Render).
+    limit: 50,
   };
 }
 

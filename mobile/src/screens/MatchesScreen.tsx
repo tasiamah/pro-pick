@@ -96,6 +96,7 @@ export function MatchesScreen({ navigation }: Props) {
   }, [debouncedSearchQuery, localDayKey, oddsTierFilter, statusFilter]);
 
   const matchesQuery = useMatches(matchListParams, {
+    enabled: isFocused,
     keepPreviousData: true,
     refetchInterval:
       isFocused && statusFilter === 'live' ? LIVE_REFETCH_INTERVAL_MS : false,

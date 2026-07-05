@@ -7,6 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { useAnalytics, useMatches } from '../api/hooks';
@@ -52,14 +53,18 @@ function formatMatchesAvailable(count: number): string {
 }
 
 export function HomeScreen({ navigation }: Props) {
+  const isFocused = useIsFocused();
   const {
     dateRange,
     matchListParams,
     selectedDate,
     setSelectedDate,
     dashboardQuery,
-  } = useMatchDateAnchor();
-  const matchesQuery = useMatches(matchListParams);
+  } = useMatchDateAnchor({ enabled: isFocused });
+  // Load matches after dashboard so Render is not hit with two heavy queries at once.
+  const matchesQuery = useMatches(matchListParams, {
+    enabled: isFocused && !!dashboardQuery.data,
+  });
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
   const now = useNow();
   const [isWeekSelected, setIsWeekSelected] = useState(false);

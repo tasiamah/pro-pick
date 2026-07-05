@@ -13,8 +13,9 @@ import {
 } from '../utils/matchDates';
 import { useLocalDayKey } from './useLocalDayKey';
 
-export function useMatchDateAnchor() {
-  const dashboardQuery = useDashboard();
+export function useMatchDateAnchor(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+  const dashboardQuery = useDashboard({ enabled });
   const localDayKey = useLocalDayKey();
   const hasUpcoming = (dashboardQuery.data?.upcoming_matches ?? 0) > 0;
   const nextPredictionKickoff = dashboardQuery.data?.next_prediction_kickoff ?? null;

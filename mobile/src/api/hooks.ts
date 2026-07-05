@@ -8,10 +8,12 @@ import type {
   ValueBetListParams,
 } from './types';
 
-export function useDashboard() {
+export function useDashboard(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.dashboard,
     queryFn: () => api.getDashboard(),
+    enabled: options?.enabled ?? true,
+    staleTime: 60_000,
   });
 }
 
