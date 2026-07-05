@@ -9,7 +9,11 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.ml.features import FORM_WINDOW, build_features
-from app.ml.market_labels import market_confidence, recommended_market_outcome
+from app.ml.market_labels import (
+    MARKET_OUTCOMES,
+    market_confidence,
+    recommended_market_outcome,
+)
 from app.models import MarketPrediction, Match, Odds, Prediction, Team
 from app.schemas.common import MarketPickOut, OddsOut, PredictionOut, TeamOut
 
@@ -78,9 +82,26 @@ def prediction_confidence(prediction: Prediction) -> float:
     return max(prediction.prob_home, prediction.prob_draw, prediction.prob_away)
 
 
+def _is_renderable_market_row(row: MarketPrediction) -> bool:
+    """A stored market row we can actually render into a pick.
+
+    Guards enrichment against malformed or retired market rows — an unknown
+    market key (e.g. a market removed from the model, or bad data) or a missing
+    probabilities blob — so a single bad row can't 500 the whole match detail or
+    list response.
+    """
+    return (
+        row.market in MARKET_OUTCOMES
+        and isinstance(row.probabilities, dict)
+        and len(row.probabilities) > 0
+    )
+
+
 def latest_market_predictions(match: Match) -> list[MarketPrediction]:
     latest_by_market: dict[str, MarketPrediction] = {}
     for row in match.market_predictions:
+        if not _is_renderable_market_row(row):
+            continue
         existing = latest_by_market.get(row.market)
         if existing is None or (row.created_at, row.id) > (
             existing.created_at,

@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/utils/marketLabels.ts`, `mobile/src/api/types.ts`).
 
 ### Fixed
+- `GET /matches` and `GET /predictions` no longer return **500 / "Failed to
+  fetch"** when a match has a malformed or retired secondary-market row (an
+  unknown market key or a null probabilities blob). Enrichment now skips
+  unrenderable market rows instead of raising, so one bad row can't take down the
+  whole list or a match's detail (`backend/app/services/match_enrichment.py`).
+  This also makes the Double Chance removal safe to deploy over existing
+  `double_chance` rows.
 - Value bet detection now compares **stats-only** model probabilities to the
   best price per outcome across all bookmakers (line shopping), and lowers the
   default edge threshold to 2%, so more genuinely mispriced lines are surfaced
