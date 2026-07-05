@@ -3,11 +3,13 @@ import type { Match } from '../api/types';
 export const DATE_RANGE_DAYS = 7;
 
 /**
- * How far ahead the "Coming up" view looks. A rolling two-week horizon (rather
- * than the current calendar week, which shrinks as the week progresses) so the
- * tab keeps showing the next batch of upcoming fixtures.
+ * How far ahead the "Coming up" view looks: a rolling one-week horizon (rather
+ * than the current calendar week, which shrinks as the week progresses). Seven
+ * days matches the weekly fixture cadence and the horizon over which bookmakers
+ * actually post prices, so we surface fresh, renderable picks instead of stale
+ * fixtures a fortnight out that carry no odds.
  */
-export const COMING_UP_DAYS = 14;
+export const COMING_UP_DAYS = 7;
 
 const TIMEZONE_SUFFIX = /([zZ]|[+-]\d{2}:?\d{2})$/;
 

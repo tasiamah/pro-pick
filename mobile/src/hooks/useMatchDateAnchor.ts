@@ -43,8 +43,8 @@ export function useMatchDateAnchor() {
     }
     return buildDateRangeEndingAt(anchorDate);
   }, [anchorDate, showsForwardWindow]);
-  // Fetch a two-week forward window (not just the seven day-chips) so the
-  // "Coming up" view has its full horizon of fixtures to choose from.
+  // Fetch the "Coming up" forward horizon so that view has its full window of
+  // fixtures to choose from (currently the same span as the day-chips).
   const matchListParams = useMemo(() => {
     const rangeStart = dateRange[0] ?? anchorDate;
     const rangeEnd = showsForwardWindow
