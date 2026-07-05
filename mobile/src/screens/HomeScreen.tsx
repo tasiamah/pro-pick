@@ -10,7 +10,7 @@ import {
 import { useIsFocused } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { useAnalytics, useMatches } from '../api/hooks';
+import { useAnalytics, useMatches, useValueBets } from '../api/hooks';
 import {
   AiPredictionsHero,
   AsyncState,
@@ -68,6 +68,10 @@ export function HomeScreen({ navigation }: Props) {
     enabled: isFocused && !!dashboardQuery.data,
   });
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
+  const valueBetsQuery = useValueBets(
+    { limit: 200 },
+    { enabled: isFocused && !!dashboardQuery.data },
+  );
   const now = useNow();
   // Default to the "Coming up" view rather than a single day.
   const [isWeekSelected, setIsWeekSelected] = useState(true);
@@ -113,9 +117,19 @@ export function HomeScreen({ navigation }: Props) {
   const heroStats = useMemo(
     () =>
       dashboardQuery.data
-        ? buildHeroStats(dashboardQuery.data, visibleMatches, shownPredictionCount)
+        ? buildHeroStats(
+            dashboardQuery.data,
+            visibleMatches,
+            shownPredictionCount,
+            valueBetsQuery.data ?? dashboardQuery.data.top_value_bets,
+          )
         : null,
-    [dashboardQuery.data, visibleMatches, shownPredictionCount],
+    [
+      dashboardQuery.data,
+      shownPredictionCount,
+      valueBetsQuery.data,
+      visibleMatches,
+    ],
   );
 
   const isInitialLoading = isInitialQueryLoad(
@@ -126,13 +140,15 @@ export function HomeScreen({ navigation }: Props) {
   const isRefreshing =
     dashboardQuery.isRefetching ||
     matchesQuery.isRefetching ||
-    analyticsQuery.isRefetching;
+    analyticsQuery.isRefetching ||
+    valueBetsQuery.isRefetching;
 
   const onRefresh = useCallback(() => {
     void dashboardQuery.refetch();
     void matchesQuery.refetch();
     void analyticsQuery.refetch();
-  }, [analyticsQuery, dashboardQuery, matchesQuery]);
+    void valueBetsQuery.refetch();
+  }, [analyticsQuery, dashboardQuery, matchesQuery, valueBetsQuery]);
 
   const onRetry = useCallback(() => {
     onRefresh();
