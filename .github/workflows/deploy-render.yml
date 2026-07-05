@@ -1,0 +1,36 @@
+# Trigger a Render deploy after CI passes on main (merge to production).
+#
+# One-time setup:
+# 1. Render → your web service → Settings → Deploy Hook → copy the URL
+# 2. GitHub → repo Settings → Secrets and variables → Actions → New secret
+#    Name: RENDER_DEPLOY_HOOK_URL   Value: <paste deploy hook URL>
+# 3. Render → Settings → turn OFF "Auto-Deploy" (avoids double deploys)
+#
+# After that, every merge to main runs CI first; this workflow POSTs the hook
+# when CI succeeds.
+
+name: Deploy to Render
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL is not set. Add it under GitHub repo Secrets (see backend/README.md)."
+            exit 1
+          fi
+          curl -fsS -X POST "$DEPLOY_HOOK"
+          echo "Render deploy triggered."
