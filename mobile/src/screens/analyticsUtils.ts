@@ -106,7 +106,7 @@ export function toAnalyticsSummaryStats(
     },
     {
       label: 'High Confidence',
-      value: formatCountMetric(analytics.high_confidence_count ?? 0),
+      value: formatAccuracyMetric(highConfidenceShare(analytics)),
       icon: 'ribbon-outline',
       iconColor: colors.chartAway,
     },
@@ -117,6 +117,29 @@ export function toAnalyticsSummaryStats(
       iconColor: colors.oddsLow,
     },
   ];
+}
+
+/**
+ * Share of matches the model issues a high-confidence pick on.
+ *
+ * Prefers the active model's out-of-sample `confident_coverage` — the same
+ * model-metadata source the accuracy cards use — so it reflects the model's true
+ * high-confidence rate (~19%). The raw `high_confidence_count` counts stored
+ * predictions, most of which are stale rows from older/neutral models without
+ * odds or history, dragging the realized rate (~3%) far below the model's real
+ * coverage. Falls back to the stored share only when no model metadata exists.
+ */
+export function highConfidenceShare(analytics: Analytics): number | null {
+  if (
+    analytics.confident_coverage != null &&
+    Number.isFinite(analytics.confident_coverage)
+  ) {
+    return analytics.confident_coverage;
+  }
+
+  const total = analytics.total_predictions ?? 0;
+  const count = analytics.high_confidence_count ?? 0;
+  return total > 0 ? count / total : null;
 }
 
 export function toModelPerformanceStats(
