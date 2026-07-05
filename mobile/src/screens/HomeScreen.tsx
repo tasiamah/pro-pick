@@ -92,8 +92,8 @@ export function HomeScreen({ navigation }: Props) {
   );
 
   // Selectivity: only surface the slate's most confident picks so the AI "picks
-  // its spots" instead of predicting every match. "Coming up" spans two weeks,
-  // so cap it at the soonest N confident picks rather than the whole horizon.
+  // its spots" instead of predicting every match. "Coming up" spans a rolling
+  // week, so cap it at the soonest N confident picks rather than the whole slate.
   const visibleMatches = useMemo(() => {
     const confident = filterHighConfidenceMatches(filteredMatches);
     return isWeekSelected ? confident.slice(0, COMING_UP_MATCH_LIMIT) : confident;

@@ -106,8 +106,8 @@ function kickoffTime(match: MatchDetail): number {
 
 /**
  * Upcoming matches for the "Coming up" view: fixtures from the anchor day up to
- * `horizonDays` ahead (default two weeks) that have not kicked off yet, sorted
- * by kickoff. Unlike a fixed calendar week this window rolls forward, so the tab
+ * `horizonDays` ahead (default one week) that have not kicked off yet, sorted by
+ * kickoff. Unlike a fixed calendar week this window rolls forward, so the tab
  * keeps showing the next batch of fixtures instead of shrinking as the week
  * ends. The confidence filter and display cap are applied by the caller.
  */

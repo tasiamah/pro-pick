@@ -77,9 +77,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - "Coming up" on Home now shows the soonest **10 confident** upcoming picks
-  across a rolling **two-week** window, instead of the current calendar week
-  (which shrank to almost nothing later in the week). Home now fetches a 14-day
-  forward window to feed it (`mobile/src/screens/HomeScreen.tsx`,
+  across a rolling **7-day** window, instead of the current calendar week (which
+  shrank to almost nothing later in the week). Seven days matches the weekly
+  fixture cadence and the horizon over which bookmakers post prices, so picks
+  stay fresh and renderable (`mobile/src/screens/HomeScreen.tsx`,
   `mobile/src/screens/homeMatchUtils.ts`, `mobile/src/hooks/useMatchDateAnchor.ts`,
   `mobile/src/utils/matchDates.ts`).
 - Match detail now only surfaces **BTTS** and **Over/Under 2.5** picks when the
