@@ -3,6 +3,7 @@ import type { Dashboard, MatchDetail, ValueBet } from '../api/types';
 import {
   buildHeroStats,
   computeAveragePickOdds,
+  countValueBetsOnVisibleMatches,
   formatHeroAvgOdds,
   formatHeroValueBetCount,
   formatHeroWinRate,
@@ -74,11 +75,23 @@ describe('homeHeroUtils', () => {
     expect(formatPredictionsSubtitle(3)).toBe('3 upcoming predictions');
   });
 
+  it('counts value bets only on visible Home picks', () => {
+    const visibleMatch: MatchDetail = { ...baseMatch, id: 99 };
+    const bets: ValueBet[] = [
+      { ...valueBet, id: 1, match_id: 1 },
+      { ...valueBet, id: 2, match_id: 2 },
+      { ...valueBet, id: 3, match_id: 99 },
+    ];
+
+    expect(countValueBetsOnVisibleMatches(bets, [visibleMatch])).toBe(1);
+    expect(countValueBetsOnVisibleMatches(bets, [])).toBe(0);
+  });
+
   it('builds hero stats from the high-confidence win rate', () => {
     expect(buildHeroStats(dashboard, [baseMatch], 12)).toEqual({
       winRate: '71.0%',
       avgOdds: '2.0',
-      valueBets: '8',
+      valueBets: '3',
       subtitle: '12 upcoming predictions',
     });
   });
@@ -94,7 +107,7 @@ describe('homeHeroUtils', () => {
     expect(buildHeroStats(withoutConfident, [baseMatch])).toEqual({
       winRate: '51.3%',
       avgOdds: '2.0',
-      valueBets: '8',
+      valueBets: '3',
       subtitle: '0 upcoming predictions',
     });
   });

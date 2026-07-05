@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `HISTORY_BACKFILL_MAX_TEAMS`.
 
 ### Fixed
+- Home hero **Value Bets** now counts only bets on confident picks shown in the
+  list below, instead of every upcoming value bet in the database
+  (`mobile/src/screens/homeHeroUtils.ts`, `mobile/src/screens/HomeScreen.tsx`).
 - Completed match cards on the Matches grid no longer truncate team names: hide
   form badges when scores are shown in compact mode, allow two-line names, and
   stack the AI pick label above confidence badges (`mobile/src/components/matchCard/MatchCardV2.tsx`).

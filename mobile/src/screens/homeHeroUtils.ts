@@ -1,4 +1,4 @@
-import type { Dashboard, MatchDetail } from '../api/types';
+import type { Dashboard, MatchDetail, ValueBet } from '../api/types';
 import {
   getOddForOutcome,
   getRecommendedOutcome,
@@ -39,6 +39,19 @@ export function formatPredictionsSubtitle(count: number): string {
   return `${count} upcoming prediction${count === 1 ? '' : 's'}`;
 }
 
+/** Value bets on matches the Home list is actually showing (confident picks). */
+export function countValueBetsOnVisibleMatches(
+  valueBets: ValueBet[],
+  visibleMatches: MatchDetail[],
+): number {
+  if (visibleMatches.length === 0) {
+    return 0;
+  }
+
+  const visibleMatchIds = new Set(visibleMatches.map((match) => match.id));
+  return valueBets.filter((bet) => visibleMatchIds.has(bet.match_id)).length;
+}
+
 export function computeAveragePickOdds(matches: MatchDetail[]): number | null {
   const prices: number[] = [];
 
@@ -66,12 +79,15 @@ export function buildHeroStats(
   dashboard: Dashboard,
   matches: MatchDetail[],
   shownPredictionCount = 0,
+  valueBets: ValueBet[] = dashboard.top_value_bets,
 ): HeroStats {
   const confidentAccuracy = dashboard.confident_accuracy;
   return {
     winRate: formatHeroWinRate(confidentAccuracy ?? dashboard.model_accuracy),
     avgOdds: formatHeroAvgOdds(computeAveragePickOdds(matches)),
-    valueBets: formatHeroValueBetCount(dashboard.upcoming_value_bets),
+    valueBets: formatHeroValueBetCount(
+      countValueBetsOnVisibleMatches(valueBets, matches),
+    ),
     subtitle: formatPredictionsSubtitle(shownPredictionCount),
   };
 }
