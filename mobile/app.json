@@ -15,7 +15,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.propick.app",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": ["remote-notification"],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -40,6 +41,12 @@
           "defaultChannel": "match-events"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "cbc8acbd-3891-4ca3-8865-c2622dc144ad"
+      }
+    },
+    "owner": "propick1"
   }
 }
