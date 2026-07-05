@@ -93,14 +93,23 @@ class StubFootballApiClient:
         fixtures: dict[tuple[int, int], list[dict]] | None = None,
         odds: dict[int, list[dict]] | None = None,
         failing_odds_ids: frozenset[int] = frozenset(),
+        team_fixtures: dict[int, list[dict]] | None = None,
     ) -> None:
         self.fixtures = fixtures or {}
         self.odds = odds or {}
         self.failing_odds_ids = set(failing_odds_ids)
+        self.team_fixtures = team_fixtures or {}
         self.odds_calls: list[int] = []
+        self.team_fixture_calls: list[int] = []
 
     def get_fixtures(self, league: int, season: int) -> list[dict]:
         return self.fixtures.get((league, season), [])
+
+    def get_team_fixtures(
+        self, team_id: int, *, last: int | None = None, season: int | None = None
+    ) -> list[dict]:
+        self.team_fixture_calls.append(team_id)
+        return self.team_fixtures.get(team_id, [])
 
     def get_odds(self, fixture_id: int) -> list[dict]:
         self.odds_calls.append(fixture_id)
@@ -347,3 +356,83 @@ def test_scheduled_fixture_persists_provider_goals(
     assert match.status == "scheduled"
     assert match.home_goals == home_goals
     assert match.away_goals == away_goals
+
+
+def team_history_fixture(
+    fixture_id: int,
+    home_id: int,
+    away_id: int,
+    *,
+    status: str = "FT",
+    home_goals: int | None = 1,
+    away_goals: int | None = 0,
+    league_id: int = 1,
+) -> dict:
+    return {
+        "fixture": {
+            "id": fixture_id,
+            "date": "2024-06-01T18:00:00+00:00",
+            "status": {"short": status},
+        },
+        "league": {
+            "id": league_id,
+            "name": "Friendlies",
+            "country": "World",
+            "season": 2024,
+        },
+        "teams": {
+            "home": {"id": home_id, "name": f"Team {home_id}", "logo": None},
+            "away": {"id": away_id, "name": f"Team {away_id}", "logo": None},
+        },
+        "goals": {"home": home_goals, "away": away_goals},
+    }
+
+
+def test_backfill_team_history_imports_finished_only_and_skips_odds(
+    db_session: Session,
+) -> None:
+    client = StubFootballApiClient(
+        team_fixtures={
+            100: [
+                team_history_fixture(5001, 100, 200, status="FT"),
+                team_history_fixture(5002, 300, 100, status="FT"),
+                # An upcoming friendly must not be imported (would surface in-app).
+                team_history_fixture(
+                    5003, 100, 400, status="NS", home_goals=None, away_goals=None
+                ),
+            ]
+        }
+    )
+    importer = HistoricalDataImporter(db_session, client=client, import_odds=False)
+
+    summary = importer.backfill_team_history([100], last=40)
+
+    assert client.team_fixture_calls == [100]
+    # Only the two finished fixtures land; the scheduled one is filtered out.
+    assert summary.matches == 2
+    statuses = {m.external_id: m.status for m in db_session.query(Match).all()}
+    assert statuses == {5001: "finished", 5002: "finished"}
+    # Results-only backfill never calls the odds endpoint.
+    assert client.odds_calls == []
+    assert db_session.query(Odds).count() == 0
+
+
+def test_backfill_team_history_survives_provider_error(db_session: Session) -> None:
+    class FailingClient(StubFootballApiClient):
+        def get_team_fixtures(self, team_id: int, **_kwargs: object) -> list[dict]:
+            self.team_fixture_calls.append(team_id)
+            if team_id == 100:
+                raise FootballApiError("boom")
+            return self.team_fixtures.get(team_id, [])
+
+    client = FailingClient(
+        team_fixtures={200: [team_history_fixture(6001, 200, 300, status="FT")]}
+    )
+    importer = HistoricalDataImporter(db_session, client=client, import_odds=False)
+
+    summary = importer.backfill_team_history([100, 200], last=40)
+
+    # First team errored but the second still imported.
+    assert client.team_fixture_calls == [100, 200]
+    assert summary.matches == 1
+    assert db_session.query(Match).one().external_id == 6001

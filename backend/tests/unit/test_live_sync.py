@@ -164,6 +164,9 @@ def test_run_live_sync_persists_upcoming_match_prediction_and_value_bet(
         def get_fixtures_by_date(self, _match_date: date) -> list[dict]:
             return [fixture]
 
+        def get_team_fixtures(self, _team_id: int, **_kwargs: object) -> list[dict]:
+            return []
+
         def get_odds(self, fixture_id: int) -> list[dict]:
             assert fixture_id == 5001
             return [
