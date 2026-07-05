@@ -77,7 +77,9 @@ describe('isConfidentMatch', () => {
   });
 
   it('lets a high-odds pick through below the threshold, down to its floor', () => {
-    const highOddsPick = match(1, pred(0.45, 0.3, 0.25), [highOdds()]);
+    const confidence = HIGH_ODDS_CONFIDENCE_FLOOR + 0.05;
+    const rest = (1 - confidence) / 2;
+    const highOddsPick = match(1, pred(confidence, rest, rest), [highOdds()]);
     expect(isConfidentMatch(highOddsPick)).toBe(true);
   });
 

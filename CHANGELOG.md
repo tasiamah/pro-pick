@@ -83,6 +83,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Removed the slate-relative quantile machinery
   (`mobile/src/utils/confidence.ts`, `mobile/src/utils/marketPicks.ts`,
   `mobile/src/components/matchCard/MatchCardV2.tsx`).
+- Raised the high-odds confidence floor from **0.40 to 0.45**. It only applies to
+  picks priced at odds >= 3.5 (book implies <= ~28.6%); 0.45 keeps a clear ~16pt
+  edge over the book and sits comfortably above random (0.333), so the exception
+  surfaces genuine value underdogs without dropping near-noise
+  (`mobile/src/utils/confidence.ts`).
 - Renamed the Home date selector's week chip from "This week" to "Coming up" (and
   its empty state to "No confident picks coming up") since the selector can now
   anchor to a future slate rather than the current calendar week
