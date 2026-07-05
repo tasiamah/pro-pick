@@ -12,6 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Automatic team/country history backfill.** Results-derived features (form,
+  goals, rest days, Elo, head-to-head) are built from stored finished matches, so
+  teams with little history — national sides in a tournament especially — got
+  near-default features and near-coin-flip predictions (e.g. two different
+  matchups producing identical probabilities). Each sync now finds upcoming-slate
+  teams below a history threshold and pulls their recent finished fixtures across
+  all competitions (one API call per team, results only, capped per run) *before*
+  refreshing predictions, so their features carry real signal. New
+  `FootballApiClient.get_team_fixtures`, `HistoricalDataImporter.backfill_team_history`,
+  `services/history_backfill.py`, and a `python -m app.scripts.backfill_team_history`
+  CLI for one-off runs. Tunable via `HISTORY_BACKFILL_ENABLED`,
+  `HISTORY_BACKFILL_MIN_MATCHES`, `HISTORY_BACKFILL_LAST_FIXTURES`, and
+  `HISTORY_BACKFILL_MAX_TEAMS`.
+
 ### Removed
 - Dropped the **Double Chance** market from the model and app. Double Chance
   (home-or-draw / home-or-away / draw-or-away) is a low-odds safe bet that adds

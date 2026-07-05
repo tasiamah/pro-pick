@@ -27,6 +27,11 @@ DEFAULT_SEASONS = (2022, 2023, 2024)
 UPCOMING_MATCH_STATUSES = frozenset({"scheduled", "live"})
 FINISHED_MATCH_STATUS = "finished"
 
+# How many recent fixtures to pull per team when backfilling missing history.
+# One API call per team; ~40 covers roughly two seasons of national-team play,
+# enough to seed stable form/Elo/H2H features without burning the quota.
+DEFAULT_TEAM_HISTORY_FIXTURES = 40
+
 # Stop fetching odds for the rest of a batch after this many consecutive provider
 # failures (e.g. quota exhaustion or an outage). Fixtures already imported are
 # still committed; the next sync retries odds. Prevents one bad call from
@@ -57,6 +62,13 @@ def map_fixture_status(short_code: str) -> str:
     if code in LIVE_STATUS_CODES:
         return "live"
     return "scheduled"
+
+
+def _is_finished_fixture(fixture_item: dict) -> bool:
+    short = fixture_item.get("fixture", {}).get("status", {}).get("short")
+    if not short:
+        return False
+    return map_fixture_status(short) == FINISHED_MATCH_STATUS
 
 
 def parse_kickoff(raw_value: str | None) -> datetime | None:
@@ -192,6 +204,56 @@ class HistoricalDataImporter:
                         )
 
         self.db.commit()
+        return summary
+
+    def backfill_team_history(
+        self,
+        team_external_ids: Sequence[int],
+        *,
+        last: int = DEFAULT_TEAM_HISTORY_FIXTURES,
+    ) -> ImportSummary:
+        """Import each team's recent finished fixtures to enrich its history.
+
+        For teams with little history in our DB (national sides especially), the
+        results-derived features (form, goals, rest days, Elo, H2H) collapse to
+        near-neutral defaults, which flattens predictions toward a coin flip. This
+        pulls each team's most recent finished matches across all competitions so
+        those features carry real signal.
+
+        Only finished fixtures are imported: upcoming ones would surface stray
+        friendlies/qualifiers in the app, and results are all the point-in-time
+        features need. Odds are not fetched here (that path is one call per match
+        and quota-heavy); it relies on ``_should_import_odds`` skipping finished
+        rows, so pass an importer built with ``import_odds=False`` (or
+        ``upcoming_odds_only=True``). Resilient to provider errors per team.
+        """
+        summary = ImportSummary()
+        consecutive_failures = 0
+
+        for team_external_id in team_external_ids:
+            try:
+                fixtures = self.client.get_team_fixtures(team_external_id, last=last)
+                consecutive_failures = 0
+            except (FootballApiError, httpx.HTTPError) as exc:
+                consecutive_failures += 1
+                logger.warning(
+                    "Team history fetch failed for team %s: %s",
+                    team_external_id,
+                    exc,
+                )
+                if consecutive_failures >= MAX_CONSECUTIVE_ODDS_FAILURES:
+                    logger.warning(
+                        "Stopping team-history backfill after %s consecutive "
+                        "failures; committing what was fetched.",
+                        consecutive_failures,
+                    )
+                    break
+                continue
+
+            finished = [item for item in fixtures if _is_finished_fixture(item)]
+            if finished:
+                summary.merge(self.import_fixture_items(finished))
+
         return summary
 
     def backfill_odds(self, matches: Sequence[Match]) -> ImportSummary:

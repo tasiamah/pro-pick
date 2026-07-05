@@ -20,6 +20,7 @@ from app.services.historical_import import (
     HistoricalDataImporter,
     ImportSummary,
 )
+from app.services.history_backfill import backfill_missing_team_history
 from app.services.ingestion_alerts import IngestionPipelineError
 from app.services.market_prediction import refresh_market_predictions_for_upcoming
 from app.services.match_notification_events import (
@@ -48,6 +49,7 @@ class FetchWindowResult:
 class LiveSyncSummary:
     fixtures_fetched: int = 0
     import_summary: ImportSummary | None = None
+    history_backfill: ImportSummary | None = None
     predictions: int = 0
     market_predictions: int = 0
     value_bets: int = 0
@@ -249,6 +251,15 @@ def run_live_sync(
             upcoming_odds_only=True,
         )
         summary.merge_import(importer.import_fixture_items(fixtures))
+        if settings.history_backfill_enabled:
+            # Enrich history for upcoming teams that lack it *before* predicting,
+            # so their form/Elo/H2H features carry signal this run.
+            try:
+                summary.history_backfill = backfill_missing_team_history(
+                    db, client=api_client, now=resolved_now
+                )
+            except (FootballApiError, httpx.HTTPError):
+                logger.exception("Team-history backfill failed; continuing sync")
         summary.predictions = refresh_predictions_for_upcoming(db, now=resolved_now)
         summary.market_predictions = refresh_market_predictions_for_upcoming(
             db, now=resolved_now
@@ -274,12 +285,13 @@ def run_live_sync(
 
     logger.info(
         "Live sync complete: %s fixtures, %s new matches, %s odds rows, "
-        "%s odds failed, %s predictions, %s market predictions, %s value bets, "
-        "%s settled bets, %s push sent",
+        "%s odds failed, %s history matches backfilled, %s predictions, "
+        "%s market predictions, %s value bets, %s settled bets, %s push sent",
         summary.fixtures_fetched,
         summary.import_summary.matches if summary.import_summary else 0,
         summary.import_summary.odds if summary.import_summary else 0,
         summary.import_summary.odds_failed if summary.import_summary else 0,
+        summary.history_backfill.matches if summary.history_backfill else 0,
         summary.predictions,
         summary.market_predictions,
         summary.value_bets,

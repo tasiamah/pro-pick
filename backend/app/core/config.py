@@ -35,6 +35,15 @@ class Settings(BaseSettings):
     scheduler_daily_hour: int = Field(default=6, ge=0, le=23)
     scheduler_import_odds: bool = True
 
+    # During each sync, pull recent finished fixtures for upcoming-slate teams
+    # that have too little stored history for meaningful form/Elo/H2H features
+    # (common for national sides in a tournament). One API call per team, results
+    # only, capped per run to bound the quota.
+    history_backfill_enabled: bool = True
+    history_backfill_min_matches: int = Field(default=10, ge=0)
+    history_backfill_last_fixtures: int = Field(default=40, ge=1)
+    history_backfill_max_teams: int = Field(default=20, ge=0)
+
     # Minimum model_prob - implied_prob gap before flagging a value bet. 2% surfaces
     # more picks than 3% while staying conservative; tune via env on Render.
     value_bet_edge_threshold: float = 0.02
