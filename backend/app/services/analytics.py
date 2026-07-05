@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models import Match, Prediction, ValueBet
 from app.services.match_enrichment import classify_odds_tier
+from app.services.prediction import FALLBACK_VERSION
 
 LOG_LOSS_EPSILON = 1e-15
 CONFIDENCE_TREND_LIMIT = 20
@@ -338,15 +339,27 @@ def load_recent_prediction_probabilities(
     db: Session,
     limit: int = CONFIDENCE_TREND_LIMIT,
 ) -> list[PredictionProbabilities]:
-    rows = db.execute(
-        select(
+    """Most recent predictions for the confidence trend.
+
+    Neutral fallback rows carry a fixed distribution (0.40/0.28/0.32), so when
+    they dominate the newest inserts the trend collapses to a constant 40. We
+    exclude them so the chart reflects the real model's varying confidence, and
+    fall back to the unfiltered set only if no model-backed rows exist yet.
+    """
+
+    def _recent(exclude_fallback: bool) -> list:
+        stmt = select(
             Prediction.prob_home,
             Prediction.prob_draw,
             Prediction.prob_away,
         )
-        .order_by(Prediction.created_at.desc())
-        .limit(limit)
-    ).all()
+        if exclude_fallback:
+            stmt = stmt.where(Prediction.model_version != FALLBACK_VERSION)
+        return db.execute(
+            stmt.order_by(Prediction.created_at.desc()).limit(limit)
+        ).all()
+
+    rows = _recent(exclude_fallback=True) or _recent(exclude_fallback=False)
 
     chronological = list(reversed(rows))
     return [
