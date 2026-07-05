@@ -6,6 +6,7 @@ import {
   buildDateRange,
   buildDateRangeEndingAt,
   buildDateWindowParams,
+  COMING_UP_DAYS,
   DATE_RANGE_DAYS,
   localDayKeyToDate,
   resolveMatchAnchorDate,
@@ -43,10 +44,12 @@ export function useMatchDateAnchor(options?: { enabled?: boolean }) {
     }
     return buildDateRangeEndingAt(anchorDate);
   }, [anchorDate, showsForwardWindow]);
+  // Fetch the "Coming up" forward horizon so that view has its full window of
+  // fixtures to choose from (currently the same span as the day-chips).
   const matchListParams = useMemo(() => {
     const rangeStart = dateRange[0] ?? anchorDate;
     const rangeEnd = showsForwardWindow
-      ? addLocalDays(rangeStart, DATE_RANGE_DAYS)
+      ? addLocalDays(rangeStart, COMING_UP_DAYS)
       : addLocalDays(anchorDate, 1);
     return buildDateWindowParams(rangeStart, rangeEnd);
   }, [anchorDate, dateRange, showsForwardWindow]);

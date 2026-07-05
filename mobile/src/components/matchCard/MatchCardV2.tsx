@@ -21,7 +21,6 @@ import { isLiveMatch, shouldShowMatchScore } from '../../utils/matchScoreUtils';
 import {
   formatAdditionalPicksLabel,
   getMatchCardDisplayPicks,
-  getQualifyingPicksForMatch,
   sortDisplayPicksByConfidence,
   type DisplayPick,
 } from '../../utils/marketPicks';
@@ -149,24 +148,11 @@ export function MatchCardV2({
   const homeName = getTeamName(match.home_team, 'Home');
   const awayName = getTeamName(match.away_team, 'Away');
 
-  const resolvedSlate = useMemo(() => {
-    if (slate) {
-      return slate;
-    }
-    if ('prediction' in match && match.prediction != null) {
-      return [match as MatchDetail];
-    }
-    if (prediction) {
-      return [{ ...(match as MatchDetail), prediction, odds: odds ?? [] }];
-    }
-    return [];
-  }, [match, odds, prediction, slate]);
-
   const picks = useMemo(() => {
     if (qualifyingPicks) {
       return qualifyingPicks;
     }
-    if (resolvedSlate.length === 0 || !prediction) {
+    if (!prediction) {
       return [];
     }
     const enriched: MatchDetail = {
@@ -174,8 +160,8 @@ export function MatchCardV2({
       prediction,
       odds: odds ?? [],
     };
-    return getMatchCardDisplayPicks(enriched, resolvedSlate);
-  }, [match, odds, prediction, qualifyingPicks, resolvedSlate]);
+    return getMatchCardDisplayPicks(enriched);
+  }, [match, odds, prediction, qualifyingPicks]);
 
   const sortedPicks = useMemo(() => sortDisplayPicksByConfidence(picks), [picks]);
   const showAiBlock = sortedPicks.length > 0;

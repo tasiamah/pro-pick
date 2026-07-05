@@ -6,10 +6,7 @@ import {
 } from '../components/matchCard/matchCardUtils';
 import { buildDynamicMatchInsight } from '../components/matchCard/matchInsightUtils';
 import { getTeamName } from './matchDisplay';
-import {
-  isConfidentMarketPick,
-  slateConfidenceThresholdForMarket,
-} from './confidence';
+import { isConfidentMarketPick } from './confidence';
 import {
   formatMarketPickLabel,
   isSecondaryMarketId,
@@ -44,11 +41,8 @@ export function buildPrimaryPredictionPick(match: MatchDetail): DisplayPick | nu
   };
 }
 
-export function getMatchCardDisplayPicks(
-  match: MatchDetail,
-  slate: MatchDetail[],
-): DisplayPick[] {
-  const qualifying = getQualifyingPicksForMatch(match, slate);
+export function getMatchCardDisplayPicks(match: MatchDetail): DisplayPick[] {
+  const qualifying = getQualifyingPicksForMatch(match);
   if (qualifying.length > 0) {
     return qualifying;
   }
@@ -61,10 +55,7 @@ export function getMatchCardDisplayPicks(
   return fallback ? [fallback] : [];
 }
 
-export function getQualifyingPicksForMatch(
-  match: MatchDetail,
-  slate: MatchDetail[],
-): DisplayPick[] {
+export function getQualifyingPicksForMatch(match: MatchDetail): DisplayPick[] {
   const prediction = match.prediction;
   if (!prediction) {
     return [];
@@ -74,8 +65,7 @@ export function getQualifyingPicksForMatch(
   const awayName = getTeamName(match.away_team, 'Away');
   const picks: DisplayPick[] = [];
 
-  const bar1x2 = slateConfidenceThresholdForMarket(slate, '1x2');
-  if (isConfidentMarketPick(match, '1x2', bar1x2)) {
+  if (isConfidentMarketPick(match, '1x2')) {
     picks.push({
       market: '1x2',
       label: formatPredictedOutcomeLabel(
@@ -93,8 +83,7 @@ export function getQualifyingPicksForMatch(
       continue;
     }
 
-    const bar = slateConfidenceThresholdForMarket(slate, marketPick.market);
-    if (!isConfidentMarketPick(match, marketPick.market, bar)) {
+    if (!isConfidentMarketPick(match, marketPick.market)) {
       continue;
     }
 
@@ -134,7 +123,7 @@ export function filterHighConfidenceMatchesWithPicks(
   const picksByMatchId = new Map<number, DisplayPick[]>();
 
   for (const match of matches) {
-    const picks = getQualifyingPicksForMatch(match, matches);
+    const picks = getQualifyingPicksForMatch(match);
     if (picks.length === 0) {
       continue;
     }

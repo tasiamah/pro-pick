@@ -6,8 +6,8 @@ import {
 } from '../components/matchCard/matchCardUtils';
 import {
   addLocalDays,
+  COMING_UP_DAYS,
   filterMatchesByDate,
-  filterMatchesByWeek,
   parseMatchDate,
   startOfLocalDay,
 } from '../utils/matchDates';
@@ -20,6 +20,13 @@ import { hasKickedOff } from './matchesFilterUtils';
  * complete browse. ~12 ≈ a full-looking slate, roughly four per odds tier.
  */
 export const HOME_MATCH_TARGET = 12;
+
+/**
+ * Max number of matches the "Coming up" view lists. We surface the soonest
+ * confident picks up to this cap so the tab shows a meaningful batch without
+ * turning into the full Matches browse.
+ */
+export const COMING_UP_MATCH_LIMIT = 10;
 
 export type HomeOddsTierGroup = {
   tier: OddsTier;
@@ -98,17 +105,27 @@ function kickoffTime(match: MatchDetail): number {
 }
 
 /**
- * Upcoming matches for the current calendar week (Mon–Sun) containing `now`.
- * Mirrors the day view's "upcoming only" rule so the Home tab stays a forward
- * looking slate while widening the window from a single day to the whole week.
+ * Upcoming matches for the "Coming up" view: fixtures from the anchor day up to
+ * `horizonDays` ahead (default one week) that have not kicked off yet, sorted by
+ * kickoff. Unlike a fixed calendar week this window rolls forward, so the tab
+ * keeps showing the next batch of fixtures instead of shrinking as the week
+ * ends. The confidence filter and display cap are applied by the caller.
  */
-export function selectHomeWeekMatches(
+export function selectComingUpMatches(
   matches: MatchDetail[],
   now: Date,
+  anchor: Date,
+  horizonDays = COMING_UP_DAYS,
 ): MatchDetail[] {
-  return filterMatchesByWeek(matches, now).filter(
-    (match) => !hasKickedOff(match.kickoff, now),
-  );
+  const windowEnd = addLocalDays(startOfLocalDay(anchor), horizonDays).getTime();
+  return matches
+    .filter(
+      (match) =>
+        match.kickoff !== null &&
+        !hasKickedOff(match.kickoff, now) &&
+        kickoffTime(match) < windowEnd,
+    )
+    .sort((left, right) => kickoffTime(left) - kickoffTime(right));
 }
 
 /**

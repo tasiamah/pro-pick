@@ -2,13 +2,10 @@ import type { MatchDetail, MarketPick, Odds, Prediction } from '../api/types';
 
 import {
   CANONICAL_CONFIDENCE_THRESHOLD,
-  CONFIDENCE_FLOOR,
   HIGH_ODDS_CONFIDENCE_FLOOR,
   isConfidentMarketPick,
   isConfidentMatch,
   isHighConfidenceSecondaryPick,
-  slateConfidenceThreshold,
-  slateConfidenceThresholdForMarket,
 } from './confidence';
 import { filterHighConfidenceMatches, getQualifyingPicksForMatch } from './marketPicks';
 
@@ -65,61 +62,25 @@ function slate(confidences: number[]): MatchDetail[] {
   );
 }
 
-describe('slateConfidenceThreshold', () => {
-  it('falls back to the canonical threshold for an empty slate', () => {
-    expect(slateConfidenceThreshold([])).toBe(CANONICAL_CONFIDENCE_THRESHOLD);
-  });
-
-  it('never drops below the floor for a low-confidence (international) slate', () => {
-    const threshold = slateConfidenceThreshold(
-      slate([0.41, 0.48, 0.52, 0.55, 0.59]),
-    );
-    expect(threshold).toBeGreaterThanOrEqual(CONFIDENCE_FLOOR);
-    expect(threshold).toBeLessThan(CANONICAL_CONFIDENCE_THRESHOLD);
-  });
-
-  it('caps at the canonical threshold for a very confident slate', () => {
-    expect(slateConfidenceThreshold(slate([0.8, 0.85, 0.9, 0.95]))).toBe(
-      CANONICAL_CONFIDENCE_THRESHOLD,
-    );
-  });
-});
-
-describe('slateConfidenceThresholdForMarket', () => {
-  it('computes a bar from secondary-market confidences only', () => {
-    const matches = [
-      match(1, {
-        ...pred(0.4, 0.3, 0.3),
-        markets: [marketPick('btts', 0.62, 'yes')],
-      }),
-      match(2, {
-        ...pred(0.4, 0.3, 0.3),
-        markets: [marketPick('btts', 0.58, 'yes')],
-      }),
-    ];
-
-    const threshold = slateConfidenceThresholdForMarket(matches, 'btts');
-    expect(threshold).toBeGreaterThanOrEqual(CONFIDENCE_FLOOR);
-    expect(threshold).toBeLessThanOrEqual(CANONICAL_CONFIDENCE_THRESHOLD);
-  });
-});
-
 describe('isConfidentMatch', () => {
-  it('is true when confidence clears the bar', () => {
-    expect(isConfidentMatch(match(1, pred(0.6, 0.25, 0.15)), 0.55)).toBe(true);
+  it('is true when confidence clears the high-confidence threshold', () => {
+    expect(isConfidentMatch(match(1, pred(0.72, 0.16, 0.12)))).toBe(true);
   });
 
-  it('is false when confidence is below the bar', () => {
-    expect(isConfidentMatch(match(1, pred(0.52, 0.28, 0.2)), 0.55)).toBe(false);
+  it('is false when confidence is below the threshold on a normal pick', () => {
+    // 0.62 would have passed the old slate-relative bar; now it does not.
+    expect(isConfidentMatch(match(1, pred(0.62, 0.22, 0.16)))).toBe(false);
   });
 
   it('is false without a prediction', () => {
-    expect(isConfidentMatch(match(1, null), 0.55)).toBe(false);
+    expect(isConfidentMatch(match(1, null))).toBe(false);
   });
 
-  it('lets a high-odds pick through below the bar, down to its floor', () => {
-    const highOddsPick = match(1, pred(0.45, 0.3, 0.25), [highOdds()]);
-    expect(isConfidentMatch(highOddsPick, 0.6)).toBe(true);
+  it('lets a high-odds pick through below the threshold, down to its floor', () => {
+    const confidence = HIGH_ODDS_CONFIDENCE_FLOOR + 0.05;
+    const rest = (1 - confidence) / 2;
+    const highOddsPick = match(1, pred(confidence, rest, rest), [highOdds()]);
+    expect(isConfidentMatch(highOddsPick)).toBe(true);
   });
 
   it('still rejects a high-odds pick below its relaxed floor', () => {
@@ -128,24 +89,25 @@ describe('isConfidentMatch', () => {
       pred(HIGH_ODDS_CONFIDENCE_FLOOR - 0.02, 0.32, 0.2),
       [highOdds()],
     );
-    expect(isConfidentMatch(tooLow, 0.6)).toBe(false);
+    expect(isConfidentMatch(tooLow)).toBe(false);
   });
 });
 
 describe('isConfidentMarketPick', () => {
-  it('keeps a secondary market that clears its own slate bar', () => {
-    const matches = [
-      match(1, {
-        ...pred(0.4, 0.3, 0.3),
-        markets: [marketPick('btts', 0.62, 'yes')],
-      }),
-      match(2, {
-        ...pred(0.4, 0.3, 0.3),
-        markets: [marketPick('btts', 0.51, 'yes')],
-      }),
-    ];
-    const bar = slateConfidenceThresholdForMarket(matches, 'btts');
-    expect(isConfidentMarketPick(matches[0], 'btts', bar)).toBe(true);
+  it('keeps a secondary market at or above the high-confidence threshold', () => {
+    const entry = match(1, {
+      ...pred(0.4, 0.3, 0.3),
+      markets: [marketPick('btts', 0.74, 'yes')],
+    });
+    expect(isConfidentMarketPick(entry, 'btts')).toBe(true);
+  });
+
+  it('drops a secondary market below the high-confidence threshold', () => {
+    const entry = match(1, {
+      ...pred(0.4, 0.3, 0.3),
+      markets: [marketPick('btts', 0.62, 'yes')],
+    });
+    expect(isConfidentMarketPick(entry, 'btts')).toBe(false);
   });
 });
 
@@ -164,35 +126,31 @@ describe('isHighConfidenceSecondaryPick', () => {
 });
 
 describe('getQualifyingPicksForMatch', () => {
-  it('returns both 1X2 and qualifying secondary markets', () => {
+  it('returns 1X2 and secondary markets that clear the high-confidence bar', () => {
     const entry = match(1, {
       ...pred(0.72, 0.15, 0.13),
-      markets: [marketPick('btts', 0.61, 'yes')],
+      markets: [marketPick('btts', 0.74, 'yes'), marketPick('over_under_25', 0.61, 'over')],
     });
-    const slateMatches = [entry, match(2, pred(0.55, 0.25, 0.2))];
 
-    const picks = getQualifyingPicksForMatch(entry, slateMatches);
-    expect(picks.map((pick) => pick.market)).toEqual(['1x2', 'btts']);
+    // 1X2 (0.72) and BTTS (0.74) qualify; Over/Under (0.61) is below 0.70.
+    const picks = getQualifyingPicksForMatch(entry);
+    expect(picks.map((pick) => pick.market)).toEqual(['btts', '1x2']);
     expect(picks[0].confidence).toBeGreaterThanOrEqual(picks[1].confidence);
   });
 });
 
 describe('filterHighConfidenceMatches', () => {
-  it('surfaces the strongest tier of an international slate (never empty)', () => {
-    const matches = slate([0.41, 0.48, 0.52, 0.55, 0.59]);
-    const kept = filterHighConfidenceMatches(matches);
-    expect(kept.length).toBeGreaterThan(0);
-    expect(kept.length).toBeLessThan(matches.length);
-    expect(kept).toContainEqual(matches[matches.length - 1]);
+  it('returns nothing for a low-confidence (international) slate', () => {
+    // None of these clear the high-confidence bar, and none are high-odds, so
+    // we deliberately show nothing rather than the "best of a weak slate".
+    const matches = slate([0.41, 0.48, 0.52, 0.55, 0.59, 0.62, 0.66, 0.68]);
+    expect(filterHighConfidenceMatches(matches)).toEqual([]);
   });
 
-  it('is strict: keeps only a minority (~top third) of a spread slate', () => {
-    const matches = slate([
-      0.5, 0.52, 0.54, 0.56, 0.58, 0.6, 0.62, 0.64, 0.66, 0.68,
-    ]);
+  it('keeps only the matches at or above the high-confidence threshold', () => {
+    const matches = slate([0.62, 0.68, 0.7, 0.74, 0.81]);
     const kept = filterHighConfidenceMatches(matches);
-    expect(kept.length).toBeGreaterThan(0);
-    expect(kept.length).toBeLessThanOrEqual(4);
+    expect(kept.map((entry) => entry.id)).toEqual([3, 4, 5]);
   });
 
   it('drops prediction-less matches', () => {
@@ -204,7 +162,7 @@ describe('filterHighConfidenceMatches', () => {
     expect(filterHighConfidenceMatches(matches).map((m) => m.id)).toEqual([1, 3]);
   });
 
-  it('keeps high-odds value picks the relative bar would otherwise drop', () => {
+  it('keeps high-odds value picks below the high-confidence threshold', () => {
     const matches = [
       match(1, pred(0.85, 0.1, 0.05)),
       match(2, pred(0.82, 0.12, 0.06)),
@@ -217,11 +175,11 @@ describe('filterHighConfidenceMatches', () => {
     const matches = [
       match(1, {
         ...pred(0.45, 0.3, 0.25),
-        markets: [marketPick('btts', 0.68, 'yes')],
+        markets: [marketPick('btts', 0.72, 'yes')],
       }),
       match(2, {
         ...pred(0.45, 0.3, 0.25),
-        markets: [marketPick('btts', 0.51, 'yes')],
+        markets: [marketPick('btts', 0.68, 'yes')],
       }),
     ];
 
