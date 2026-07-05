@@ -18,8 +18,13 @@ export const CANONICAL_CONFIDENCE_THRESHOLD = 0.7;
  * bookmaker probability, so the model doesn't need to be as confident for the
  * pick to still represent a genuine edge worth surfacing. This is the "if the
  * odds are high, the confidence doesn't need to be as high" exception.
+ *
+ * Only applies to picks priced at odds >= 3.5 (`classifyMatchOddsTier` "high"),
+ * where the book implies <= ~28.6%. The floor is set above random (0.333) with a
+ * safety margin so we demand a clear ~16pt edge over the book rather than
+ * surfacing near-noise — anchored to the odds tier, not an arbitrary number.
  */
-export const HIGH_ODDS_CONFIDENCE_FLOOR = 0.4;
+export const HIGH_ODDS_CONFIDENCE_FLOOR = 0.45;
 
 function matchConfidence(match: MatchDetail): number | null {
   return match.prediction == null ? null : getConfidence(match.prediction);
