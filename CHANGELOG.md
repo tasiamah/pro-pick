@@ -52,6 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `backend/app/services/prediction.py`, `backend/app/core/config.py`).
 
 ### Changed
+- Analytics **"High Confidence"** now reports the active model's out-of-sample
+  coverage rate (~19%) instead of a raw count of stored predictions clearing the
+  threshold. The count (~3%) was misleading: most stored predictions are stale
+  rows from older/neutral models without odds or history, so it undercounted the
+  model's true high-confidence rate. It now uses the same model-metadata source
+  as the accuracy cards (`confident_coverage`), falling back to the stored share
+  only when no model metadata is available (`mobile/src/screens/analyticsUtils.ts`).
 - Confidence filter is now a **fixed high-confidence bar** instead of a
   slate-relative one. Picks are only surfaced when the model clears the canonical
   **0.70** threshold; on a weak slate the app shows fewer (or no) picks rather
