@@ -1,7 +1,9 @@
 import type { MatchDetail } from '../api/types';
 
 import {
+  buildPrimaryPredictionPick,
   formatAdditionalPicksLabel,
+  getMatchCardDisplayPicks,
   getQualifyingPicksForMatch,
   sortDisplayPicksByConfidence,
   type DisplayPick,
@@ -85,5 +87,71 @@ describe('getQualifyingPicksForMatch', () => {
     const picks = getQualifyingPicksForMatch(baseMatch, slate);
     expect(picks.length).toBeGreaterThan(0);
     expect(picks[0].market).toBe('btts');
+  });
+});
+
+describe('getMatchCardDisplayPicks', () => {
+  it('falls back to the primary 1X2 pick on finished matches without qualifying picks', () => {
+    const finishedMatch: MatchDetail = {
+      ...baseMatch,
+      status: 'finished',
+      home_goals: 0,
+      away_goals: 3,
+      odds: [],
+      prediction: {
+        match_id: 1,
+        model_version: 'stub',
+        prob_home: 0.31,
+        prob_draw: 0.29,
+        prob_away: 0.4,
+      },
+    };
+
+    const picks = getMatchCardDisplayPicks(finishedMatch, [finishedMatch]);
+    expect(picks).toEqual([
+      {
+        market: '1x2',
+        label: 'Austria Win',
+        confidence: 0.4,
+        insight: expect.any(String),
+      },
+    ]);
+  });
+
+  it('keeps selectivity for scheduled matches without a qualifying pick', () => {
+    const scheduledMatch: MatchDetail = {
+      ...baseMatch,
+      prediction: {
+        match_id: 1,
+        model_version: 'stub',
+        prob_home: 0.4,
+        prob_draw: 0.35,
+        prob_away: 0.25,
+        markets: [],
+      },
+    };
+    const slate = [
+      scheduledMatch,
+      {
+        ...baseMatch,
+        id: 2,
+        prediction: {
+          match_id: 2,
+          model_version: 'stub',
+          prob_home: 0.82,
+          prob_draw: 0.1,
+          prob_away: 0.08,
+        },
+      },
+    ];
+
+    expect(getQualifyingPicksForMatch(scheduledMatch, slate)).toEqual([]);
+    expect(getMatchCardDisplayPicks(scheduledMatch, slate)).toEqual([]);
+  });
+});
+
+describe('buildPrimaryPredictionPick', () => {
+  it('returns null when a match has no prediction', () => {
+    expect(buildPrimaryPredictionPick({ ...baseMatch, prediction: null })).toBeNull();
   });
 });

@@ -20,6 +20,7 @@ import { getTeamName } from '../../utils/matchDisplay';
 import { isLiveMatch, shouldShowMatchScore } from '../../utils/matchScoreUtils';
 import {
   formatAdditionalPicksLabel,
+  getMatchCardDisplayPicks,
   getQualifyingPicksForMatch,
   sortDisplayPicksByConfidence,
   type DisplayPick,
@@ -173,11 +174,11 @@ export function MatchCardV2({
       prediction,
       odds: odds ?? [],
     };
-    return getQualifyingPicksForMatch(enriched, resolvedSlate);
+    return getMatchCardDisplayPicks(enriched, resolvedSlate);
   }, [match, odds, prediction, qualifyingPicks, resolvedSlate]);
 
   const sortedPicks = useMemo(() => sortDisplayPicksByConfidence(picks), [picks]);
-  const showAiBlock = sortedPicks.length > 0 && primaryOdds != null;
+  const showAiBlock = sortedPicks.length > 0;
   const topPick = sortedPicks[0];
   const additionalPicksLabel = formatAdditionalPicksLabel(sortedPicks.length - 1);
   const oddsTier =

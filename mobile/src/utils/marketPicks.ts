@@ -23,6 +23,44 @@ export type DisplayPick = {
   insight?: string | null;
 };
 
+export function buildPrimaryPredictionPick(match: MatchDetail): DisplayPick | null {
+  const prediction = match.prediction;
+  if (!prediction) {
+    return null;
+  }
+
+  const homeName = getTeamName(match.home_team, 'Home');
+  const awayName = getTeamName(match.away_team, 'Away');
+
+  return {
+    market: '1x2',
+    label: formatPredictedOutcomeLabel(
+      getRecommendedOutcome(prediction),
+      homeName,
+      awayName,
+    ),
+    confidence: getConfidence(prediction),
+    insight: buildDynamicMatchInsight(match, prediction),
+  };
+}
+
+export function getMatchCardDisplayPicks(
+  match: MatchDetail,
+  slate: MatchDetail[],
+): DisplayPick[] {
+  const qualifying = getQualifyingPicksForMatch(match, slate);
+  if (qualifying.length > 0) {
+    return qualifying;
+  }
+
+  if (match.status !== 'finished') {
+    return [];
+  }
+
+  const fallback = buildPrimaryPredictionPick(match);
+  return fallback ? [fallback] : [];
+}
+
 export function getQualifyingPicksForMatch(
   match: MatchDetail,
   slate: MatchDetail[],
@@ -62,7 +100,7 @@ export function getQualifyingPicksForMatch(
 
     picks.push({
       market: marketPick.market,
-      label: formatMarketPickLabel(marketPick),
+      label: formatMarketPickLabel(marketPick, homeName, awayName),
       confidence: marketPick.confidence,
     });
   }
