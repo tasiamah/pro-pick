@@ -13,7 +13,11 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.ml.baseline import train_baseline_model
-from app.ml.features import MARKET_FEATURE_COLUMNS, build_features, build_training_dataset
+from app.ml.features import (
+    MARKET_FEATURE_COLUMNS,
+    build_features,
+    build_training_dataset,
+)
 from app.ml.storage import ModelBundle, ModelMetadata
 from app.models import Competition, Match, Prediction, Team
 from app.services.prediction import (

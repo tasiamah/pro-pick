@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Value bet detection now compares **stats-only** model probabilities to the
+  best price per outcome across all bookmakers (line shopping), and lowers the
+  default edge threshold to 2%, so more genuinely mispriced lines are surfaced
+  after sync (`backend/app/services/value_bets.py`,
+  `backend/app/services/prediction.py`, `backend/app/core/config.py`).
+
 ### Changed
 - Renamed the Home date selector's week chip from "This week" to "Coming up" (and
   its empty state to "No confident picks coming up") since the selector can now
