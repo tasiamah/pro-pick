@@ -4,7 +4,11 @@ import math
 from datetime import UTC, datetime
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.database import Base
+from app.models import Prediction
 from app.services.analytics import (
     LOG_LOSS_EPSILON,
     PredictionProbabilities,
@@ -18,9 +22,22 @@ from app.services.analytics import (
     compute_log_loss,
     compute_roi,
     count_high_confidence_predictions,
+    load_recent_prediction_probabilities,
 )
+from app.services.prediction import FALLBACK_VERSION
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture
+def db_session() -> Session:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    session = sessionmaker(bind=engine)()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 def test_compute_roi_returns_none_without_settled_bets():
@@ -146,6 +163,50 @@ def test_build_confidence_trend_returns_percentages():
     ]
 
     assert build_confidence_trend(predictions) == [70, 40]
+
+
+def _add_prediction(db, match_id, probs, version, created_at):
+    db.add(
+        Prediction(
+            match_id=match_id,
+            model_version=version,
+            prob_home=probs[0],
+            prob_draw=probs[1],
+            prob_away=probs[2],
+            created_at=created_at,
+        )
+    )
+
+
+def test_recent_predictions_exclude_neutral_fallback_rows(db_session):
+    base = datetime(2026, 7, 1, 12, 0, 0)
+    # Real model predictions (older) carry real variance.
+    _add_prediction(db_session, 1, (0.62, 0.23, 0.15), "v2", base)
+    _add_prediction(db_session, 2, (0.48, 0.30, 0.22), "v2", base.replace(minute=30))
+    # Fallback rows (newest) are a constant 0.40/0.28/0.32 -> flat 40.
+    for match_id in range(10, 15):
+        _add_prediction(
+            db_session,
+            match_id,
+            (0.40, 0.28, 0.32),
+            FALLBACK_VERSION,
+            base.replace(hour=13),
+        )
+    db_session.commit()
+
+    recent = load_recent_prediction_probabilities(db_session)
+
+    assert build_confidence_trend(recent) == [62, 48]
+
+
+def test_recent_predictions_fall_back_when_only_fallback_rows_exist(db_session):
+    base = datetime(2026, 7, 1, 12, 0, 0)
+    _add_prediction(db_session, 1, (0.40, 0.28, 0.32), FALLBACK_VERSION, base)
+    db_session.commit()
+
+    recent = load_recent_prediction_probabilities(db_session)
+
+    assert build_confidence_trend(recent) == [40]
 
 
 def test_build_prediction_outcome_counts_groups_latest_predictions():
