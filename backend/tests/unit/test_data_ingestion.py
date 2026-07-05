@@ -30,6 +30,44 @@ def test_get_fixtures_returns_provider_response() -> None:
     assert fixtures == [{"fixture": {"id": 1001}}]
 
 
+def test_get_team_fixtures_passes_team_and_last() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/fixtures"
+        assert request.url.params["team"] == "33"
+        assert request.url.params["last"] == "40"
+        assert "season" not in request.url.params
+        return httpx.Response(
+            200,
+            json={"response": [{"fixture": {"id": 7}}], "errors": []},
+        )
+
+    client = FootballApiClient(
+        api_key="test-key",
+        min_request_interval_seconds=0,
+        transport=httpx.MockTransport(handler),
+    )
+
+    fixtures = client.get_team_fixtures(33, last=40)
+
+    assert fixtures == [{"fixture": {"id": 7}}]
+
+
+def test_get_team_fixtures_passes_season_when_given() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.params["team"] == "33"
+        assert request.url.params["season"] == "2024"
+        assert "last" not in request.url.params
+        return httpx.Response(200, json={"response": [], "errors": []})
+
+    client = FootballApiClient(
+        api_key="test-key",
+        min_request_interval_seconds=0,
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert client.get_team_fixtures(33, season=2024) == []
+
+
 def test_get_odds_returns_provider_response() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/odds"

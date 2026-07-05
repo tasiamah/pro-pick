@@ -139,6 +139,31 @@ class FootballApiClient:
             raise FootballApiError("Unexpected fixtures response shape")
         return response
 
+    def get_team_fixtures(
+        self,
+        team_id: int,
+        *,
+        last: int | None = None,
+        season: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Fixtures for a single team, across all competitions.
+
+        Used to backfill history for teams (national sides in particular) that
+        have too few matches in our DB for meaningful form/Elo/H2H features. Pass
+        ``last`` for the team's most recent N fixtures (one call, no season), or
+        ``season`` for a specific campaign.
+        """
+        params: dict[str, Any] = {"team": team_id}
+        if last is not None:
+            params["last"] = last
+        if season is not None:
+            params["season"] = season
+        payload = self._request("fixtures", params)
+        response = payload.get("response", [])
+        if not isinstance(response, list):
+            raise FootballApiError("Unexpected fixtures response shape")
+        return response
+
     def get_odds(self, fixture_id: int) -> list[dict[str, Any]]:
         payload = self._request(
             "odds",

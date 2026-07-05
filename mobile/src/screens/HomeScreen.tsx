@@ -30,9 +30,10 @@ import { filterHighConfidenceMatches } from '../utils/marketPicks';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { buildHeroStats } from './homeHeroUtils';
 import {
+  COMING_UP_MATCH_LIMIT,
   filterUpcomingMatchesForDay,
   groupHomeMatchesByOddsTier,
-  selectHomeWeekMatches,
+  selectComingUpMatches,
 } from './homeMatchUtils';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
@@ -55,6 +56,7 @@ function formatMatchesAvailable(count: number): string {
 export function HomeScreen({ navigation }: Props) {
   const isFocused = useIsFocused();
   const {
+    anchorDate,
     dateRange,
     matchListParams,
     selectedDate,
@@ -67,7 +69,8 @@ export function HomeScreen({ navigation }: Props) {
   });
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
   const now = useNow();
-  const [isWeekSelected, setIsWeekSelected] = useState(false);
+  // Default to the "Coming up" view rather than a single day.
+  const [isWeekSelected, setIsWeekSelected] = useState(true);
 
   const selectDate = useCallback(
     (date: Date) => {
@@ -84,17 +87,18 @@ export function HomeScreen({ navigation }: Props) {
   const filteredMatches = useMemo(
     () =>
       isWeekSelected
-        ? selectHomeWeekMatches(matchesQuery.data ?? [], now)
+        ? selectComingUpMatches(matchesQuery.data ?? [], now, anchorDate)
         : filterUpcomingMatchesForDay(matchesQuery.data ?? [], selectedDate, now),
-    [isWeekSelected, matchesQuery.data, selectedDate, now],
+    [isWeekSelected, matchesQuery.data, selectedDate, now, anchorDate],
   );
 
   // Selectivity: only surface the slate's most confident picks so the AI "picks
-  // its spots" instead of predicting every match.
-  const visibleMatches = useMemo(
-    () => filterHighConfidenceMatches(filteredMatches),
-    [filteredMatches],
-  );
+  // its spots" instead of predicting every match. "Coming up" spans a rolling
+  // week, so cap it at the soonest N confident picks rather than the whole slate.
+  const visibleMatches = useMemo(() => {
+    const confident = filterHighConfidenceMatches(filteredMatches);
+    return isWeekSelected ? confident.slice(0, COMING_UP_MATCH_LIMIT) : confident;
+  }, [filteredMatches, isWeekSelected]);
 
   const oddsTierGroups = useMemo(
     () => groupHomeMatchesByOddsTier(visibleMatches),

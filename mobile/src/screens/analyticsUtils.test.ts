@@ -94,6 +94,24 @@ describe('analyticsUtils', () => {
     expect(logLoss?.value).toBe('0.912');
   });
 
+  it('reports High Confidence as the model coverage rate, not the stored count', () => {
+    const summary = toAnalyticsSummaryStats(sampleAnalytics);
+    const highConfidence = summary.find((stat) => stat.label === 'High Confidence');
+    // 0.19 coverage -> 19.0%, not the stale stored count (11).
+    expect(highConfidence?.value).toBe('19.0%');
+  });
+
+  it('falls back to the stored high-confidence share without model coverage', () => {
+    const summary = toAnalyticsSummaryStats({
+      ...sampleAnalytics,
+      confident_coverage: null,
+      total_predictions: 20,
+      high_confidence_count: 5,
+    });
+    const highConfidence = summary.find((stat) => stat.label === 'High Confidence');
+    expect(highConfidence?.value).toBe('25.0%');
+  });
+
   it('surfaces high-confidence accuracy and never the full-slate figure', () => {
     const summary = toAnalyticsSummaryStats(sampleAnalytics);
     const accuracyCard = summary.find((stat) => stat.label === 'Model Accuracy');

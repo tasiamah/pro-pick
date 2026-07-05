@@ -2,6 +2,15 @@ import type { Match } from '../api/types';
 
 export const DATE_RANGE_DAYS = 7;
 
+/**
+ * How far ahead the "Coming up" view looks: a rolling one-week horizon (rather
+ * than the current calendar week, which shrinks as the week progresses). Seven
+ * days matches the weekly fixture cadence and the horizon over which bookmakers
+ * actually post prices, so we surface fresh, renderable picks instead of stale
+ * fixtures a fortnight out that carry no odds.
+ */
+export const COMING_UP_DAYS = 7;
+
 const TIMEZONE_SUFFIX = /([zZ]|[+-]\d{2}:?\d{2})$/;
 
 /**
@@ -38,7 +47,10 @@ export function localDayKeyToDate(key: string): Date {
   return new Date(year, month - 1, day);
 }
 
-export function formatDateChipLabel(date: Date): string {
+export function formatDateChipLabel(date: Date, now = new Date()): string {
+  if (toLocalDateKey(date) === toLocalDateKey(now)) {
+    return 'Today';
+  }
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',

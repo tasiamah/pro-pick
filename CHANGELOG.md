@@ -16,6 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - GitHub Actions workflow to auto-deploy Render after CI passes on `main`
   (`.github/workflows/deploy-render.yml`; set `RENDER_DEPLOY_HOOK_URL` in repo
   secrets — see `backend/README.md`).
+- **Automatic team/country history backfill.** Results-derived features (form,
+  goals, rest days, Elo, head-to-head) are built from stored finished matches, so
+  teams with little history — national sides in a tournament especially — got
+  near-default features and near-coin-flip predictions (e.g. two different
+  matchups producing identical probabilities). Each sync now finds upcoming-slate
+  teams below a history threshold and pulls their recent finished fixtures across
+  all competitions (one API call per team, results only, capped per run) *before*
+  refreshing predictions, so their features carry real signal. New
+  `FootballApiClient.get_team_fixtures`, `HistoricalDataImporter.backfill_team_history`,
+  `services/history_backfill.py`, and a `python -m app.scripts.backfill_team_history`
+  CLI for one-off runs. Tunable via `HISTORY_BACKFILL_ENABLED`,
+  `HISTORY_BACKFILL_MIN_MATCHES`, `HISTORY_BACKFILL_LAST_FIXTURES`, and
+  `HISTORY_BACKFILL_MAX_TEAMS`.
 
 ### Fixed
 - Ignore legacy `double_chance` rows when building market picks so `GET /matches`
@@ -45,6 +58,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/api/hooks.ts`, `mobile/src/api/client.ts`).
 
 ### Fixed
+- `GET /matches` and `GET /predictions` no longer return **500 / "Failed to
+  fetch"** when a match has a malformed or retired secondary-market row (an
+  unknown market key or a null probabilities blob). Enrichment now skips
+  unrenderable market rows instead of raising, so one bad row can't take down the
+  whole list or a match's detail (`backend/app/services/match_enrichment.py`).
+  This also makes the Double Chance removal safe to deploy over existing
+  `double_chance` rows.
 - Value bet detection now compares **stats-only** model probabilities to the
   best price per outcome across all bookmakers (line shopping), and lowers the
   default edge threshold to 2%, so more genuinely mispriced lines are surfaced
@@ -52,6 +72,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `backend/app/services/prediction.py`, `backend/app/core/config.py`).
 
 ### Changed
+- Analytics **"High Confidence"** now reports the active model's out-of-sample
+  coverage rate (~19%) instead of a raw count of stored predictions clearing the
+  threshold. The count (~3%) was misleading: most stored predictions are stale
+  rows from older/neutral models without odds or history, so it undercounted the
+  model's true high-confidence rate. It now uses the same model-metadata source
+  as the accuracy cards (`confident_coverage`), falling back to the stored share
+  only when no model metadata is available (`mobile/src/screens/analyticsUtils.ts`).
+- Confidence filter is now a **fixed high-confidence bar** instead of a
+  slate-relative one. Picks are only surfaced when the model clears the canonical
+  **0.70** threshold; on a weak slate the app shows fewer (or no) picks rather
+  than the "best of a mediocre bunch", which was letting ~50–60% calls onto Home.
+  The high-odds exception is kept — long-price (underdog) 1X2 picks may clear a
+  relaxed **0.40** floor, since a lower model probability at a long price can
+  still be a genuine edge ("if the odds are high, the confidence doesn't need to
+  be as high"). Secondary markets (BTTS, Over/Under 2.5) always require 0.70.
+  Removed the slate-relative quantile machinery
+  (`mobile/src/utils/confidence.ts`, `mobile/src/utils/marketPicks.ts`,
+  `mobile/src/components/matchCard/MatchCardV2.tsx`).
+- Raised the high-odds confidence floor from **0.40 to 0.45**. It only applies to
+  picks priced at odds >= 3.5 (book implies <= ~28.6%); 0.45 keeps a clear ~16pt
+  edge over the book and sits comfortably above random (0.333), so the exception
+  surfaces genuine value underdogs without dropping near-noise
+  (`mobile/src/utils/confidence.ts`).
 - Renamed the Home date selector's week chip from "This week" to "Coming up" (and
   its empty state to "No confident picks coming up") since the selector can now
   anchor to a future slate rather than the current calendar week
@@ -69,6 +112,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/hooks/useMatchDateAnchor.ts`).
 
 ### Changed
+- Home now opens on the **"Coming up"** view by default (instead of a single
+  day), and the current day's chip reads **"Today"** rather than the full date
+  (`mobile/src/screens/HomeScreen.tsx`, `mobile/src/utils/matchDates.ts`).
+- "Coming up" on Home now shows the soonest **10 confident** upcoming picks
+  across a rolling **7-day** window, instead of the current calendar week (which
+  shrank to almost nothing later in the week). Seven days matches the weekly
+  fixture cadence and the horizon over which bookmakers post prices, so picks
+  stay fresh and renderable (`mobile/src/screens/HomeScreen.tsx`,
+  `mobile/src/screens/homeMatchUtils.ts`, `mobile/src/hooks/useMatchDateAnchor.ts`,
+  `mobile/src/utils/matchDates.ts`).
 - Match detail now only surfaces **BTTS** and **Over/Under 2.5** picks when the
   model is genuinely confident (at or above the canonical 0.70 threshold),
   matching the selective behaviour of the Home and Matches cards instead of

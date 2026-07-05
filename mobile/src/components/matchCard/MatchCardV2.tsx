@@ -170,7 +170,7 @@ export function MatchCardV2({
       prediction,
       odds: odds ?? [],
     };
-    return getQualifyingPicksForMatch(enriched, resolvedSlate);
+    return getQualifyingPicksForMatch(enriched);
   }, [match, odds, prediction, qualifyingPicks, resolvedSlate]);
 
   const sortedPicks = useMemo(() => sortDisplayPicksByConfidence(picks), [picks]);

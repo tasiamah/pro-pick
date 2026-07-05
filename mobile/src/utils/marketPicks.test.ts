@@ -67,23 +67,10 @@ describe('formatAdditionalPicksLabel', () => {
 });
 
 describe('getQualifyingPicksForMatch', () => {
-  it('returns qualifying picks sorted by confidence', () => {
-    const slate = [
-      baseMatch,
-      {
-        ...baseMatch,
-        id: 2,
-        prediction: {
-          ...baseMatch.prediction!,
-          prob_home: 0.45,
-          prob_draw: 0.3,
-          prob_away: 0.25,
-        },
-      },
-    ];
-
-    const picks = getQualifyingPicksForMatch(baseMatch, slate);
-    expect(picks.length).toBeGreaterThan(0);
-    expect(picks[0].market).toBe('btts');
+  it('keeps only high-confidence markets and sorts them by confidence', () => {
+    // 1X2 (0.52) and Over/Under (0.56) are below the 0.70 bar; only BTTS (0.78)
+    // clears it.
+    const picks = getQualifyingPicksForMatch(baseMatch);
+    expect(picks.map((pick) => pick.market)).toEqual(['btts']);
   });
 });
