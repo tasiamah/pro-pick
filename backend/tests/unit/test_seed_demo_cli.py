@@ -22,7 +22,7 @@ def test_main_prints_summary(
         matches=12,
         predictions=2,
         odds=2,
-        value_bets=1,
+        value_bets=2,
     )
 
     exit_code = main([])
@@ -47,7 +47,7 @@ def test_main_purges_when_flag_set(
         matches=12,
         predictions=2,
         odds=2,
-        value_bets=1,
+        value_bets=2,
     )
 
     exit_code = main(["--purge"])

@@ -40,7 +40,7 @@ def test_run_demo_seed_is_idempotent(db_session: Session) -> None:
     assert db_session.scalar(select(func.count()).select_from(Team)) == 4
     assert db_session.scalar(select(func.count()).select_from(Prediction)) == 2
     assert db_session.scalar(select(func.count()).select_from(Odds)) == 2
-    assert db_session.scalar(select(func.count()).select_from(ValueBet)) == 1
+    assert db_session.scalar(select(func.count()).select_from(ValueBet)) == 2
 
 
 def test_run_demo_seed_creates_bournemouth_vs_luton_fixture(
@@ -132,7 +132,7 @@ def test_purge_demo_seed_removes_demo_data_only(db_session: Session) -> None:
     assert summary.competitions == 1
     assert summary.predictions == 2
     assert summary.odds == 2
-    assert summary.value_bets == 1
+    assert summary.value_bets == 2
 
     assert db_session.scalar(select(func.count()).select_from(Match)) == 1
     assert db_session.scalar(select(func.count()).select_from(Team)) == 2

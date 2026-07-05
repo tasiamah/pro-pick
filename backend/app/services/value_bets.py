@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import Match, Odds, ValueBet
+from app.services.prediction import value_bet_probabilities
 
 
 @dataclass
@@ -167,27 +168,46 @@ def primary_odds(odds_rows: list[Odds]) -> Odds | None:
     return ordered[0] if ordered else None
 
 
+def best_outcome_odds(odds_rows: list[Odds]) -> dict[str, float] | None:
+    """Best decimal price per outcome across all books (line shopping).
+
+    Value bets compare the model to the price a bettor can actually get, not a
+    single sharp book row. Taking the max price per outcome surfaces more genuine
+    edge when multiple bookmakers are stored for a match.
+    """
+    best: dict[str, float] = {}
+    for row in odds_rows:
+        for outcome, price in (
+            ("home", row.home),
+            ("draw", row.draw),
+            ("away", row.away),
+        ):
+            if price is not None and price > 0:
+                best[outcome] = max(best.get(outcome, 0.0), price)
+    if {"home", "draw", "away"} - best.keys():
+        return None
+    return best
+
+
 def generate_value_bets(db: Session, match: Match) -> list[ValueBet]:
     """Persist value bets (EV, edge, stake, confidence) for a match.
 
-    Uses the latest prediction and the primary odds, replacing any unsettled
-    bets for the match. Requires ``match.predictions`` and ``match.odds`` to be
-    loaded; returns the persisted rows.
+    Uses stats-only model probabilities (market features zeroed) so edges reflect
+    where form/Elo disagree with bookmaker prices, the best available price per
+    outcome, replacing any unsettled bets for the match. Requires
+    ``match.predictions`` and ``match.odds`` to be loaded; returns the persisted
+    rows.
     """
     if not match.predictions or not match.odds:
         return []
 
-    odds = primary_odds(match.odds)
-    if odds is None:
+    odds_values = best_outcome_odds(match.odds)
+    if odds_values is None:
         return []
 
-    prediction = max(match.predictions, key=lambda item: (item.created_at, item.id))
-    probabilities = {
-        "home": prediction.prob_home,
-        "draw": prediction.prob_draw,
-        "away": prediction.prob_away,
-    }
-    odds_values = {"home": odds.home, "draw": odds.draw, "away": odds.away}
+    probabilities = value_bet_probabilities(db, match)
+    if probabilities is None:
+        return []
 
     db.execute(
         delete(ValueBet).where(

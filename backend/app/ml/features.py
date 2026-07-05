@@ -20,7 +20,11 @@ from datetime import datetime
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.ml.market_features import MARKET_FEATURE_COLUMNS, market_features
+from app.ml.market_features import (
+    MARKET_FEATURE_COLUMNS,
+    market_features,
+    zeroed_market_features,
+)
 from app.models import Match, Odds
 
 FORM_WINDOW = 5
@@ -219,13 +223,20 @@ def load_match_history_for_teams(
 
 
 def build_features(
-    db: Session, match: Match, *, form_window: int = FORM_WINDOW
+    db: Session,
+    match: Match,
+    *,
+    form_window: int = FORM_WINDOW,
+    include_market: bool = True,
 ) -> dict[str, float]:
     if match.kickoff is None:
         raise ValueError("match must have a kickoff to build features")
     history = load_match_history(db, before=match.kickoff)
     features = compute_features(_to_context(match), history, form_window=form_window)
-    features.update(market_features(list(match.odds)))
+    if include_market:
+        features.update(market_features(list(match.odds)))
+    else:
+        features.update(zeroed_market_features())
     return features
 
 

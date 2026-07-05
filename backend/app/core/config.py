@@ -35,7 +35,9 @@ class Settings(BaseSettings):
     scheduler_daily_hour: int = Field(default=6, ge=0, le=23)
     scheduler_import_odds: bool = True
 
-    value_bet_edge_threshold: float = 0.03
+    # Minimum model_prob - implied_prob gap before flagging a value bet. 2% surfaces
+    # more picks than 3% while staying conservative; tune via env on Render.
+    value_bet_edge_threshold: float = 0.02
     kelly_fraction: float = 0.25
     # Quality guard: skip flagging longshots and low-certainty picks as value
     # bets. Models are least reliable on long odds, so capping them keeps the
