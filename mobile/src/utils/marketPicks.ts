@@ -89,7 +89,7 @@ export function getQualifyingPicksForMatch(match: MatchDetail): DisplayPick[] {
 
     picks.push({
       market: marketPick.market,
-      label: formatMarketPickLabel(marketPick, homeName, awayName),
+      label: formatMarketPickLabel(marketPick),
       confidence: marketPick.confidence,
     });
   }
