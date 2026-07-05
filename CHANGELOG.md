@@ -59,6 +59,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `backend/app/services/prediction.py`, `backend/app/core/config.py`).
 
 ### Changed
+- Confidence filter is now a **fixed high-confidence bar** instead of a
+  slate-relative one. Picks are only surfaced when the model clears the canonical
+  **0.70** threshold; on a weak slate the app shows fewer (or no) picks rather
+  than the "best of a mediocre bunch", which was letting ~50–60% calls onto Home.
+  The high-odds exception is kept — long-price (underdog) 1X2 picks may clear a
+  relaxed **0.40** floor, since a lower model probability at a long price can
+  still be a genuine edge ("if the odds are high, the confidence doesn't need to
+  be as high"). Secondary markets (BTTS, Over/Under 2.5) always require 0.70.
+  Removed the slate-relative quantile machinery
+  (`mobile/src/utils/confidence.ts`, `mobile/src/utils/marketPicks.ts`,
+  `mobile/src/components/matchCard/MatchCardV2.tsx`).
 - Renamed the Home date selector's week chip from "This week" to "Coming up" (and
   its empty state to "No confident picks coming up") since the selector can now
   anchor to a future slate rather than the current calendar week
