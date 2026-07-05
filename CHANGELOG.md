@@ -21,8 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - Linked the mobile app to its EAS project (`@propick1/mobile`) by recording the
   `extra.eas.projectId` and `owner` in `app.json`, and configured the production
-  iOS `submit` profile with the signing Apple ID so EAS Build/Submit can produce
-  and upload TestFlight builds non-interactively on the Expo side. Also set
+  iOS `submit` profile with the App Store Connect app id (`ascAppId`) and
+  `appleTeamId` — authentication uses an App Store Connect API key via env vars,
+  so no personal Apple ID is stored in the repo — letting EAS Build/Submit
+  produce and upload TestFlight builds non-interactively. Also set
   `ios.infoPlist.ITSAppUsesNonExemptEncryption` to `false` (the app uses only
   standard HTTPS) so builds skip the manual export-compliance prompt in App
   Store Connect (`mobile/app.json`, `mobile/eas.json`).

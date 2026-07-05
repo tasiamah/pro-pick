@@ -184,10 +184,12 @@ EAS manages the signing credentials (let it generate them on first run).
 eas submit --platform ios --profile production
 ```
 
-The `submit.production` profile in `eas.json` is intentionally minimal for now,
-so `eas submit` prompts for the App Store Connect target interactively. Once the
-app record exists, fill in `ascAppId` and `appleTeamId` there to make submission
-non-interactive.
+The `submit.production` profile in `eas.json` pins the App Store Connect target
+(`ascAppId`) and `appleTeamId` so `eas submit` runs non-interactively.
+Authenticate with an App Store Connect API key via the standard EAS environment
+variables (`EXPO_ASC_API_KEY_PATH`, `EXPO_ASC_KEY_ID`, `EXPO_ASC_ISSUER_ID`);
+no personal Apple ID is stored in the repo. If you authenticate with an Apple ID
+instead, provide it through the `EXPO_APPLE_ID` environment variable.
 
 ### Beta test and processing feedback
 
