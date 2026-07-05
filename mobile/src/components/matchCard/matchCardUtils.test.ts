@@ -8,6 +8,7 @@ import {
   getMatchInsight,
   getOddForOutcome,
   getRecommendedOutcome,
+  shouldShowTeamForm,
 } from './matchCardUtils';
 
 const prediction: Prediction = {
@@ -77,5 +78,11 @@ describe('matchCardUtils', () => {
         insights: ['', 'Strong home advantage in recent meetings.'],
       }),
     ).toBe('Strong home advantage in recent meetings.');
+  });
+
+  it('hides form badges on compact cards when scores are shown', () => {
+    expect(shouldShowTeamForm(true, true)).toBe(false);
+    expect(shouldShowTeamForm(true, false)).toBe(true);
+    expect(shouldShowTeamForm(false, true)).toBe(true);
   });
 });

@@ -1,7 +1,9 @@
 import type { MatchDetail } from '../api/types';
 
 import {
+  buildPrimaryPredictionPick,
   formatAdditionalPicksLabel,
+  getMatchCardDisplayPicks,
   getQualifyingPicksForMatch,
   sortDisplayPicksByConfidence,
   type DisplayPick,
@@ -72,5 +74,56 @@ describe('getQualifyingPicksForMatch', () => {
     // clears it.
     const picks = getQualifyingPicksForMatch(baseMatch);
     expect(picks.map((pick) => pick.market)).toEqual(['btts']);
+  });
+});
+
+describe('getMatchCardDisplayPicks', () => {
+  it('falls back to the primary 1X2 pick on finished matches without qualifying picks', () => {
+    const finishedMatch: MatchDetail = {
+      ...baseMatch,
+      status: 'finished',
+      home_goals: 0,
+      away_goals: 3,
+      odds: [],
+      prediction: {
+        match_id: 1,
+        model_version: 'stub',
+        prob_home: 0.31,
+        prob_draw: 0.29,
+        prob_away: 0.4,
+      },
+    };
+
+    const picks = getMatchCardDisplayPicks(finishedMatch);
+    expect(picks).toEqual([
+      {
+        market: '1x2',
+        label: 'Austria Win',
+        confidence: 0.4,
+        insight: expect.any(String),
+      },
+    ]);
+  });
+
+  it('keeps selectivity for scheduled matches without a qualifying pick', () => {
+    const scheduledMatch: MatchDetail = {
+      ...baseMatch,
+      prediction: {
+        match_id: 1,
+        model_version: 'stub',
+        prob_home: 0.4,
+        prob_draw: 0.35,
+        prob_away: 0.25,
+        markets: [],
+      },
+    };
+    expect(getQualifyingPicksForMatch(scheduledMatch)).toEqual([]);
+    expect(getMatchCardDisplayPicks(scheduledMatch)).toEqual([]);
+  });
+});
+
+describe('buildPrimaryPredictionPick', () => {
+  it('returns null when a match has no prediction', () => {
+    expect(buildPrimaryPredictionPick({ ...baseMatch, prediction: null })).toBeNull();
   });
 });

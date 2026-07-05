@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `HISTORY_BACKFILL_MAX_TEAMS`.
 
 ### Fixed
+- Completed match cards on the Matches grid no longer truncate team names: hide
+  form badges when scores are shown in compact mode, allow two-line names, and
+  stack the AI pick label above confidence badges (`mobile/src/components/matchCard/MatchCardV2.tsx`).
+- Completed match cards show the model's 1X2 pick even when odds are missing or
+  the fixture no longer clears the upcoming confidence filter
+  (`mobile/src/utils/marketPicks.ts`).
 - Ignore legacy `double_chance` rows when building market picks so `GET /matches`
   no longer 500s after that market was removed (`backend/app/services/match_enrichment.py`).
 
