@@ -30,7 +30,6 @@ PRETRAINED_MODEL_PATH = Path(__file__).resolve().parent / "pretrained_model.pkl"
 MARKET_MODEL_FILENAMES: dict[str, str] = {
     "btts": "btts_model.pkl",
     "over_under_25": "over_under_25_model.pkl",
-    "double_chance": "double_chance_model.pkl",
 }
 
 MARKET_MODEL_PATHS: dict[str, Path] = {

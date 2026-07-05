@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
@@ -50,43 +50,6 @@ def predict_binary_probabilities(
         for label, probability in zip(model.classes_, probabilities, strict=True)
     }
     return {outcome: by_class.get(outcome, 0.0) for outcome in outcomes}
-
-
-def train_multi_binary_models(
-    features: Sequence[dict[str, float]],
-    targets: dict[str, Sequence[int]],
-    *,
-    outcomes: tuple[str, ...],
-) -> dict[str, Pipeline]:
-    models: dict[str, Pipeline] = {}
-    for outcome in outcomes:
-        labels = [str(value) for value in targets[outcome]]
-        if len(set(labels)) < 2:
-            continue
-        model = build_binary_model()
-        model.fit([feature_vector(row) for row in features], labels)
-        models[outcome] = model
-    return models
-
-
-def predict_multi_binary_probabilities(
-    models: Mapping[str, Pipeline],
-    features: Mapping[str, float],
-    *,
-    outcomes: tuple[str, ...],
-    neutral: Mapping[str, float],
-) -> dict[str, float]:
-    resolved: dict[str, float] = {}
-    for outcome in outcomes:
-        model = models.get(outcome)
-        if model is None:
-            resolved[outcome] = float(neutral[outcome])
-            continue
-        positive = _positive_class(model)
-        raw = model.predict_proba([feature_vector(features)])[0]
-        probability = float(raw[positive])
-        resolved[outcome] = probability
-    return resolved
 
 
 def _positive_class(model: Pipeline) -> int:

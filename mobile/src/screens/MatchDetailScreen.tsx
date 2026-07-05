@@ -48,6 +48,7 @@ import {
   formatMarketSectionTitle,
   isSecondaryMarketId,
 } from '../utils/marketLabels';
+import { isHighConfidenceSecondaryPick } from '../utils/confidence';
 import { isInitialQueryLoad, queryErrorForDisplay } from '../utils/queryState';
 import { shouldUseMatchDetailTwoColumnLayout } from './matchDetailLayoutUtils';
 import {
@@ -154,11 +155,9 @@ function KeyInsightsSection({ insights }: KeyInsightsSectionProps) {
 
 type SecondaryMarketCardProps = {
   pick: MarketPick;
-  homeName: string;
-  awayName: string;
 };
 
-function SecondaryMarketCard({ pick, homeName, awayName }: SecondaryMarketCardProps) {
+function SecondaryMarketCard({ pick }: SecondaryMarketCardProps) {
   return (
     <View style={styles.sectionCard}>
       <View style={styles.secondaryMarketHeader}>
@@ -168,7 +167,7 @@ function SecondaryMarketCard({ pick, homeName, awayName }: SecondaryMarketCardPr
         <ConfidenceBadge confidence={pick.confidence} />
       </View>
       <Text style={styles.secondaryMarketPick}>
-        {formatMarketPickLabel(pick, homeName, awayName)}
+        {formatMarketPickLabel(pick)}
       </Text>
       <Text style={styles.secondaryMarketMeta}>
         Model confidence {Math.round(pick.confidence * 100)}%
@@ -179,16 +178,14 @@ function SecondaryMarketCard({ pick, homeName, awayName }: SecondaryMarketCardPr
 
 type SecondaryMarketsSectionProps = {
   markets: MarketPick[];
-  homeName: string;
-  awayName: string;
 };
 
-function SecondaryMarketsSection({
-  markets,
-  homeName,
-  awayName,
-}: SecondaryMarketsSectionProps) {
-  const ordered = markets.filter((pick) => isSecondaryMarketId(pick.market));
+function SecondaryMarketsSection({ markets }: SecondaryMarketsSectionProps) {
+  const ordered = markets.filter(
+    (pick) =>
+      isSecondaryMarketId(pick.market) &&
+      isHighConfidenceSecondaryPick(pick.confidence),
+  );
 
   if (ordered.length === 0) {
     return null;
@@ -199,12 +196,7 @@ function SecondaryMarketsSection({
       <Text style={styles.sectionTitle}>More AI Markets</Text>
       <View style={styles.secondaryMarketList}>
         {ordered.map((pick) => (
-          <SecondaryMarketCard
-            awayName={awayName}
-            homeName={homeName}
-            key={pick.market}
-            pick={pick}
-          />
+          <SecondaryMarketCard key={pick.market} pick={pick} />
         ))}
       </View>
     </View>
@@ -439,8 +431,6 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
 
   const prediction = match.prediction;
   const oddsUpdatedLabel = marketMovements ? 'just now' : 'Latest available';
-  const homeName = match.home_team.name;
-  const awayName = match.away_team.name;
 
   return (
     <ScrollView
@@ -481,11 +471,7 @@ export function MatchDetailScreen({ navigation, route }: MatchDetailProps) {
             {insights.length > 0 ? <KeyInsightsSection insights={insights} /> : null}
 
             {prediction?.markets ? (
-              <SecondaryMarketsSection
-                awayName={awayName}
-                homeName={homeName}
-                markets={prediction.markets}
-              />
+              <SecondaryMarketsSection markets={prediction.markets} />
             ) : null}
           </View>
 

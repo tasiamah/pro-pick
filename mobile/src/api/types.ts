@@ -25,7 +25,7 @@ export type Prediction = {
 };
 
 export type MarketPick = {
-  market: 'btts' | 'over_under_25' | 'double_chance';
+  market: 'btts' | 'over_under_25';
   model_version: string;
   probabilities: Record<string, number>;
   recommended_outcome: string;

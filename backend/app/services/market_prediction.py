@@ -1,4 +1,4 @@
-"""Market prediction service for BTTS, Over/Under 2.5, and Double Chance."""
+"""Market prediction service for the BTTS and Over/Under 2.5 markets."""
 
 from __future__ import annotations
 
@@ -9,18 +9,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
-from app.ml.binary_model import (
-    predict_binary_probabilities,
-    predict_multi_binary_probabilities,
-)
+from app.ml.binary_model import predict_binary_probabilities
 from app.ml.features import build_features
 from app.ml.market_labels import (
-    MARKET_DOUBLE_CHANCE,
     MARKET_OUTCOMES,
     NEUTRAL_PROBABILITIES,
     SUPPORTED_MARKETS,
 )
-from app.ml.market_train import DoubleChanceModel
 from app.ml.storage import ModelBundle, active_market_model_path, load_model
 from app.models import MarketPrediction, Match
 from app.services.historical_import import UPCOMING_MATCH_STATUSES
@@ -77,7 +72,7 @@ def predict_market(
         )
 
     features = build_features(db, match)
-    probabilities = _predict_with_bundle(bundle, market, features, neutral)
+    probabilities = _predict_with_bundle(bundle, market, features)
     return MarketMatchPrediction(
         market=market,
         probabilities=probabilities,
@@ -107,24 +102,11 @@ def _predict_with_bundle(
     bundle: ModelBundle,
     market: str,
     features: dict[str, float],
-    neutral: dict[str, float],
 ) -> dict[str, float]:
-    outcomes = MARKET_OUTCOMES[market]
-    if market == MARKET_DOUBLE_CHANCE:
-        dc_model = bundle.model
-        if not isinstance(dc_model, DoubleChanceModel):
-            return dict(neutral)
-        return predict_multi_binary_probabilities(
-            dc_model.models,
-            features,
-            outcomes=outcomes,
-            neutral=neutral,
-        )
-
     return predict_binary_probabilities(
         bundle.model,
         features,
-        outcomes=outcomes,
+        outcomes=MARKET_OUTCOMES[market],
     )
 
 
