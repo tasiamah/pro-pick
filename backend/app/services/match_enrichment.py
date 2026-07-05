@@ -101,11 +101,16 @@ def to_market_pick_out(row: MarketPrediction) -> MarketPickOut:
     )
 
 
-def build_market_picks(match: Match, db: Session | None = None) -> list[MarketPickOut]:
+def build_market_picks(
+    match: Match,
+    db: Session | None = None,
+    *,
+    allow_live_prediction: bool = True,
+) -> list[MarketPickOut]:
     stored = latest_market_predictions(match)
     if stored:
         return [to_market_pick_out(row) for row in stored]
-    if db is None:
+    if db is None or not allow_live_prediction:
         return []
 
     from app.services.market_prediction import predict_all_markets

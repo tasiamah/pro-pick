@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import create_engine
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.database import Base
 from app.models import Competition, Match, Odds, Prediction, Team
 from app.services.match_enrichment import (
+    build_market_picks,
     capture_previous_odds,
     classify_odds_tier,
     derive_odds_movement,
@@ -18,6 +20,7 @@ from app.services.match_enrichment import (
     prediction_confidence,
     recommended_outcome,
 )
+from app.services.match_list_enrichment import enrich_match_list
 
 pytestmark = pytest.mark.unit
 
@@ -178,3 +181,62 @@ def test_matches_odds_tier_filter(db_session: Session) -> None:
     assert matches_odds_tier_filter(match, "low", prediction, odds) is True
     assert matches_odds_tier_filter(match, "high", prediction, odds) is False
     assert matches_odds_tier_filter(match, "all", prediction, odds) is True
+
+
+def test_build_market_picks_skips_live_prediction_when_disabled(
+    db_session: Session,
+) -> None:
+    home_team = Team(name="Home", logo_url=None)
+    away_team = Team(name="Away", logo_url=None)
+    db_session.add_all([home_team, away_team])
+    db_session.flush()
+
+    match = Match(
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow(),
+        status="scheduled",
+    )
+    db_session.add(match)
+    db_session.commit()
+
+    with patch(
+        "app.services.market_prediction.predict_all_markets",
+        side_effect=AssertionError("predict_all_markets should not run"),
+    ):
+        assert build_market_picks(match, db_session, allow_live_prediction=False) == []
+
+
+def test_enrich_match_list_skips_live_market_prediction(db_session: Session) -> None:
+    home_team = Team(name="Home", logo_url=None)
+    away_team = Team(name="Away", logo_url=None)
+    db_session.add_all([home_team, away_team])
+    db_session.flush()
+
+    match = Match(
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime.utcnow(),
+        status="scheduled",
+    )
+    db_session.add(match)
+    db_session.flush()
+    db_session.add(
+        Prediction(
+            match_id=match.id,
+            prob_home=0.55,
+            prob_draw=0.25,
+            prob_away=0.20,
+        )
+    )
+    db_session.commit()
+
+    with patch(
+        "app.services.market_prediction.predict_all_markets",
+        side_effect=AssertionError("predict_all_markets should not run"),
+    ):
+        enriched = enrich_match_list(db_session, [match])
+
+    assert len(enriched) == 1
+    assert enriched[0].prediction is not None
+    assert enriched[0].prediction.markets == []

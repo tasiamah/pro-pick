@@ -38,7 +38,8 @@ function buildQueryString(
   return query ? `?${query}` : '';
 }
 
-export const REQUEST_TIMEOUT_MS = 45000;
+// Render cold starts can exceed 30s; keep a buffer for the first dashboard load.
+export const REQUEST_TIMEOUT_MS = 60_000;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();

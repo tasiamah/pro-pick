@@ -68,7 +68,7 @@ describe('matchDates', () => {
 
     expect(new Date(params.kickoff_from).getTime()).toBe(start.getTime());
     expect(new Date(params.kickoff_to).getTime()).toBe(end.getTime());
-    expect(params.limit).toBe(200);
+    expect(params.limit).toBe(50);
   });
 
   it('anchors on the latest kickoff when nothing is upcoming', () => {
