@@ -30,6 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `HISTORY_BACKFILL_MIN_MATCHES`, `HISTORY_BACKFILL_LAST_FIXTURES`, and
   `HISTORY_BACKFILL_MAX_TEAMS`.
 
+### Changed
+- Analytics tab: replaced the "Prediction Outcomes" home/draw/away count cards
+  with a "Prediction Markets" section that lists the markets the model covers
+  (`1X2`, `BTTS`, `Over/Under 2.5`) without counts, so the section reads as market
+  coverage instead of a home-win-heavy tally (`mobile/src/screens/AnalyticsScreen.tsx`,
+  `mobile/src/screens/analyticsUtils.ts`).
+
 ### Fixed
 - Home hero **Value Bets** now counts only bets on confident picks shown in the
   list below, instead of every upcoming value bet in the database

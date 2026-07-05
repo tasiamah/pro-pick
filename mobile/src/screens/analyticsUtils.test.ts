@@ -6,11 +6,11 @@ import {
   formatLogLossMetric,
   formatRoiMetric,
   formatTrendLabel,
+  PREDICTION_MARKETS,
   riskDistributionTotal,
   toAnalyticsSummaryStats,
   toConfidenceTrendValues,
   toModelPerformanceStats,
-  toPredictionOutcomeStats,
   toRiskDistributionSegments,
   toRoiTrendChartData,
 } from './analyticsUtils';
@@ -68,11 +68,11 @@ describe('analyticsUtils', () => {
     expect(riskDistributionTotal(toRiskDistributionSegments(sampleAnalytics.risk_distribution))).toBe(22);
   });
 
-  it('maps the 1X2 prediction outcomes we model', () => {
-    expect(toPredictionOutcomeStats(sampleAnalytics.prediction_outcomes).map((item) => item.label)).toEqual([
-      'HOME WIN',
-      'DRAW',
-      'AWAY WIN',
+  it('lists the betting markets the model covers', () => {
+    expect(PREDICTION_MARKETS.map((market) => market.label)).toEqual([
+      '1X2',
+      'BTTS',
+      'Over/Under 2.5',
     ]);
   });
 
