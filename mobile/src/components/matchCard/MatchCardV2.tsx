@@ -29,6 +29,7 @@ import {
   classifyOddsTier,
   getOddForOutcome,
   getRecommendedOutcome,
+  shouldShowTeamForm,
 } from './matchCardUtils';
 
 type MatchCardV2Props = {
@@ -81,11 +82,13 @@ function TeamRow({
   goals = null,
   showScore = false,
 }: TeamRowProps) {
+  const showForm = shouldShowTeamForm(compact, showScore);
+
   return (
     <View style={styles.teamRow}>
       <Text
         ellipsizeMode="tail"
-        numberOfLines={compact ? 1 : undefined}
+        numberOfLines={compact ? 2 : undefined}
         style={[styles.teamName, compact && styles.teamNameCompact]}
       >
         {getTeamName(team, fallbackName)}
@@ -96,7 +99,7 @@ function TeamRow({
             {goals}
           </Text>
         ) : null}
-        <FormIndicator form={team.form} />
+        {showForm ? <FormIndicator form={team.form} /> : null}
       </View>
     </View>
   );
@@ -110,7 +113,7 @@ type AiPickRowProps = {
 
 function AiPickRow({ pick, compact, oddsTier }: AiPickRowProps) {
   return (
-    <View style={styles.pickRow}>
+    <View style={[styles.pickRow, compact && styles.pickRowCompact]}>
       <View style={styles.pickCopy}>
         <Text
           numberOfLines={compact ? 2 : undefined}
@@ -363,6 +366,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     marginRight: spacing.sm,
+    minWidth: 0,
   },
   teamNameCompact: {
     ...typography.labelStrong,
@@ -373,6 +377,7 @@ const styles = StyleSheet.create({
   teamMeta: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexShrink: 0,
     gap: spacing.sm,
   },
   teamScore: {
@@ -405,9 +410,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: 'space-between',
   },
+  pickRowCompact: {
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    gap: spacing.xs,
+  },
   pickCopy: {
+    alignSelf: 'stretch',
     flex: 1,
     gap: spacing.xs,
+    minWidth: 0,
   },
   predictedOutcome: {
     ...typography.bodySemibold,
@@ -426,6 +438,9 @@ const styles = StyleSheet.create({
   },
   badgeRowCompact: {
     alignItems: 'flex-start',
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   detailsLinkWrap: {
     alignItems: 'center',

@@ -64,3 +64,7 @@ export function getExplicitMatchInsight(prediction: Prediction): string | null {
 
   return insight ?? null;
 }
+
+export function shouldShowTeamForm(compact: boolean, showScore: boolean): boolean {
+  return !(compact && showScore);
+}
