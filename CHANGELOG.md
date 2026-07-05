@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Ignore legacy `double_chance` rows when building market picks so `GET /matches`
+  no longer 500s after that market was removed (`backend/app/services/match_enrichment.py`).
+
 ### Removed
 - Dropped the **Double Chance** market from the model and app. Double Chance
   (home-or-draw / home-or-away / draw-or-away) is a low-odds safe bet that adds
