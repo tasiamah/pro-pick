@@ -2,6 +2,13 @@ import type { Match } from '../api/types';
 
 export const DATE_RANGE_DAYS = 7;
 
+/**
+ * How far ahead the "Coming up" view looks. A rolling two-week horizon (rather
+ * than the current calendar week, which shrinks as the week progresses) so the
+ * tab keeps showing the next batch of upcoming fixtures.
+ */
+export const COMING_UP_DAYS = 14;
+
 const TIMEZONE_SUFFIX = /([zZ]|[+-]\d{2}:?\d{2})$/;
 
 /**
