@@ -76,6 +76,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/hooks/useMatchDateAnchor.ts`).
 
 ### Changed
+- Home now opens on the **"Coming up"** view by default (instead of a single
+  day), and the current day's chip reads **"Today"** rather than the full date
+  (`mobile/src/screens/HomeScreen.tsx`, `mobile/src/utils/matchDates.ts`).
 - "Coming up" on Home now shows the soonest **10 confident** upcoming picks
   across a rolling **7-day** window, instead of the current calendar week (which
   shrank to almost nothing later in the week). Seven days matches the weekly
