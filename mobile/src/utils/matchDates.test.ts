@@ -5,6 +5,7 @@ import {
   buildDateWindowParams,
   filterMatchesByDate,
   filterMatchesByWeek,
+  formatDateChipLabel,
   localDayKeyToDate,
   parseMatchDate,
   resolveMatchAnchorDate,
@@ -116,6 +117,22 @@ describe('matchDates', () => {
     expect(filterMatchesByDate(matches, selectedDate).map((match) => match.id)).toEqual([
       2, 1,
     ]);
+  });
+});
+
+describe('formatDateChipLabel', () => {
+  it('labels the current local day as "Today"', () => {
+    const now = new Date(2026, 6, 5, 9, 30);
+    const today = startOfLocalDay(now);
+
+    expect(formatDateChipLabel(today, now)).toBe('Today');
+  });
+
+  it('formats any other day as weekday, month and day', () => {
+    const now = new Date(2026, 6, 5, 9, 30);
+    const tomorrow = addLocalDays(startOfLocalDay(now), 1);
+
+    expect(formatDateChipLabel(tomorrow, now)).toBe('Mon, Jul 6');
   });
 });
 

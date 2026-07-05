@@ -64,7 +64,8 @@ export function HomeScreen({ navigation }: Props) {
   const matchesQuery = useMatches(matchListParams);
   const analyticsQuery = useAnalytics({ enabled: !!dashboardQuery.data });
   const now = useNow();
-  const [isWeekSelected, setIsWeekSelected] = useState(false);
+  // Default to the "Coming up" view rather than a single day.
+  const [isWeekSelected, setIsWeekSelected] = useState(true);
 
   const selectDate = useCallback(
     (date: Date) => {

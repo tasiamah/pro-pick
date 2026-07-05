@@ -47,7 +47,10 @@ export function localDayKeyToDate(key: string): Date {
   return new Date(year, month - 1, day);
 }
 
-export function formatDateChipLabel(date: Date): string {
+export function formatDateChipLabel(date: Date, now = new Date()): string {
+  if (toLocalDateKey(date) === toLocalDateKey(now)) {
+    return 'Today';
+  }
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
