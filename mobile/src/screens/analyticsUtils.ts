@@ -18,10 +18,20 @@ export type RiskDistributionSegment = {
   color: string;
 };
 
-export type PredictionOutcomeStat = {
+export type PredictionMarketStat = {
   label: string;
-  value: number;
 };
+
+/**
+ * Betting markets the model produces picks for. Shown in the Analytics
+ * "Prediction Markets" section as a static capability list (no counts), so it
+ * reads as market coverage rather than a home/draw/away tally.
+ */
+export const PREDICTION_MARKETS: PredictionMarketStat[] = [
+  { label: '1X2' },
+  { label: 'BTTS' },
+  { label: 'Over/Under 2.5' },
+];
 
 export type AnalyticsSummaryStat = {
   label: string;
@@ -76,16 +86,6 @@ export function toRiskDistributionSegments(
 
 export function riskDistributionTotal(segments: RiskDistributionSegment[]): number {
   return segments.reduce((sum, segment) => sum + segment.value, 0);
-}
-
-export function toPredictionOutcomeStats(
-  outcomes: Analytics['prediction_outcomes'] | null | undefined,
-): PredictionOutcomeStat[] {
-  return [
-    { label: 'HOME WIN', value: outcomes?.home_win ?? 0 },
-    { label: 'DRAW', value: outcomes?.draw ?? 0 },
-    { label: 'AWAY WIN', value: outcomes?.away_win ?? 0 },
-  ];
 }
 
 export function toAnalyticsSummaryStats(

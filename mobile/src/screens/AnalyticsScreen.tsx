@@ -24,12 +24,12 @@ import { RiskDistributionChart } from './RiskDistributionChart';
 import {
   type AnalyticsSummaryStat,
   type ModelPerformanceStat,
-  type PredictionOutcomeStat,
+  type PredictionMarketStat,
+  PREDICTION_MARKETS,
   riskDistributionTotal,
   toAnalyticsSummaryStats,
   toConfidenceTrendValues,
   toModelPerformanceStats,
-  toPredictionOutcomeStats,
   toRiskDistributionSegments,
 } from './analyticsUtils';
 
@@ -47,15 +47,14 @@ function SummaryStatCard({ stat }: SummaryStatCardProps) {
   );
 }
 
-type OutcomeCardProps = {
-  outcome: PredictionOutcomeStat;
+type MarketCardProps = {
+  market: PredictionMarketStat;
 };
 
-function OutcomeCard({ outcome }: OutcomeCardProps) {
+function MarketCard({ market }: MarketCardProps) {
   return (
     <View style={styles.outcomeCard}>
-      <Text style={styles.outcomeValue}>{outcome.value}</Text>
-      <Text style={styles.outcomeLabel}>{outcome.label}</Text>
+      <Text style={styles.marketName}>{market.label}</Text>
     </View>
   );
 }
@@ -99,9 +98,7 @@ export function AnalyticsScreen() {
   const summaryStats = toAnalyticsSummaryStats(analytics);
   const confidenceTrend = toConfidenceTrendValues(analytics.confidence_trend ?? []);
   const riskSegments = toRiskDistributionSegments(analytics.risk_distribution);
-  const predictionOutcomes = toPredictionOutcomeStats(analytics.prediction_outcomes);
   const modelPerformance = toModelPerformanceStats(analytics);
-  const hasPredictionOutcomes = predictionOutcomes.some((outcome) => outcome.value > 0);
 
   return (
     <ScrollView
@@ -147,19 +144,12 @@ export function AnalyticsScreen() {
       </View>
 
       <View style={screenStyles.section}>
-        <SectionHeader title="Prediction Outcomes" />
-        <AsyncState
-          isLoading={false}
-          error={null}
-          isEmpty={!hasPredictionOutcomes}
-          emptyMessage="No prediction outcomes yet"
-        >
-          <View style={styles.outcomesRow}>
-            {predictionOutcomes.map((outcome) => (
-              <OutcomeCard key={outcome.label} outcome={outcome} />
-            ))}
-          </View>
-        </AsyncState>
+        <SectionHeader title="Prediction Markets" />
+        <View style={styles.outcomesRow}>
+          {PREDICTION_MARKETS.map((market) => (
+            <MarketCard key={market.label} market={market} />
+          ))}
+        </View>
       </View>
 
       <View style={screenStyles.section}>
@@ -210,16 +200,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flex: 1,
     gap: spacing.xs,
+    justifyContent: 'center',
+    minHeight: 72,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.lg,
   },
-  outcomeValue: {
-    ...typography.titleLarge,
+  marketName: {
+    ...typography.title,
     color: colors.text,
-  },
-  outcomeLabel: {
-    ...typography.badge,
-    color: colors.textMuted,
     textAlign: 'center',
   },
   performanceCard: {
