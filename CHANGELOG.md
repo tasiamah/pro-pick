@@ -69,6 +69,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `mobile/src/hooks/useMatchDateAnchor.ts`).
 
 ### Changed
+- "Coming up" on Home now shows the soonest **10 confident** upcoming picks
+  across a rolling **two-week** window, instead of the current calendar week
+  (which shrank to almost nothing later in the week). Home now fetches a 14-day
+  forward window to feed it (`mobile/src/screens/HomeScreen.tsx`,
+  `mobile/src/screens/homeMatchUtils.ts`, `mobile/src/hooks/useMatchDateAnchor.ts`,
+  `mobile/src/utils/matchDates.ts`).
 - Match detail now only surfaces **BTTS** and **Over/Under 2.5** picks when the
   model is genuinely confident (at or above the canonical 0.70 threshold),
   matching the selective behaviour of the Home and Matches cards instead of

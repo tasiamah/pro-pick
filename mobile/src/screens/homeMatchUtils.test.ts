@@ -5,6 +5,7 @@ import {
   filterUpcomingMatchesForDay,
   filterUpcomingValueBets,
   groupHomeMatchesByOddsTier,
+  selectComingUpMatches,
   selectHomeMatches,
 } from './homeMatchUtils';
 
@@ -139,6 +140,41 @@ describe('selectHomeMatches', () => {
 
     // The earlier (today) match is not borrowed; fills forward from later days.
     expect(result.map((match) => match.id)).toEqual([2, 3, 4]);
+  });
+});
+
+describe('selectComingUpMatches', () => {
+  const now = new Date(2026, 5, 24, 16, 0);
+  const anchor = startOfLocalDay(now);
+
+  it('keeps upcoming matches within the two-week horizon, sorted by kickoff', () => {
+    const started = createMatch(1, new Date(2026, 5, 24, 15, 0).toISOString());
+    const soon = createMatch(2, new Date(2026, 5, 24, 20, 0).toISOString());
+    const nextWeek = createMatch(3, new Date(2026, 5, 30, 18, 0).toISOString());
+    const beyondHorizon = createMatch(4, new Date(2026, 6, 10, 18, 0).toISOString());
+
+    const result = selectComingUpMatches(
+      [beyondHorizon, nextWeek, started, soon],
+      now,
+      anchor,
+    );
+
+    // Started match dropped, beyond-horizon (>14 days) dropped, rest sorted.
+    expect(result.map((match) => match.id)).toEqual([2, 3]);
+  });
+
+  it('anchors the horizon on a future slate during a fixture gap', () => {
+    const futureAnchor = startOfLocalDay(new Date(2026, 6, 1, 0, 0));
+    const withinFromAnchor = createMatch(1, new Date(2026, 6, 12, 18, 0).toISOString());
+    const beyondFromAnchor = createMatch(2, new Date(2026, 6, 20, 18, 0).toISOString());
+
+    const result = selectComingUpMatches(
+      [beyondFromAnchor, withinFromAnchor],
+      now,
+      futureAnchor,
+    );
+
+    expect(result.map((match) => match.id)).toEqual([1]);
   });
 });
 
