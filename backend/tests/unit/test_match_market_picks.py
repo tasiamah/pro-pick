@@ -7,8 +7,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.models import MarketPrediction
+from app.models import MarketOdds, MarketPrediction
 from app.services.match_enrichment import (
+    best_market_odd,
     build_market_picks,
     latest_market_predictions,
 )
@@ -34,8 +35,21 @@ def _row(
     return row
 
 
-def _match(rows: list[MarketPrediction]) -> SimpleNamespace:
-    return SimpleNamespace(market_predictions=rows)
+def _market_odd(market: str, outcome: str, odd: float, *, bookmaker: str) -> MarketOdds:
+    return MarketOdds(
+        match_id=1,
+        bookmaker=bookmaker,
+        market=market,
+        outcome=outcome,
+        odd=odd,
+    )
+
+
+def _match(
+    rows: list[MarketPrediction],
+    market_odds: list[MarketOdds] | None = None,
+) -> SimpleNamespace:
+    return SimpleNamespace(market_predictions=rows, market_odds=market_odds or [])
 
 
 def test_latest_market_predictions_drops_unknown_and_malformed_rows() -> None:
@@ -75,3 +89,38 @@ def test_build_market_picks_skips_bad_rows_without_crashing() -> None:
 
     assert [pick.market for pick in picks] == ["btts"]
     assert picks[0].recommended_outcome == "yes"
+    # No stored odds for this market -> price is None, not an error.
+    assert picks[0].odds is None
+
+
+def test_best_market_odd_picks_highest_price_for_the_outcome() -> None:
+    match = _match(
+        [],
+        market_odds=[
+            _market_odd("btts", "yes", 1.75, bookmaker="Bet365"),
+            _market_odd("btts", "yes", 1.83, bookmaker="Pinnacle"),
+            _market_odd("btts", "no", 2.00, bookmaker="Bet365"),
+        ],
+    )
+
+    assert best_market_odd(match, "btts", "yes") == 1.83
+    assert best_market_odd(match, "over_under_25", "over") is None
+
+
+def test_build_market_picks_attaches_best_price_for_recommended_outcome() -> None:
+    base = datetime(2026, 7, 4, 20, 0)
+    btts = _row("btts", {"yes": 0.62, "no": 0.38}, row_id=1, created_at=base)
+    match = _match(
+        [btts],
+        market_odds=[
+            _market_odd("btts", "yes", 1.75, bookmaker="Bet365"),
+            _market_odd("btts", "yes", 1.90, bookmaker="Pinnacle"),
+            # "no" is not the recommended outcome, so its price is ignored.
+            _market_odd("btts", "no", 2.10, bookmaker="Bet365"),
+        ],
+    )
+
+    picks = build_market_picks(_match([btts], match.market_odds))
+
+    assert picks[0].recommended_outcome == "yes"
+    assert picks[0].odds == 1.90

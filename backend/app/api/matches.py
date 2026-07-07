@@ -98,6 +98,7 @@ def list_matches(
             joinedload(Match.away_team),
             joinedload(Match.competition),
             selectinload(Match.odds),
+            selectinload(Match.market_odds),
             selectinload(Match.predictions),
             selectinload(Match.market_predictions),
         )
@@ -149,6 +150,7 @@ def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchDetailOut:
             joinedload(Match.away_team),
             joinedload(Match.competition),
             selectinload(Match.odds),
+            selectinload(Match.market_odds),
             selectinload(Match.predictions),
             selectinload(Match.market_predictions),
         )
