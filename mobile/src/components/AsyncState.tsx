@@ -12,6 +12,7 @@ type AsyncStateProps = {
   children: ReactNode;
   loadingMessage?: string;
   emptyMessage?: string;
+  emptySubtext?: string;
   errorMessage?: string;
   onRetry?: () => void;
 };
@@ -23,6 +24,7 @@ export function AsyncState({
   children,
   loadingMessage,
   emptyMessage,
+  emptySubtext,
   errorMessage,
   onRetry,
 }: AsyncStateProps) {
@@ -40,7 +42,7 @@ export function AsyncState({
   }
 
   if (isEmpty) {
-    return <EmptyState message={emptyMessage} />;
+    return <EmptyState message={emptyMessage} subtext={emptySubtext} />;
   }
 
   return children;

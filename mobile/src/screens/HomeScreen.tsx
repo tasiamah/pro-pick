@@ -35,6 +35,7 @@ import {
   groupHomeMatchesByOddsTier,
   selectComingUpMatches,
 } from './homeMatchUtils';
+import { getNoConfidentPicksEmptyState } from './matchesFilterUtils';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -132,6 +133,15 @@ export function HomeScreen({ navigation }: Props) {
     ],
   );
 
+  const confidentPicksEmptyState = useMemo(
+    () =>
+      getNoConfidentPicksEmptyState(
+        filteredMatches,
+        isWeekSelected ? 'home_week' : 'home_day',
+      ),
+    [filteredMatches, isWeekSelected],
+  );
+
   const isInitialLoading = isInitialQueryLoad(
     dashboardQuery.isLoading,
     dashboardQuery.data,
@@ -202,11 +212,8 @@ export function HomeScreen({ navigation }: Props) {
           isLoading={isInitialQueryLoad(matchesQuery.isLoading, matchesQuery.data)}
           error={queryErrorForDisplay(matchesQuery.error, matchesQuery.data)}
           isEmpty={oddsTierGroups.length === 0}
-          emptyMessage={
-            isWeekSelected
-              ? 'No confident picks coming up'
-              : 'No confident picks on this day'
-          }
+          emptyMessage={confidentPicksEmptyState.title}
+          emptySubtext={confidentPicksEmptyState.subtext}
           errorMessage="Could not load matches"
           onRetry={() => void matchesQuery.refetch()}
         >

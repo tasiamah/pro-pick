@@ -37,6 +37,7 @@ import {
 import {
   filterMatchesForBrowse,
   getMatchesEmptyMessage,
+  getNoConfidentPicksEmptyState,
   type MatchOddsTierFilter,
   type MatchStatusFilter,
 } from './matchesFilterUtils';
@@ -200,11 +201,43 @@ export function MatchesScreen({ navigation }: Props) {
     [visibleMatches],
   );
 
-  const emptyMessage = useMemo(
-    () =>
-      getMatchesEmptyMessage(statusFilter, oddsTierFilter, debouncedSearchQuery, true),
-    [debouncedSearchQuery, oddsTierFilter, statusFilter],
-  );
+  const emptyState = useMemo(() => {
+    const hasSearch = debouncedSearchQuery.trim().length > 0;
+    const hasOddsTierFilter = oddsTierFilter !== 'all';
+
+    if (hasSearch || hasOddsTierFilter || statusFilter === 'live') {
+      return {
+        message: getMatchesEmptyMessage(
+          statusFilter,
+          oddsTierFilter,
+          debouncedSearchQuery,
+          showsConfidentPicksOnly,
+        ),
+        subtext: undefined,
+      };
+    }
+
+    if (showsConfidentPicksOnly) {
+      const context =
+        statusFilter === 'completed' ? 'matches_completed' : 'matches_upcoming';
+      const confidentEmpty = getNoConfidentPicksEmptyState(filteredMatches, context);
+      return {
+        message: confidentEmpty.title,
+        subtext: confidentEmpty.subtext,
+      };
+    }
+
+    return {
+      message: getMatchesEmptyMessage(statusFilter, oddsTierFilter, debouncedSearchQuery),
+      subtext: undefined,
+    };
+  }, [
+    debouncedSearchQuery,
+    filteredMatches.length,
+    oddsTierFilter,
+    showsConfidentPicksOnly,
+    statusFilter,
+  ]);
 
   const onRefresh = useCallback(() => {
     void refetchMatches();
@@ -268,7 +301,8 @@ export function MatchesScreen({ navigation }: Props) {
         isLoading={isMatchesLoading}
         error={null}
         isEmpty={visibleMatches.length === 0}
-        emptyMessage={emptyMessage}
+        emptyMessage={emptyState.message}
+        emptySubtext={emptyState.subtext}
       >
         <View style={[styles.cardGrid, { gap: gridMetrics.gutter }]}>
           {gridRows.map((row, rowIndex) => (

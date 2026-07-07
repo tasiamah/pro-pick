@@ -2,7 +2,9 @@ import type { MatchDetail } from '../api/types';
 
 import {
   filterMatchesForBrowse,
+  formatCompetitionClause,
   getMatchesEmptyMessage,
+  getNoConfidentPicksEmptyState,
   matchesOddsTierFilter,
   matchesSearchFilter,
   matchesStatusFilter,
@@ -203,13 +205,72 @@ describe('matchesFilterUtils', () => {
       'No matches match your search.',
     );
     expect(getMatchesEmptyMessage('upcoming', 'all', '', true)).toBe(
-      'No confident picks in this list.',
+      'No confident picks right now',
     );
     expect(getMatchesEmptyMessage('completed', 'all', '')).toBe(
       'No completed matches in this list.',
     );
     expect(getMatchesEmptyMessage('completed', 'all', '', true)).toBe(
-      'No confident picks in completed matches.',
+      'No confident picks right now',
     );
+  });
+
+  it('explains when matches exist but none clear the confidence bar', () => {
+    const serieMatches = Array.from({ length: 5 }, (_, index) => ({
+      ...baseMatch,
+      id: index + 1,
+      competition_name: 'Serie A',
+    }));
+
+    expect(getNoConfidentPicksEmptyState(serieMatches, 'home_week')).toEqual({
+      title: 'No confident picks right now',
+      subtext:
+        'Fixtures in Serie A are on this week. No confident picks for now. Off-season weeks are often like this.',
+    });
+
+    expect(
+      getNoConfidentPicksEmptyState(
+        [
+          { ...baseMatch, id: 1, competition_name: 'Serie A' },
+          { ...baseMatch, id: 2, competition_name: 'La Liga' },
+          { ...baseMatch, id: 3, competition_name: 'La Liga' },
+        ],
+        'home_week',
+      ).subtext,
+    ).toBe(
+      'Fixtures across Serie A and La Liga are on this week. No confident picks for now. Off-season weeks are often like this.',
+    );
+
+    expect(getNoConfidentPicksEmptyState([baseMatch], 'home_day')).toEqual({
+      title: 'No confident picks right now',
+      subtext:
+        'Fixtures in Premier League are on today. No confident picks for now. Off-season weeks are often like this.',
+    });
+
+    expect(
+      getNoConfidentPicksEmptyState(
+        [{ ...baseMatch, competition_name: null }],
+        'home_week',
+      ).subtext,
+    ).toBe(
+      'Fixtures are on this week. No confident picks for now. Off-season weeks are often like this.',
+    );
+
+    expect(getNoConfidentPicksEmptyState([], 'home_week').subtext).toBe(
+      'No fixtures this week. Off-season weeks are often like this.',
+    );
+  });
+
+  it('formats competition names for the empty state', () => {
+    expect(
+      formatCompetitionClause(['Serie A']),
+    ).toBe(' in Serie A');
+    expect(
+      formatCompetitionClause(['Serie A', 'La Liga']),
+    ).toBe(' across Serie A and La Liga');
+    expect(
+      formatCompetitionClause(['Serie A', 'La Liga', 'Bundesliga']),
+    ).toBe(' across Serie A, La Liga and others');
+    expect(formatCompetitionClause([])).toBe('');
   });
 });
