@@ -21,6 +21,7 @@ from app.models import Competition, MarketPrediction, Match, Team
 from app.services.market_prediction import (
     FALLBACK_VERSION,
     predict_market,
+    refresh_market_predictions_for_recent_finished,
     refresh_market_predictions_for_upcoming,
     reset_market_model_cache,
 )
@@ -120,6 +121,76 @@ def test_refresh_market_predictions_persists_rows(db_session: Session) -> None:
     ).all()
     assert len(stored) == 1
     assert stored[0].market == MARKET_BTTS
+
+
+def test_backfill_market_predictions_for_recent_finished(db_session: Session) -> None:
+    _seed(db_session)
+    bundle = _btts_bundle(db_session)
+
+    refreshed = refresh_market_predictions_for_recent_finished(
+        db_session,
+        now=BASE + timedelta(days=6),
+        model_bundles={MARKET_BTTS: bundle},
+        window_days=14,
+    )
+
+    # Each of the six finished matches in the window gets one BTTS row; the
+    # scheduled match is skipped (not finished).
+    assert refreshed == len(RESULTS)
+    finished = db_session.scalars(
+        select(Match).where(Match.status == "finished")
+    ).all()
+    for match in finished:
+        stored = db_session.scalars(
+            select(MarketPrediction).where(MarketPrediction.match_id == match.id)
+        ).all()
+        assert [row.market for row in stored] == [MARKET_BTTS]
+
+
+def test_backfill_market_predictions_is_noop_once_present(db_session: Session) -> None:
+    _seed(db_session)
+    bundle = _btts_bundle(db_session)
+    kwargs = {
+        "now": BASE + timedelta(days=6),
+        "model_bundles": {MARKET_BTTS: bundle},
+        "window_days": 14,
+    }
+
+    first = refresh_market_predictions_for_recent_finished(db_session, **kwargs)
+    second = refresh_market_predictions_for_recent_finished(db_session, **kwargs)
+
+    assert first == len(RESULTS)
+    assert second == 0
+
+
+def test_backfill_market_predictions_respects_window(db_session: Session) -> None:
+    _seed(db_session)
+    bundle = _btts_bundle(db_session)
+
+    # since = now - 2d = BASE+4, so only the matches at BASE+4 and BASE+5 qualify.
+    refreshed = refresh_market_predictions_for_recent_finished(
+        db_session,
+        now=BASE + timedelta(days=6),
+        model_bundles={MARKET_BTTS: bundle},
+        window_days=2,
+    )
+
+    assert refreshed == 2
+
+
+def test_backfill_market_predictions_respects_max_matches(db_session: Session) -> None:
+    _seed(db_session)
+    bundle = _btts_bundle(db_session)
+
+    refreshed = refresh_market_predictions_for_recent_finished(
+        db_session,
+        now=BASE + timedelta(days=6),
+        model_bundles={MARKET_BTTS: bundle},
+        window_days=14,
+        max_matches=2,
+    )
+
+    assert refreshed == 2
 
 
 def test_predict_market_falls_back_without_model(db_session: Session) -> None:

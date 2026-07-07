@@ -44,6 +44,15 @@ class Settings(BaseSettings):
     history_backfill_last_fixtures: int = Field(default=40, ge=1)
     history_backfill_max_teams: int = Field(default=20, ge=0)
 
+    # BTTS/Over-Under picks are generated while a match is upcoming, so matches
+    # that finished before the market models ran never got them. Each sync fills
+    # in missing market predictions for recently finished matches (point-in-time
+    # safe) so the Completed tab can surface them, over a rolling window and
+    # capped per run.
+    market_backfill_enabled: bool = True
+    market_backfill_window_days: int = Field(default=14, ge=1)
+    market_backfill_max_matches: int = Field(default=200, ge=0)
+
     # Minimum model_prob - implied_prob gap before flagging a value bet. 2% surfaces
     # more picks than 3% while staying conservative; tune via env on Render.
     value_bet_edge_threshold: float = 0.02

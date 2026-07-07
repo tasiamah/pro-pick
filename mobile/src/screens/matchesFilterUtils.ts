@@ -124,7 +124,9 @@ export function selectMatchesForDisplay(
   filteredMatches: MatchDetail[],
   statusFilter: MatchStatusFilter,
 ): MatchDetail[] {
-  if (statusFilter === 'upcoming') {
+  // Upcoming and completed both show only matches the model made a confident
+  // pick on; live shows every in-play fixture.
+  if (statusFilter === 'upcoming' || statusFilter === 'completed') {
     return filterHighConfidenceMatches(filteredMatches);
   }
 
@@ -150,7 +152,9 @@ export function getMatchesEmptyMessage(
   }
 
   if (statusFilter === 'completed') {
-    return 'No completed matches in this list.';
+    return highConfidenceOnly
+      ? 'No confident picks in completed matches.'
+      : 'No completed matches in this list.';
   }
 
   if (highConfidenceOnly) {

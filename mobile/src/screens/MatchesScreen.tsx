@@ -129,21 +129,26 @@ export function MatchesScreen({ navigation }: Props) {
     ],
   );
 
-  const upcomingBrowse = useMemo(
+  // Upcoming and completed both only surface matches the model actually made a
+  // confident call on (across 1X2, BTTS and Over/Under 2.5), so the Completed
+  // tab mirrors Upcoming instead of showing every finished fixture's raw 1X2.
+  const showsConfidentPicksOnly =
+    statusFilter === 'upcoming' || statusFilter === 'completed';
+
+  const confidentBrowse = useMemo(
     () => filterHighConfidenceMatchesWithPicks(filteredMatches),
     [filteredMatches],
   );
 
   const visibleMatches = useMemo(
-    () =>
-      statusFilter === 'upcoming' ? upcomingBrowse.matches : filteredMatches,
-    [filteredMatches, statusFilter, upcomingBrowse.matches],
+    () => (showsConfidentPicksOnly ? confidentBrowse.matches : filteredMatches),
+    [confidentBrowse.matches, filteredMatches, showsConfidentPicksOnly],
   );
 
   const qualifyingPicksByMatchId = useMemo(
     () =>
-      statusFilter === 'upcoming' ? upcomingBrowse.picksByMatchId : undefined,
-    [statusFilter, upcomingBrowse.picksByMatchId],
+      showsConfidentPicksOnly ? confidentBrowse.picksByMatchId : undefined,
+    [confidentBrowse.picksByMatchId, showsConfidentPicksOnly],
   );
 
   const gridRows = useMemo(

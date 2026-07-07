@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -18,7 +18,10 @@ from app.ml.market_labels import (
 )
 from app.ml.storage import ModelBundle, active_market_model_path, load_model
 from app.models import MarketPrediction, Match
-from app.services.historical_import import UPCOMING_MATCH_STATUSES
+from app.services.historical_import import (
+    FINISHED_MATCH_STATUS,
+    UPCOMING_MATCH_STATUSES,
+)
 
 FALLBACK_VERSION = "fallback"
 PREDICTION_REFRESH_EPSILON = 1e-4
@@ -160,6 +163,87 @@ def refresh_market_predictions_for_upcoming(
     if refreshed:
         db.commit()
     return refreshed
+
+
+def refresh_market_predictions_for_recent_finished(
+    db: Session,
+    *,
+    now: datetime | None = None,
+    model_bundles: dict[str, ModelBundle | None] | None = None,
+    window_days: int | None = None,
+    max_matches: int | None = None,
+) -> int:
+    """Backfill BTTS/Over-Under picks for recently finished matches.
+
+    Market predictions are only generated while a match is upcoming, so matches
+    that finished before the market models ran (or were imported as finished)
+    never got them, and the Completed tab has nothing to show beyond 1X2. This
+    fills in missing market predictions for finished matches within a recent
+    window. It only writes when a renderable row is missing, so repeat syncs are
+    cheap no-ops once a match is backfilled. Predictions are point-in-time
+    (features only use fixtures before kickoff), so backfilling is leakage-safe.
+    """
+    bundles = model_bundles or {
+        market: load_active_market_model(market) for market in SUPPORTED_MARKETS
+    }
+    if not any(bundle is not None for bundle in bundles.values()):
+        return 0
+
+    resolved_now = _naive_utc_now(now)
+    window = (
+        window_days if window_days is not None else settings.market_backfill_window_days
+    )
+    cap = (
+        max_matches
+        if max_matches is not None
+        else settings.market_backfill_max_matches
+    )
+    if cap <= 0:
+        return 0
+    since = resolved_now - timedelta(days=window)
+
+    matches = db.scalars(
+        select(Match)
+        .options(selectinload(Match.market_predictions))
+        .where(
+            Match.status == FINISHED_MATCH_STATUS,
+            Match.kickoff >= since,
+            Match.kickoff < resolved_now,
+        )
+        .order_by(Match.kickoff.desc())
+    ).all()
+
+    refreshed = 0
+    processed = 0
+    for match in matches:
+        if processed >= cap:
+            break
+        missing = [
+            market
+            for market in SUPPORTED_MARKETS
+            if bundles.get(market) is not None
+            and not _has_renderable_market_prediction(match, market)
+        ]
+        if not missing:
+            continue
+        processed += 1
+        for market in missing:
+            result = predict_market(db, match, market, model_bundle=bundles.get(market))
+            _persist_market_prediction(db, match, result)
+            refreshed += 1
+
+    if refreshed:
+        db.commit()
+    return refreshed
+
+
+def _has_renderable_market_prediction(match: Match, market: str) -> bool:
+    return any(
+        row.market == market
+        and isinstance(row.probabilities, dict)
+        and len(row.probabilities) > 0
+        for row in match.market_predictions
+    )
 
 
 def _latest_market_prediction(match: Match, market: str) -> MarketPrediction | None:

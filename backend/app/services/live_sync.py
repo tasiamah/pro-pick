@@ -22,7 +22,10 @@ from app.services.historical_import import (
 )
 from app.services.history_backfill import backfill_missing_team_history
 from app.services.ingestion_alerts import IngestionPipelineError
-from app.services.market_prediction import refresh_market_predictions_for_upcoming
+from app.services.market_prediction import (
+    refresh_market_predictions_for_recent_finished,
+    refresh_market_predictions_for_upcoming,
+)
 from app.services.match_notification_events import (
     NotificationDispatchSummary,
     process_match_fixture_update,
@@ -264,6 +267,12 @@ def run_live_sync(
         summary.market_predictions = refresh_market_predictions_for_upcoming(
             db, now=resolved_now
         )
+        if settings.market_backfill_enabled:
+            # Fill in BTTS/Over-Under picks for recently finished matches so the
+            # Completed tab surfaces them, not just the 1X2 pick.
+            summary.market_predictions += (
+                refresh_market_predictions_for_recent_finished(db, now=resolved_now)
+            )
         summary.value_bets = sync_value_bets_for_upcoming(db, now=resolved_now)
     else:
         logger.info("Live sync found no fixtures for leagues %s", resolved_league_ids)
