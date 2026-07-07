@@ -4,7 +4,7 @@ import math
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from threading import Lock
 
 from sqlalchemy import and_, func, select
@@ -372,7 +372,19 @@ def load_recent_prediction_probabilities(
     ]
 
 
-def count_predictions_for_today(db: Session, today: date) -> int:
+def count_predictions_for_today(db: Session, now: datetime) -> int:
+    """Count latest predictions for matches still to kick off later today (UTC).
+
+    Only matches whose kickoff is between ``now`` and the end of the current UTC
+    day are counted. Matching by calendar date alone would keep counting matches
+    that have already kicked off — including a stale fixture whose kickoff passed
+    but was never played or settled — which inflates the "active matches" figure
+    even when nothing is actually on.
+    """
+    reference = now.replace(tzinfo=None) if now.tzinfo is not None else now
+    day_end = datetime.combine(
+        reference.date() + timedelta(days=1), datetime.min.time()
+    )
     latest_prediction_subq = _latest_prediction_subquery()
 
     return db.execute(
@@ -385,7 +397,8 @@ def count_predictions_for_today(db: Session, today: date) -> int:
         .join(Match, Prediction.match_id == Match.id)
         .where(
             Match.kickoff.is_not(None),
-            func.date(Match.kickoff) == today,
+            Match.kickoff >= reference,
+            Match.kickoff < day_end,
         )
     ).scalar_one()
 
