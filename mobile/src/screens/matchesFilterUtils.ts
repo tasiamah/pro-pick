@@ -1,5 +1,4 @@
 import type { MatchDetail } from '../api/types';
-import { filterHighConfidenceMatches } from '../utils/marketPicks';
 import {
   classifyOddsTier,
   type OddsTier,
@@ -8,6 +7,7 @@ import {
   getOddForOutcome,
   getRecommendedOutcome,
 } from '../components/matchCard/matchCardUtils';
+import { filterHighConfidenceMatches } from '../utils/marketPicks';
 import { parseMatchDate } from '../utils/matchDates';
 
 export type MatchStatusFilter = 'upcoming' | 'live' | 'completed';
@@ -153,13 +153,136 @@ export function getMatchesEmptyMessage(
 
   if (statusFilter === 'completed') {
     return highConfidenceOnly
-      ? 'No confident picks in completed matches.'
+      ? 'No confident picks right now'
       : 'No completed matches in this list.';
   }
 
   if (highConfidenceOnly) {
-    return 'No confident picks in this list.';
+    return 'No confident picks right now';
   }
 
   return 'No upcoming matches in this list.';
+}
+
+export type ConfidentPicksEmptyContext =
+  | 'home_week'
+  | 'home_day'
+  | 'matches_upcoming'
+  | 'matches_completed';
+
+export type ConfidentPicksEmptyState = {
+  title: string;
+  subtext: string;
+};
+
+const MAX_COMPETITIONS_IN_EMPTY_STATE = 2;
+
+function periodLabel(context: ConfidentPicksEmptyContext): string {
+  switch (context) {
+    case 'home_week':
+      return 'this week';
+    case 'home_day':
+      return 'today';
+    case 'matches_upcoming':
+      return 'right now';
+    case 'matches_completed':
+      return 'in this period';
+  }
+}
+
+function fixtureAvailabilitySentence(
+  context: ConfidentPicksEmptyContext,
+  competitionClause: string,
+): string {
+  if (competitionClause) {
+    switch (context) {
+      case 'home_week':
+        return `Fixtures${competitionClause} are on this week.`;
+      case 'home_day':
+        return `Fixtures${competitionClause} are on today.`;
+      case 'matches_upcoming':
+        return `Fixtures${competitionClause} are upcoming.`;
+      case 'matches_completed':
+        return `Fixtures${competitionClause} were played recently.`;
+    }
+  }
+
+  switch (context) {
+    case 'home_week':
+      return 'Fixtures are on this week.';
+    case 'home_day':
+      return 'Fixtures are on today.';
+    case 'matches_upcoming':
+      return 'Fixtures are upcoming.';
+    case 'matches_completed':
+      return 'Fixtures were played recently.';
+  }
+}
+
+const NO_CONFIDENT_PICKS_SENTENCE = 'No confident picks for now.';
+const QUIET_WEEKS_SENTENCE = 'Off-season weeks are often like this.';
+
+export function uniqueCompetitionNames(matches: MatchDetail[]): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+
+  for (const match of matches) {
+    const name = match.competition_name?.trim();
+    if (!name || seen.has(name)) {
+      continue;
+    }
+    seen.add(name);
+    names.push(name);
+  }
+
+  return names;
+}
+
+export function formatCompetitionClause(names: string[]): string {
+  if (names.length === 0) {
+    return '';
+  }
+
+  const displayed = names.slice(0, MAX_COMPETITIONS_IN_EMPTY_STATE);
+
+  if (displayed.length === 1) {
+    return ` in ${displayed[0]}`;
+  }
+
+  if (names.length === 2) {
+    return ` across ${displayed[0]} and ${displayed[1]}`;
+  }
+
+  return ` across ${displayed[0]}, ${displayed[1]} and others`;
+}
+
+function formatMatchAvailability(
+  matches: MatchDetail[],
+  context: ConfidentPicksEmptyContext,
+): string {
+  const count = matches.length;
+  const period = periodLabel(context);
+
+  if (count === 0) {
+    return `No fixtures ${period}. ${QUIET_WEEKS_SENTENCE}`;
+  }
+
+  const competitionClause = formatCompetitionClause(uniqueCompetitionNames(matches));
+
+  return (
+    `${fixtureAvailabilitySentence(context, competitionClause)} ` +
+    `${NO_CONFIDENT_PICKS_SENTENCE} ` +
+    QUIET_WEEKS_SENTENCE
+  );
+}
+
+/** Copy when the list is empty because nothing cleared the confidence bar. */
+export function getNoConfidentPicksEmptyState(
+  availableMatches: MatchDetail[],
+  context: ConfidentPicksEmptyContext,
+): ConfidentPicksEmptyState {
+  return {
+    title: 'No confident picks right now',
+    subtext: formatMatchAvailability(availableMatches, context),
+  };
 }

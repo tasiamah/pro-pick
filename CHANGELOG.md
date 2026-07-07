@@ -70,6 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `backend/app/services/live_sync.py`).
 
 ### Changed
+- Empty states on Home and Matches show contextual copy when fixtures exist but
+  none clear the confidence bar: competition-aware fixture text, no match count,
+  and off-season note (`mobile/src/components/EmptyState.tsx`,
+  `mobile/src/screens/matchesFilterUtils.ts`).
 - Matches **Completed** tab now loads fixtures from the last **90 days** (was 14)
   and requests up to 200 rows, so recent tournament results stay in the browse
   window while still showing only confident picks (`mobile/src/screens/MatchesScreen.tsx`).
