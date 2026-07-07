@@ -27,6 +27,7 @@ export function useMatches(
     enabled?: boolean;
     keepPreviousData?: boolean;
     refetchInterval?: number | false;
+    staleTime?: number;
   },
 ) {
   return useQuery({
@@ -35,6 +36,7 @@ export function useMatches(
     enabled: options?.enabled ?? true,
     placeholderData: options?.keepPreviousData ? keepPreviousData : undefined,
     refetchInterval: options?.refetchInterval,
+    staleTime: options?.staleTime,
   });
 }
 
