@@ -1,6 +1,7 @@
 import { useIsFocused } from '@react-navigation/native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -10,7 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { useMatches } from '../api/hooks';
+import { useMatchesInfinite } from '../api/hooks';
 import type { MatchListParams } from '../api/types';
 import {
   AsyncState,
@@ -47,7 +48,11 @@ const UPCOMING_BROWSE_WINDOW_DAYS = 14;
 /** Completed tab loads further back so recent tournament results stay visible. */
 const COMPLETED_BROWSE_WINDOW_DAYS = 90;
 const MATCHES_PAGE_LIMIT = 50;
-const COMPLETED_MATCHES_PAGE_LIMIT = 200;
+/**
+ * Completed loads in small pages so the first results paint quickly and the
+ * rest stream in on a background fetch instead of one large 200-row request.
+ */
+const COMPLETED_MATCHES_PAGE_SIZE = 30;
 const LIVE_REFETCH_INTERVAL_MS = 60_000;
 const KICKOFF_GUARD_EPOCH = new Date(0);
 
@@ -88,7 +93,9 @@ export function MatchesScreen({ navigation }: Props) {
       kickoff_from: start.toISOString(),
       kickoff_to: end.toISOString(),
       limit:
-        statusFilter === 'completed' ? COMPLETED_MATCHES_PAGE_LIMIT : MATCHES_PAGE_LIMIT,
+        statusFilter === 'completed'
+          ? COMPLETED_MATCHES_PAGE_SIZE
+          : MATCHES_PAGE_LIMIT,
       status: statusFilter,
     };
 
@@ -103,7 +110,7 @@ export function MatchesScreen({ navigation }: Props) {
     return params;
   }, [debouncedSearchQuery, localDayKey, oddsTierFilter, statusFilter]);
 
-  const matchesQuery = useMatches(matchListParams, {
+  const matchesQuery = useMatchesInfinite(matchListParams, {
     enabled: isFocused,
     keepPreviousData: true,
     refetchInterval:
@@ -117,12 +124,41 @@ export function MatchesScreen({ navigation }: Props) {
     isRefetching: isMatchesRefetching,
     isPlaceholderData: isMatchesPlaceholderData,
     refetch: refetchMatches,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = matchesQuery;
+
+  const matches = useMemo(
+    () => matchesData?.pages.flat() ?? [],
+    [matchesData],
+  );
+
+  // After the first page renders, keep pulling remaining pages in the
+  // background so the full list fills in without blocking the initial paint.
+  // Guarded against placeholder data so a filter switch doesn't paginate the
+  // previous tab's cached results.
+  useEffect(() => {
+    if (
+      isFocused &&
+      hasNextPage &&
+      !isFetchingNextPage &&
+      !isMatchesPlaceholderData
+    ) {
+      void fetchNextPage();
+    }
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFocused,
+    isMatchesPlaceholderData,
+  ]);
 
   const filteredMatches = useMemo(
     () =>
       filterMatchesForBrowse(
-        matchesData ?? [],
+        matches,
         statusFilter,
         oddsTierFilter,
         debouncedSearchQuery,
@@ -131,7 +167,7 @@ export function MatchesScreen({ navigation }: Props) {
     [
       debouncedSearchQuery,
       kickoffGuardNow,
-      matchesData,
+      matches,
       oddsTierFilter,
       statusFilter,
     ],
@@ -174,7 +210,14 @@ export function MatchesScreen({ navigation }: Props) {
     void refetchMatches();
   }, [refetchMatches]);
 
-  const isMatchesLoading = isInitialQueryLoad(isMatchesQueryLoading, matchesData);
+  // Switching filters/tabs changes the query key, so react-query serves the
+  // previous tab's rows as placeholder data while the real fetch runs. Those
+  // rows filter down to nothing under the new filter, which briefly renders a
+  // misleading "No confident picks" empty state. Treat an in-flight placeholder
+  // fetch that currently has nothing to show as loading instead.
+  const isMatchesLoading =
+    isInitialQueryLoad(isMatchesQueryLoading, matchesData) ||
+    (isMatchesPlaceholderData && visibleMatches.length === 0);
 
   if (queryErrorForDisplay(matchesError, matchesData)) {
     return (
@@ -255,6 +298,12 @@ export function MatchesScreen({ navigation }: Props) {
           ))}
         </View>
       </AsyncState>
+
+      {isFetchingNextPage && visibleMatches.length > 0 ? (
+        <View style={styles.footerLoading}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -275,5 +324,8 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 0,
     minWidth: 0,
+  },
+  footerLoading: {
+    paddingVertical: spacing.lg,
   },
 });
