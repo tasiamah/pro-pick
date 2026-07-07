@@ -137,9 +137,7 @@ def test_backfill_market_predictions_for_recent_finished(db_session: Session) ->
     # Each of the six finished matches in the window gets one BTTS row; the
     # scheduled match is skipped (not finished).
     assert refreshed == len(RESULTS)
-    finished = db_session.scalars(
-        select(Match).where(Match.status == "finished")
-    ).all()
+    finished = db_session.scalars(select(Match).where(Match.status == "finished")).all()
     for match in finished:
         stored = db_session.scalars(
             select(MarketPrediction).where(MarketPrediction.match_id == match.id)
