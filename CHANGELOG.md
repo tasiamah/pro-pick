@@ -111,6 +111,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`mobile/src/screens/MatchesScreen.tsx`, `mobile/src/screens/matchesFilterUtils.ts`).
 
 ### Fixed
+- **Played matches now self-heal into the Completed tab.** The live sync only
+  re-fetched fixtures within its `sync_date_offsets` window (e.g. `-1..+7`), so a
+  match whose result day fell outside a successful run's window (a missed/failed
+  daily run, an off-season/tournament backlog) stayed stored as `scheduled`/`live`
+  with no score forever and never reached the Completed tab — e.g. a finished World
+  Cup fixture still showing as upcoming. Each sync now re-fetches overdue matches
+  (kicked off, still not finished) *by fixture ID* to settle them, independent of
+  the date window, bounded by `SETTLE_OVERDUE_WINDOW_DAYS` (14) and
+  `SETTLE_OVERDUE_MAX_MATCHES` (200) to protect the API quota; toggle with
+  `SETTLE_OVERDUE_ENABLED` (`backend/app/services/live_sync.py`,
+  `backend/app/services/data_ingestion.py`, `backend/app/core/config.py`).
 - Matches **Completed** tab no longer flashes an empty state or streams cards in
   one by one. Completed fixtures prefetch in the background, the tab waits on
   the full batch (up to 200 rows in the 90-day window), and cached results show

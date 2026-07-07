@@ -60,6 +60,16 @@ class Settings(BaseSettings):
     finished_backfill_window_days: int = Field(default=14, ge=1)
     finished_backfill_max_matches: int = Field(default=2000, ge=0)
 
+    # Self-healing settlement. The date-window sync only revisits fixtures within
+    # sync_date_offsets (e.g. -1..+7), so if a run is missed the day after a match
+    # kicks off, that match is stranded as scheduled/live with no score forever and
+    # never reaches the Completed tab. Each sync re-fetches overdue matches (already
+    # kicked off, still not finished) by fixture ID to settle them, independent of
+    # the date window. Bounded by a lookback window and per-run cap to protect quota.
+    settle_overdue_enabled: bool = True
+    settle_overdue_window_days: int = Field(default=14, ge=1)
+    settle_overdue_max_matches: int = Field(default=200, ge=0)
+
     # Minimum model_prob - implied_prob gap before flagging a value bet. 2% surfaces
     # more picks than 3% while staying conservative; tune via env on Render.
     value_bet_edge_threshold: float = 0.02

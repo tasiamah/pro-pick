@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
@@ -133,6 +134,26 @@ class FootballApiClient:
         payload = self._request(
             "fixtures",
             {"league": league, "season": season},
+        )
+        response = payload.get("response", [])
+        if not isinstance(response, list):
+            raise FootballApiError("Unexpected fixtures response shape")
+        return response
+
+    def get_fixtures_by_ids(self, fixture_ids: Sequence[int]) -> list[dict[str, Any]]:
+        """Fixtures for specific fixture IDs, regardless of date.
+
+        Used to re-fetch and settle matches that already kicked off but are still
+        stored as scheduled/live because the date-window sync never revisited them.
+        API-Football caps ``ids`` at 20 per request (dash-separated), so callers
+        must chunk larger sets.
+        """
+        ids = [int(fixture_id) for fixture_id in fixture_ids]
+        if not ids:
+            return []
+        payload = self._request(
+            "fixtures",
+            {"ids": "-".join(str(fixture_id) for fixture_id in ids)},
         )
         response = payload.get("response", [])
         if not isinstance(response, list):
