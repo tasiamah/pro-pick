@@ -22,13 +22,19 @@ from app.services.historical_import import (
 )
 from app.services.history_backfill import backfill_missing_team_history
 from app.services.ingestion_alerts import IngestionPipelineError
-from app.services.market_prediction import refresh_market_predictions_for_upcoming
+from app.services.market_prediction import (
+    refresh_market_predictions_for_recent_finished,
+    refresh_market_predictions_for_upcoming,
+)
 from app.services.match_notification_events import (
     NotificationDispatchSummary,
     process_match_fixture_update,
     run_live_notification_sync,
 )
-from app.services.prediction import refresh_predictions_for_upcoming
+from app.services.prediction import (
+    refresh_predictions_for_recent_finished,
+    refresh_predictions_for_upcoming,
+)
 from app.services.value_bets import generate_value_bets, settlement_profit
 
 logger = logging.getLogger(__name__)
@@ -264,6 +270,22 @@ def run_live_sync(
         summary.market_predictions = refresh_market_predictions_for_upcoming(
             db, now=resolved_now
         )
+        if settings.finished_backfill_enabled:
+            # Backfill real 1X2 + BTTS/Over-Under picks for recently finished
+            # matches so the Completed tab shows real picks across markets rather
+            # than stale fallback 1X2s. Best-effort: this is a nice-to-have, so a
+            # failure here must never abort the sync's critical path (value bets,
+            # settlement, notifications).
+            try:
+                summary.predictions += refresh_predictions_for_recent_finished(
+                    db, now=resolved_now
+                )
+                summary.market_predictions += (
+                    refresh_market_predictions_for_recent_finished(db, now=resolved_now)
+                )
+            except Exception:
+                db.rollback()
+                logger.exception("Finished-match backfill failed; continuing sync")
         summary.value_bets = sync_value_bets_for_upcoming(db, now=resolved_now)
     else:
         logger.info("Live sync found no fixtures for leagues %s", resolved_league_ids)

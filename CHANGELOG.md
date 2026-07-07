@@ -29,6 +29,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   CLI for one-off runs. Tunable via `HISTORY_BACKFILL_ENABLED`,
   `HISTORY_BACKFILL_MIN_MATCHES`, `HISTORY_BACKFILL_LAST_FIXTURES`, and
   `HISTORY_BACKFILL_MAX_TEAMS`.
+- **Prediction backfill for recently finished matches.** Predictions (1X2 and
+  BTTS/Over-Under) were only refreshed while a match was upcoming, so matches that
+  finished before the models/features were ready kept a stale neutral `fallback`
+  1X2 row (a flat 0.40/0.28/0.32) and never got market rows — the Completed tab
+  then had nothing real to show. Each sync now backfills real 1X2 + market picks
+  for finished matches within a rolling window (point-in-time features, so
+  leakage-safe; skips matches already on the current model version, so repeat
+  syncs are cheap), and a `python -m app.scripts.backfill_finished_predictions`
+  CLI covers one-off runs. Tunable via `FINISHED_BACKFILL_ENABLED`,
+  `FINISHED_BACKFILL_WINDOW_DAYS`, and `FINISHED_BACKFILL_MAX_MATCHES`
+  (`backend/app/services/prediction.py`, `backend/app/services/market_prediction.py`,
+  `backend/app/services/live_sync.py`).
 
 ### Changed
 - Analytics tab: replaced the "Prediction Outcomes" home/draw/away count cards
@@ -36,6 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`1X2`, `BTTS`, `Over/Under 2.5`) without counts, so the section reads as market
   coverage instead of a home-win-heavy tally (`mobile/src/screens/AnalyticsScreen.tsx`,
   `mobile/src/screens/analyticsUtils.ts`).
+- **Matches "Completed" tab now mirrors "Upcoming".** It previously showed every
+  finished fixture and always fell back to the raw 1X2 (home/away) pick, even when
+  the model wasn't confident. It now surfaces only matches the model made a
+  confident call on — high confidence, or lower confidence at high odds — and shows
+  those picks across all markets (`1X2`, `BTTS`, `Over/Under 2.5`) instead of just
+  home/away, using the same filter as Upcoming
+  (`mobile/src/screens/MatchesScreen.tsx`, `mobile/src/screens/matchesFilterUtils.ts`).
 
 ### Fixed
 - Home hero **Value Bets** now counts only bets on confident picks shown in the
