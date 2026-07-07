@@ -43,8 +43,11 @@ import {
 type Props = NativeStackScreenProps<MatchesStackParamList, 'Matches'>;
 
 const SEARCH_DEBOUNCE_MS = 300;
-const BROWSE_WINDOW_DAYS = 14;
+const UPCOMING_BROWSE_WINDOW_DAYS = 14;
+/** Completed tab loads further back so recent tournament results stay visible. */
+const COMPLETED_BROWSE_WINDOW_DAYS = 90;
 const MATCHES_PAGE_LIMIT = 50;
+const COMPLETED_MATCHES_PAGE_LIMIT = 200;
 const LIVE_REFETCH_INTERVAL_MS = 60_000;
 const KICKOFF_GUARD_EPOCH = new Date(0);
 
@@ -71,16 +74,21 @@ export function MatchesScreen({ navigation }: Props) {
 
   const matchListParams = useMemo(() => {
     const today = localDayKeyToDate(localDayKey);
-    const start = addLocalDays(today, -BROWSE_WINDOW_DAYS);
+    const browseWindowDays =
+      statusFilter === 'completed'
+        ? COMPLETED_BROWSE_WINDOW_DAYS
+        : UPCOMING_BROWSE_WINDOW_DAYS;
+    const start = addLocalDays(today, -browseWindowDays);
     const end =
       statusFilter === 'completed'
         ? addLocalDays(today, 1)
-        : addLocalDays(today, BROWSE_WINDOW_DAYS);
+        : addLocalDays(today, UPCOMING_BROWSE_WINDOW_DAYS);
 
     const params: MatchListParams = {
       kickoff_from: start.toISOString(),
       kickoff_to: end.toISOString(),
-      limit: MATCHES_PAGE_LIMIT,
+      limit:
+        statusFilter === 'completed' ? COMPLETED_MATCHES_PAGE_LIMIT : MATCHES_PAGE_LIMIT,
       status: statusFilter,
     };
 

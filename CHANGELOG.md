@@ -70,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `backend/app/services/live_sync.py`).
 
 ### Changed
+- Matches **Completed** tab now loads fixtures from the last **90 days** (was 14)
+  and requests up to 200 rows, so recent tournament results stay in the browse
+  window while still showing only confident picks (`mobile/src/screens/MatchesScreen.tsx`).
 - Finished-match prediction backfill now covers the **current calendar year to
   date** (Jan 1 → now) by default instead of a rolling 14-day window, so the
   Completed tab reflects the whole season across all leagues in the database
