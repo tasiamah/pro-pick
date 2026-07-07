@@ -9,6 +9,7 @@ tagged with a fallback version so callers keep working before training runs.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
@@ -195,6 +196,7 @@ def refresh_predictions_for_recent_finished(
     model_bundle: ModelBundle | None = None,
     window_days: int | None = None,
     max_matches: int | None = None,
+    progress: Callable[[str], None] | None = None,
 ) -> int:
     """Backfill real 1X2 predictions for recently finished matches.
 
@@ -235,6 +237,11 @@ def refresh_predictions_for_recent_finished(
         .order_by(Match.kickoff.desc())
     ).all()
 
+    if progress is not None:
+        progress(
+            f"1X2 backfill: {len(matches)} finished matches in window (cap {cap})."
+        )
+
     refreshed = 0
     processed = 0
     for match in matches:
@@ -261,7 +268,11 @@ def refresh_predictions_for_recent_finished(
             continue
         processed += 1
         refreshed += 1
+        if progress is not None and refreshed % 25 == 0:
+            progress(f"  1X2 backfill: {refreshed} predictions written...")
 
+    if progress is not None:
+        progress(f"1X2 backfill: {refreshed} predictions written.")
     return refreshed
 
 

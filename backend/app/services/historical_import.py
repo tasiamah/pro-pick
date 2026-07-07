@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -178,32 +178,66 @@ class HistoricalDataImporter:
         self,
         league_ids: tuple[int, ...] = DEFAULT_LEAGUE_IDS,
         seasons: tuple[int, ...] = DEFAULT_SEASONS,
+        progress: Callable[[str], None] | None = None,
+        since: datetime | None = None,
     ) -> ImportSummary:
         total = ImportSummary()
-        for league_id in league_ids:
-            for season in seasons:
-                result = self.import_league_season(league_id, season)
-                total.merge(result)
+        combos = [(league_id, season) for league_id in league_ids for season in seasons]
+        for index, (league_id, season) in enumerate(combos, start=1):
+            if progress is not None:
+                progress(
+                    f"[{index}/{len(combos)}] league {league_id} season {season}: "
+                    "fetching fixtures..."
+                )
+            result = self.import_league_season(
+                league_id, season, progress=progress, since=since
+            )
+            if progress is not None:
+                failed = (
+                    f", {result.odds_failed} odds failed" if result.odds_failed else ""
+                )
+                progress(
+                    f"[{index}/{len(combos)}] league {league_id} season {season}: "
+                    f"done (+{result.matches} matches, +{result.odds} odds{failed})"
+                )
+            total.merge(result)
         return total
 
-    def import_league_season(self, league_id: int, season: int) -> ImportSummary:
+    def import_league_season(
+        self,
+        league_id: int,
+        season: int,
+        progress: Callable[[str], None] | None = None,
+        since: datetime | None = None,
+    ) -> ImportSummary:
         fixtures = self.client.get_fixtures(league=league_id, season=season)
-        return self.import_fixture_items(fixtures, default_season=season)
+        if progress is not None:
+            progress(f"    fetched {len(fixtures)} fixtures; importing...")
+        return self.import_fixture_items(
+            fixtures, default_season=season, progress=progress, since=since
+        )
 
     def import_fixture_items(
         self,
         fixture_items: list[dict],
         default_season: int | None = None,
+        progress: Callable[[str], None] | None = None,
+        since: datetime | None = None,
     ) -> ImportSummary:
         summary = ImportSummary()
         consecutive_odds_failures = 0
         odds_circuit_open = False
+        total = len(fixture_items)
 
-        for fixture_item in fixture_items:
+        for position, fixture_item in enumerate(fixture_items, start=1):
             league = fixture_item["league"]
+            kickoff = parse_kickoff(fixture_item["fixture"].get("date"))
+            # Skip fixtures before the cutoff (e.g. import only 2026 games from a
+            # full 2025/26 season pull) without an extra API call.
+            if since is not None and (kickoff is None or kickoff < since):
+                continue
             season = league.get("season") or default_season
             if season is None:
-                kickoff = parse_kickoff(fixture_item["fixture"].get("date"))
                 season = kickoff.year if kickoff is not None else datetime.now(UTC).year
 
             competition, competition_created = self._upsert_competition(
@@ -255,6 +289,12 @@ class HistoricalDataImporter:
                             "this batch.",
                             consecutive_odds_failures,
                         )
+
+            if progress is not None and (position % 25 == 0 or position == total):
+                progress(
+                    f"      {position}/{total} fixtures "
+                    f"({summary.matches} new, {summary.odds} odds)"
+                )
 
         self.db.commit()
         return summary
