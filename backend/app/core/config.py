@@ -60,6 +60,16 @@ class Settings(BaseSettings):
     finished_backfill_window_days: int = Field(default=14, ge=1)
     finished_backfill_max_matches: int = Field(default=2000, ge=0)
 
+    # Self-healing settlement. The date-window sync only revisits fixtures within
+    # sync_date_offsets (e.g. -1..+7), so if a run is missed the day after a match
+    # kicks off, that match is stranded as scheduled/live with no score forever and
+    # never reaches the Completed tab. Each sync re-fetches overdue matches (already
+    # kicked off, still not finished) by fixture ID to settle them, independent of
+    # the date window. Bounded by a lookback window and per-run cap to protect quota.
+    settle_overdue_enabled: bool = True
+    settle_overdue_window_days: int = Field(default=14, ge=1)
+    settle_overdue_max_matches: int = Field(default=200, ge=0)
+
     # Minimum model_prob - implied_prob gap before flagging a value bet. 2% surfaces
     # more picks than 3% while staying conservative; tune via env on Render.
     value_bet_edge_threshold: float = 0.02
@@ -99,6 +109,13 @@ class Settings(BaseSettings):
     notification_test_secret: str = ""
     live_notification_poll_minutes: int = Field(default=3, ge=1, le=60)
     scheduler_live_notifications_enabled: bool = True
+    # The live poll only processes matches near their kickoff — imminent (for
+    # line-up/kick-off events) or recently started/finished (for live events and
+    # full-time settlement). Without this bound the poll would fetch line-ups for
+    # *every* future scheduled match every cycle (one API call each), exhausting
+    # the provider quota within minutes and starving the rest of the pipeline.
+    live_poll_lookahead_hours: int = Field(default=3, ge=0, le=48)
+    live_poll_lookback_hours: int = Field(default=6, ge=0, le=48)
 
     def finished_backfill_since(self, now: datetime) -> datetime:
         """Earliest kickoff the finished-match backfill should cover.

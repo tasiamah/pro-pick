@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
@@ -39,6 +39,9 @@ from app.services.value_bets import generate_value_bets, settlement_profit
 
 logger = logging.getLogger(__name__)
 
+# API-Football caps the fixtures `ids` parameter at 20 IDs per request.
+_MAX_FIXTURE_IDS_PER_REQUEST = 20
+
 
 @dataclass
 class FetchWindowResult:
@@ -59,6 +62,7 @@ class LiveSyncSummary:
     predictions: int = 0
     market_predictions: int = 0
     value_bets: int = 0
+    settled_matches: int = 0
     settled_value_bets: int = 0
     notifications: NotificationDispatchSummary | None = None
 
@@ -144,6 +148,86 @@ def sync_value_bets_for_upcoming(
         db.commit()
 
     return created
+
+
+def settle_overdue_matches(
+    db: Session,
+    *,
+    client: FootballApiClient,
+    now: datetime | None = None,
+    window_days: int | None = None,
+    max_matches: int | None = None,
+) -> int:
+    """Re-fetch and settle matches that kicked off but were never finished.
+
+    The date-window sync only revisits fixtures within ``sync_date_offsets``. Any
+    match whose result day falls outside a successful run's window stays stored as
+    ``scheduled``/``live`` with no score indefinitely, so it never reaches the
+    Completed tab. This finds those overdue matches and re-fetches them *by fixture
+    ID* (independent of the date window), letting ``_upsert_match`` flip them to
+    ``finished`` with the final score. Bounded by a lookback window and per-run cap
+    to protect the API quota. Returns the number of matches now finished.
+    """
+    resolved_now = _resolve_sync_now(now)
+    resolved_window = (
+        window_days if window_days is not None else settings.settle_overdue_window_days
+    )
+    resolved_cap = (
+        max_matches if max_matches is not None else settings.settle_overdue_max_matches
+    )
+    if resolved_cap == 0:
+        return 0
+
+    earliest = resolved_now - timedelta(days=resolved_window)
+    overdue = db.scalars(
+        select(Match)
+        .where(
+            Match.status.in_(UPCOMING_MATCH_STATUSES),
+            Match.kickoff.is_not(None),
+            Match.kickoff < resolved_now,
+            Match.kickoff >= earliest,
+            Match.external_id.is_not(None),
+        )
+        .order_by(Match.kickoff.desc())
+        .limit(resolved_cap)
+    ).all()
+
+    external_ids = [
+        int(match.external_id) for match in overdue if match.external_id is not None
+    ]
+    if not external_ids:
+        return 0
+
+    # Results only — no odds — since finished fixtures don't need fresh prices and
+    # the odds path is one quota-heavy call per match.
+    importer = HistoricalDataImporter(db, client=client, import_odds=False)
+    for start in range(0, len(external_ids), _MAX_FIXTURE_IDS_PER_REQUEST):
+        chunk = external_ids[start : start + _MAX_FIXTURE_IDS_PER_REQUEST]
+        try:
+            fixtures = client.get_fixtures_by_ids(chunk)
+        except (FootballApiError, httpx.HTTPError):
+            logger.exception("Overdue settlement fetch failed for fixtures %s", chunk)
+            continue
+        if not fixtures:
+            continue
+        # Isolate the import per chunk: a malformed payload or DB error on one
+        # chunk must not abort the remaining chunks (or lose the whole call to the
+        # broad handler in run_live_sync). Roll back the failed chunk and go on.
+        try:
+            importer.import_fixture_items(fixtures)
+        except Exception:
+            db.rollback()
+            logger.exception("Overdue settlement import failed for fixtures %s", chunk)
+
+    settled = db.scalar(
+        select(func.count())
+        .select_from(Match)
+        .where(
+            Match.external_id.in_(external_ids),
+            Match.status == FINISHED_MATCH_STATUS,
+        )
+    )
+    return int(settled or 0)
 
 
 def settle_value_bets(db: Session) -> int:
@@ -290,6 +374,18 @@ def run_live_sync(
     else:
         logger.info("Live sync found no fixtures for leagues %s", resolved_league_ids)
 
+    if settings.settle_overdue_enabled:
+        # Self-healing: settle matches stranded outside the date window (e.g. after
+        # a missed run). Runs even when the window returned no fixtures, so the
+        # off-season / tournament backlog still clears. Best-effort.
+        try:
+            summary.settled_matches = settle_overdue_matches(
+                db, client=api_client, now=resolved_now
+            )
+        except Exception:
+            db.rollback()
+            logger.exception("Overdue-match settlement failed; continuing sync")
+
     summary.settled_value_bets = settle_value_bets(db)
 
     if settings.notifications_enabled:
@@ -308,7 +404,8 @@ def run_live_sync(
     logger.info(
         "Live sync complete: %s fixtures, %s new matches, %s odds rows, "
         "%s odds failed, %s history matches backfilled, %s predictions, "
-        "%s market predictions, %s value bets, %s settled bets, %s push sent",
+        "%s market predictions, %s value bets, %s settled matches, "
+        "%s settled bets, %s push sent",
         summary.fixtures_fetched,
         summary.import_summary.matches if summary.import_summary else 0,
         summary.import_summary.odds if summary.import_summary else 0,
@@ -317,6 +414,7 @@ def run_live_sync(
         summary.predictions,
         summary.market_predictions,
         summary.value_bets,
+        summary.settled_matches,
         summary.settled_value_bets,
         summary.notifications.messages_sent if summary.notifications else 0,
     )

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
@@ -19,6 +19,9 @@ from app.services.notification_preferences import get_enabled_devices_for_event
 from app.services.push_token_registry import get_push_tokens_for_devices
 
 logger = logging.getLogger(__name__)
+
+# API-Football caps the fixtures `ids` parameter at 20 IDs per request.
+_MAX_FIXTURE_IDS_PER_REQUEST = 20
 
 EVENT_LABELS: dict[str, str] = {
     "goal": "Goal",
@@ -439,38 +442,31 @@ def process_lineups_confirmed(
     return dispatch_events_for_match(db, match, [event])
 
 
-def _fetch_live_fixture_window(
+def _fetch_fixtures_by_ids(
     client: FootballApiClient,
-    now: datetime | None = None,
+    external_ids: list[int],
 ) -> dict[int, dict]:
-    """Fetch fixtures across the configured date window, keyed by external id.
+    """Fetch specific fixtures by ID, keyed by external id.
 
-    Gives the poll authoritative, up-to-the-minute fixture status so it can
-    detect status transitions (kick-off, full time, half-time, etc.) instead of
-    relying on the once-daily importer to refresh ``Match.status``.
+    Gives the poll authoritative, up-to-the-minute status for the matches it is
+    watching (kick-off, full time, half-time, etc.). Fetching only the relevant
+    fixtures by ID — rather than the whole multi-day date window on every cycle —
+    keeps each poll to roughly one provider call instead of one per synced day.
     """
-    resolved = now or datetime.now(UTC)
-    today = resolved.date()
-    league_set = set(settings.sync_league_id_list)
     fixtures_by_id: dict[int, dict] = {}
-
-    for offset in settings.sync_date_offset_list:
-        sync_date = today + timedelta(days=offset)
+    for start in range(0, len(external_ids), _MAX_FIXTURE_IDS_PER_REQUEST):
+        chunk = external_ids[start : start + _MAX_FIXTURE_IDS_PER_REQUEST]
         try:
-            fixtures = client.get_fixtures_by_date(sync_date)
+            fixtures = client.get_fixtures_by_ids(chunk)
         except (FootballApiError, httpx.HTTPError):
             logger.exception(
-                "Failed to fetch fixtures for %s during notification poll",
-                sync_date,
+                "Failed to fetch fixtures %s during notification poll", chunk
             )
             continue
         for item in fixtures:
             try:
-                league_id = int((item.get("league") or {}).get("id"))
                 external_id = int((item.get("fixture") or {}).get("id"))
             except (TypeError, ValueError):
-                continue
-            if league_id not in league_set:
                 continue
             fixtures_by_id[external_id] = item
 
@@ -480,12 +476,28 @@ def _fetch_live_fixture_window(
 def run_live_notification_sync(
     db: Session,
     client: FootballApiClient | None = None,
+    now: datetime | None = None,
 ) -> NotificationDispatchSummary:
-    """Poll live/upcoming matches and dispatch push notifications."""
+    """Poll matches near kickoff / in-play and dispatch push notifications.
+
+    Only matches that are live, or scheduled within a short window around now,
+    are polled. Line-up and full-time events only occur near kickoff, so there is
+    no reason to hit the provider for every future fixture every cycle — doing so
+    previously fetched line-ups for the entire upcoming slate on each poll and
+    exhausted the API quota.
+    """
     from app.services.historical_import import map_fixture_status
 
     api_client = client or FootballApiClient()
     total = NotificationDispatchSummary()
+
+    resolved_now = now or datetime.now(UTC)
+    if resolved_now.tzinfo is not None:
+        resolved_now = resolved_now.astimezone(UTC).replace(tzinfo=None)
+    lookahead_cutoff = resolved_now + timedelta(
+        hours=settings.live_poll_lookahead_hours
+    )
+    lookback_cutoff = resolved_now - timedelta(hours=settings.live_poll_lookback_hours)
 
     matches = db.scalars(
         select(Match)
@@ -493,13 +505,26 @@ def run_live_notification_sync(
             selectinload(Match.home_team),
             selectinload(Match.away_team),
         )
-        .where(Match.status.in_(("scheduled", "live")))
+        .where(
+            Match.status.in_(("scheduled", "live")),
+            or_(
+                Match.status == "live",
+                and_(
+                    Match.kickoff.is_not(None),
+                    Match.kickoff >= lookback_cutoff,
+                    Match.kickoff <= lookahead_cutoff,
+                ),
+            ),
+        )
     ).all()
 
     if not matches:
         return total
 
-    fixtures_by_ext = _fetch_live_fixture_window(api_client)
+    external_ids = [
+        int(match.external_id) for match in matches if match.external_id is not None
+    ]
+    fixtures_by_ext = _fetch_fixtures_by_ids(api_client, external_ids)
 
     for match in matches:
         fixture_item = (
