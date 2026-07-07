@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base
-from app.models import Prediction
+from app.models import Match, Prediction
 from app.services.analytics import (
     LOG_LOSS_EPSILON,
     PredictionProbabilities,
@@ -22,6 +22,7 @@ from app.services.analytics import (
     compute_log_loss,
     compute_roi,
     count_high_confidence_predictions,
+    count_predictions_for_today,
     load_recent_prediction_probabilities,
 )
 from app.services.prediction import FALLBACK_VERSION
@@ -231,3 +232,40 @@ def test_compute_avg_confidence_and_high_confidence_count():
 
     assert round(compute_avg_confidence(predictions), 3) == round((0.8 + 0.55) / 2, 3)
     assert count_high_confidence_predictions(predictions, 0.7) == 1
+
+
+def _add_match(db, match_id, kickoff, status="scheduled"):
+    db.add(
+        Match(
+            id=match_id,
+            home_team_id=1,
+            away_team_id=2,
+            kickoff=kickoff,
+            status=status,
+        )
+    )
+
+
+def test_count_predictions_for_today_only_counts_matches_not_yet_kicked_off(db_session):
+    now = datetime(2026, 7, 7, 8, 25, 0)
+    # Already kicked off earlier today (e.g. a stale, unsettled fixture) -> excluded.
+    _add_match(db_session, 1, datetime(2026, 7, 7, 0, 0, 0))
+    # Still to come today -> counted.
+    _add_match(db_session, 2, datetime(2026, 7, 7, 16, 0, 0))
+    _add_match(db_session, 3, datetime(2026, 7, 7, 20, 0, 0))
+    # Tomorrow -> excluded (different day).
+    _add_match(db_session, 4, datetime(2026, 7, 8, 12, 0, 0))
+    for match_id in (1, 2, 3, 4):
+        _add_prediction(db_session, match_id, (0.5, 0.3, 0.2), "v1", now)
+    db_session.commit()
+
+    assert count_predictions_for_today(db_session, now) == 2
+
+
+def test_count_predictions_for_today_accepts_timezone_aware_now(db_session):
+    now = datetime(2026, 7, 7, 8, 25, 0, tzinfo=UTC)
+    _add_match(db_session, 1, datetime(2026, 7, 7, 16, 0, 0))
+    _add_prediction(db_session, 1, (0.5, 0.3, 0.2), "v1", datetime(2026, 7, 7, 8, 0, 0))
+    db_session.commit()
+
+    assert count_predictions_for_today(db_session, now) == 1

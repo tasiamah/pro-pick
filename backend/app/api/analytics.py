@@ -48,8 +48,7 @@ def get_analytics(db: Session = Depends(get_db)) -> AnalyticsOut:
     confidence_trend = build_confidence_trend(recent_predictions)
     outcome_counts = build_prediction_outcome_counts(latest_predictions)
     risk_counts = build_risk_distribution(db)
-    today = datetime.now(UTC).date()
-    predictions_today = count_predictions_for_today(db, today)
+    predictions_today = count_predictions_for_today(db, datetime.now(UTC))
 
     model_metrics = active_model_metrics()
     if model_metrics is not None:
