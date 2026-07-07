@@ -211,11 +211,6 @@ def refresh_predictions_for_recent_finished(
         return 0
 
     resolved_now = _naive_utc_now(now)
-    window = (
-        window_days
-        if window_days is not None
-        else settings.finished_backfill_window_days
-    )
     cap = (
         max_matches
         if max_matches is not None
@@ -223,7 +218,11 @@ def refresh_predictions_for_recent_finished(
     )
     if cap <= 0:
         return 0
-    since = resolved_now - timedelta(days=window)
+    since = (
+        resolved_now - timedelta(days=window_days)
+        if window_days is not None
+        else settings.finished_backfill_since(resolved_now)
+    )
 
     matches = db.scalars(
         select(Match)

@@ -43,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `backend/app/services/live_sync.py`).
 
 ### Changed
+- Finished-match prediction backfill now covers the **current calendar year to
+  date** (Jan 1 → now) by default instead of a rolling 14-day window, so the
+  Completed tab reflects the whole season across all leagues in the database
+  rather than just the last two weeks. New `FINISHED_BACKFILL_FROM_YEAR_START`
+  toggle (default on) with a `Settings.finished_backfill_since` helper; set it to
+  `false` to fall back to the rolling `FINISHED_BACKFILL_WINDOW_DAYS` window. The
+  per-run cap default was also raised (`FINISHED_BACKFILL_MAX_MATCHES` 200 → 2000)
+  so a single run can fill a full season (`backend/app/core/config.py`,
+  `backend/app/services/prediction.py`, `backend/app/services/market_prediction.py`).
 - Analytics tab: replaced the "Prediction Outcomes" home/draw/away count cards
   with a "Prediction Markets" section that lists the markets the model covers
   (`1X2`, `BTTS`, `Over/Under 2.5`) without counts, so the section reads as market

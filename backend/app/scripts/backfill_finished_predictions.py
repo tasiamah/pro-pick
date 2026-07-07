@@ -36,8 +36,9 @@ def main(argv: list[str] | None = None) -> int:
         "--window-days",
         type=int,
         default=None,
-        help="Only backfill matches whose kickoff is within this many days "
-        "(default: FINISHED_BACKFILL_WINDOW_DAYS).",
+        help="Only backfill matches whose kickoff is within this many days. "
+        "When omitted, the backfill covers the current calendar year "
+        "(Jan 1 -> now) by default.",
     )
     parser.add_argument(
         "--max-matches",
