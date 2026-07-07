@@ -99,6 +99,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   no longer 500s after that market was removed (`backend/app/services/match_enrichment.py`).
 
 ### Removed
+- Removed the persistent **"For entertainment only" disclaimer banner** from the
+  top of the app (`mobile/src/components/DisclaimerBanner.tsx`, its export, the
+  `DISCLAIMER_SHORT` constant, and the App root render). The full entertainment
+  disclaimer text remains on the About/legal screen (`DISCLAIMER_TEXT`).
 - Dropped the **Double Chance** market from the model and app. Double Chance
   (home-or-draw / home-or-away / draw-or-away) is a low-odds safe bet that adds
   little value, so predictions now cover only **1X2**, **BTTS**, and **Over/Under

@@ -8,7 +8,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { queryClient } from './src/api/queryClient';
 import { setupQueryFocusManager } from './src/api/setupQueryFocusManager';
-import { DisclaimerBanner } from './src/components';
 import { flushPendingNavigation, navigationRef, openMatchDetail } from './src/navigation/navigationRef';
 import { RootStackNavigator } from './src/navigation/RootStackNavigator';
 import {
@@ -71,7 +70,6 @@ export default function App() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <View style={styles.app}>
-          <DisclaimerBanner />
           <View style={styles.navigation}>
             <NavigationContainer
               ref={navigationRef}
