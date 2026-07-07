@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from functools import lru_cache
 
 from pydantic import Field
@@ -48,11 +49,16 @@ class Settings(BaseSettings):
     # upcoming, so matches that finished before the models/features were ready
     # keep stale `fallback` 1X2 rows and never get market rows — the Completed tab
     # then has nothing real to show. Each sync backfills real predictions for
-    # recently finished matches (point-in-time features, so leakage-safe), over a
-    # rolling window and capped per run.
+    # recently finished matches (point-in-time features, so leakage-safe), capped
+    # per run. By default it covers the current calendar year (Jan 1 -> now) so
+    # the Completed tab spans the whole season; already-backfilled matches are
+    # skipped cheaply, so re-scanning the window each sync is a no-op once
+    # populated. Set finished_backfill_from_year_start = False to instead use a
+    # rolling window of finished_backfill_window_days.
     finished_backfill_enabled: bool = True
+    finished_backfill_from_year_start: bool = True
     finished_backfill_window_days: int = Field(default=14, ge=1)
-    finished_backfill_max_matches: int = Field(default=200, ge=0)
+    finished_backfill_max_matches: int = Field(default=2000, ge=0)
 
     # Minimum model_prob - implied_prob gap before flagging a value bet. 2% surfaces
     # more picks than 3% while staying conservative; tune via env on Render.
@@ -93,6 +99,17 @@ class Settings(BaseSettings):
     notification_test_secret: str = ""
     live_notification_poll_minutes: int = Field(default=3, ge=1, le=60)
     scheduler_live_notifications_enabled: bool = True
+
+    def finished_backfill_since(self, now: datetime) -> datetime:
+        """Earliest kickoff the finished-match backfill should cover.
+
+        Defaults to the start of the current calendar year (year-to-date) so the
+        Completed tab spans the whole season; falls back to a rolling window of
+        ``finished_backfill_window_days`` when year-start coverage is disabled.
+        """
+        if self.finished_backfill_from_year_start:
+            return datetime(now.year, 1, 1)
+        return now - timedelta(days=self.finished_backfill_window_days)
 
     @property
     def is_production(self) -> bool:
