@@ -49,17 +49,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    def _progress(message: str) -> None:
+        print(message, flush=True)
+
     db = SessionLocal()
     try:
         one_x_two = refresh_predictions_for_recent_finished(
             db,
             window_days=args.window_days,
             max_matches=args.max_matches,
+            progress=_progress,
         )
         markets = refresh_market_predictions_for_recent_finished(
             db,
             window_days=args.window_days,
             max_matches=args.max_matches,
+            progress=_progress,
         )
         print(
             "Finished-match backfill complete: "

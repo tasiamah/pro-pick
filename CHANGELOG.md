@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Live progress output for the import/backfill CLIs.** `import_historical` and
+  `backfill_finished_predictions` previously printed only a single summary line at
+  the very end, so a multi-minute run over several leagues looked frozen. Both now
+  stream progress (per league/season, and every 25 fixtures/predictions, plus
+  per-phase headers and totals) via an optional `progress` callback threaded
+  through `HistoricalDataImporter.import_all` and the two
+  `refresh_*_for_recent_finished` services. Default is off, so library callers and
+  tests are unchanged (`backend/app/scripts/import_historical.py`,
+  `backend/app/scripts/backfill_finished_predictions.py`,
+  `backend/app/services/historical_import.py`,
+  `backend/app/services/prediction.py`,
+  `backend/app/services/market_prediction.py`).
+- **`--since` cutoff for `import_historical`.** API-Football returns a whole
+  season in one call, so importing (e.g.) the 2025/26 season pulled ~200 pre-2026
+  fixtures you may not want. `--since YYYY-MM-DD` skips fixtures kicking off before
+  the date before they're stored (and before any per-match odds call), e.g.
+  `--season 2025 --since 2026-01-01` keeps only 2026 games — lining up with the
+  year-to-date finished-prediction backfill.
 - **BTTS / Over-Under 2.5 bookmaker odds ingestion.** Odds import now parses the
   "Both Teams Score" and "Goals Over/Under" (2.5 line) bet blocks alongside 1X2
   and stores them in a new `market_odds` table (one row per match/bookmaker/

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
@@ -175,6 +176,7 @@ def refresh_market_predictions_for_recent_finished(
     model_bundles: dict[str, ModelBundle | None] | None = None,
     window_days: int | None = None,
     max_matches: int | None = None,
+    progress: Callable[[str], None] | None = None,
 ) -> int:
     """Backfill BTTS/Over-Under picks for recently finished matches.
 
@@ -217,6 +219,11 @@ def refresh_market_predictions_for_recent_finished(
         .order_by(Match.kickoff.desc())
     ).all()
 
+    if progress is not None:
+        progress(
+            f"market backfill: {len(matches)} finished matches in window (cap {cap})."
+        )
+
     refreshed = 0
     processed = 0
     for match in matches:
@@ -246,7 +253,13 @@ def refresh_market_predictions_for_recent_finished(
             continue
         processed += 1
         refreshed += len(missing)
+        if progress is not None and processed % 25 == 0:
+            progress(
+                f"  market backfill: {processed} matches, {refreshed} rows written..."
+            )
 
+    if progress is not None:
+        progress(f"market backfill: {refreshed} market rows written.")
     return refreshed
 
 
