@@ -8,6 +8,7 @@ tagged with a fallback version so callers keep working before training runs.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
@@ -27,6 +28,8 @@ from app.services.historical_import import (
 NEUTRAL_PROBABILITIES = {"home": 0.40, "draw": 0.28, "away": 0.32}
 FALLBACK_VERSION = "fallback"
 PREDICTION_REFRESH_EPSILON = 1e-4
+
+logger = logging.getLogger(__name__)
 
 _model_cache: tuple[float, ModelBundle | None] | None = None
 
@@ -241,15 +244,25 @@ def refresh_predictions_for_recent_finished(
         latest = _latest_prediction(match)
         if latest is not None and latest.model_version == bundle.metadata.version:
             continue
-        result = predict_match(db, match, model_bundle=bundle)
-        if not _prediction_changed(latest, result):
+        # Isolate each match: a feature-building or DB error on one match must
+        # not discard other matches' work or abort the sync. Commit per match so
+        # prior progress survives, and roll back only the failed match.
+        try:
+            result = predict_match(db, match, model_bundle=bundle)
+            if not _prediction_changed(latest, result):
+                continue
+            _persist_prediction(db, match, result)
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception(
+                "Finished-match 1X2 backfill failed for match %s; skipping",
+                match.id,
+            )
             continue
         processed += 1
-        _persist_prediction(db, match, result)
         refreshed += 1
 
-    if refreshed:
-        db.commit()
     return refreshed
 
 

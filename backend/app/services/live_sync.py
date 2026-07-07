@@ -273,13 +273,19 @@ def run_live_sync(
         if settings.finished_backfill_enabled:
             # Backfill real 1X2 + BTTS/Over-Under picks for recently finished
             # matches so the Completed tab shows real picks across markets rather
-            # than stale fallback 1X2s.
-            summary.predictions += refresh_predictions_for_recent_finished(
-                db, now=resolved_now
-            )
-            summary.market_predictions += (
-                refresh_market_predictions_for_recent_finished(db, now=resolved_now)
-            )
+            # than stale fallback 1X2s. Best-effort: this is a nice-to-have, so a
+            # failure here must never abort the sync's critical path (value bets,
+            # settlement, notifications).
+            try:
+                summary.predictions += refresh_predictions_for_recent_finished(
+                    db, now=resolved_now
+                )
+                summary.market_predictions += (
+                    refresh_market_predictions_for_recent_finished(db, now=resolved_now)
+                )
+            except Exception:
+                db.rollback()
+                logger.exception("Finished-match backfill failed; continuing sync")
         summary.value_bets = sync_value_bets_for_upcoming(db, now=resolved_now)
     else:
         logger.info("Live sync found no fixtures for leagues %s", resolved_league_ids)

@@ -253,6 +253,44 @@ def test_refresh_finished_predictions_respects_max_matches(db_session: Session) 
     assert capped == 2
 
 
+def test_refresh_finished_predictions_isolates_failing_match(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _seed(db_session)
+    bundle = _trained_bundle(db_session)
+    poison_id = (
+        db_session.scalars(
+            select(Match).where(Match.status == "finished").order_by(Match.kickoff)
+        )
+        .first()
+        .id
+    )
+
+    import app.services.prediction as pred
+
+    original = pred.predict_match
+
+    def flaky(db, match, *, model_bundle=None):
+        if match.id == poison_id:
+            raise ValueError("boom")
+        return original(db, match, model_bundle=model_bundle)
+
+    monkeypatch.setattr(pred, "predict_match", flaky)
+
+    refreshed = refresh_predictions_for_recent_finished(
+        db_session, now=BASE + timedelta(days=6), model_bundle=bundle, window_days=14
+    )
+
+    # The one failing match is skipped; every other match is still committed.
+    assert refreshed == len(RESULTS) - 1
+    assert (
+        db_session.scalars(
+            select(Prediction).where(Prediction.match_id == poison_id)
+        ).all()
+        == []
+    )
+
+
 def test_predict_match_falls_back_without_model(
     db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
@@ -25,6 +26,8 @@ from app.services.historical_import import (
 
 FALLBACK_VERSION = "fallback"
 PREDICTION_REFRESH_EPSILON = 1e-4
+
+logger = logging.getLogger(__name__)
 
 _market_model_cache: dict[str, tuple[float, ModelBundle | None]] = {}
 
@@ -228,14 +231,23 @@ def refresh_market_predictions_for_recent_finished(
         ]
         if not missing:
             continue
+        # Isolate each match: a feature-building or DB error on one match must
+        # not discard other matches' work or abort the sync. Commit per match so
+        # prior progress survives, and roll back only the failed match.
+        try:
+            for market in missing:
+                result = predict_market(
+                    db, match, market, model_bundle=bundles.get(market)
+                )
+                _persist_market_prediction(db, match, result)
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Market backfill failed for match %s; skipping", match.id)
+            continue
         processed += 1
-        for market in missing:
-            result = predict_market(db, match, market, model_bundle=bundles.get(market))
-            _persist_market_prediction(db, match, result)
-            refreshed += 1
+        refreshed += len(missing)
 
-    if refreshed:
-        db.commit()
     return refreshed
 
 

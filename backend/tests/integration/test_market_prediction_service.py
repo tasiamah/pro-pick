@@ -191,6 +191,48 @@ def test_backfill_market_predictions_respects_max_matches(db_session: Session) -
     assert refreshed == 2
 
 
+def test_backfill_market_predictions_isolates_failing_match(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _seed(db_session)
+    bundle = _btts_bundle(db_session)
+    poison_id = (
+        db_session.scalars(
+            select(Match).where(Match.status == "finished").order_by(Match.kickoff)
+        )
+        .first()
+        .id
+    )
+
+    import app.services.market_prediction as mp
+
+    original = mp.predict_market
+
+    def flaky(db, match, market, *, model_bundle=None):
+        if match.id == poison_id:
+            raise ValueError("boom")
+        return original(db, match, market, model_bundle=model_bundle)
+
+    monkeypatch.setattr(mp, "predict_market", flaky)
+
+    refreshed = refresh_market_predictions_for_recent_finished(
+        db_session,
+        now=BASE + timedelta(days=6),
+        model_bundles={MARKET_BTTS: bundle},
+        window_days=14,
+    )
+
+    # The one failing match is skipped; every other match is still committed.
+    assert refreshed == len(RESULTS) - 1
+    assert (
+        db_session.scalars(
+            select(MarketPrediction).where(MarketPrediction.match_id == poison_id)
+        ).all()
+        == []
+    )
+    assert len(db_session.scalars(select(MarketPrediction)).all()) == len(RESULTS) - 1
+
+
 def test_predict_market_falls_back_without_model(db_session: Session) -> None:
     upcoming = _seed(db_session)
     reset_market_model_cache()
