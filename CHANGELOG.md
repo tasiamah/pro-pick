@@ -77,13 +77,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Matches **Completed** tab now loads fixtures from the last **90 days** (was 14),
   so recent tournament results stay in the browse window while still showing only
   confident picks (`mobile/src/screens/MatchesScreen.tsx`).
-- **Matches lists now load in pages instead of one large request.** The Completed
-  tab previously fetched up to 200 rows in a single call; it now uses a new
-  `useMatchesInfinite` hook (offset/limit paging over `/matches`) to render a
-  first page of 30 immediately and stream the remaining pages in the background,
-  with a footer spinner while more load. Reaching a short page ends paging, so
-  smaller tabs still fetch a single page (`mobile/src/api/hooks.ts`,
-  `mobile/src/api/queryKeys.ts`, `mobile/src/screens/MatchesScreen.tsx`).
+- **Matches Completed tab loads in one batch.** It fetches up to 200 finished
+  fixtures in a single request (prefetched while Upcoming/Live is visible) so
+  confident picks paint together instead of streaming in page by page. Upcoming
+  and Live still use offset/limit paging via `useMatchesInfinite`
+  (`mobile/src/api/hooks.ts`, `mobile/src/screens/MatchesScreen.tsx`,
+  `mobile/src/utils/queryState.ts`).
+- **Matches lists (Upcoming/Live) load in pages instead of one large request.**
+  Those tabs use `useMatchesInfinite` to render a first page immediately and
+  stream remaining pages in the background, with a footer spinner while more load
+  (`mobile/src/api/hooks.ts`, `mobile/src/api/queryKeys.ts`,
+  `mobile/src/screens/MatchesScreen.tsx`).
 - Finished-match prediction backfill now covers the **current calendar year to
   date** (Jan 1 → now) by default instead of a rolling 14-day window, so the
   Completed tab reflects the whole season across all leagues in the database
@@ -107,6 +111,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`mobile/src/screens/MatchesScreen.tsx`, `mobile/src/screens/matchesFilterUtils.ts`).
 
 ### Fixed
+- Matches **Completed** tab no longer flashes an empty state or streams cards in
+  one by one. Completed fixtures prefetch in the background, the tab waits on
+  the full batch (up to 200 rows in the 90-day window), and cached results show
+  immediately on revisit (`mobile/src/screens/MatchesScreen.tsx`,
+  `mobile/src/utils/queryState.ts`).
 - Matches tab no longer flashes a misleading empty state (e.g. "No confident
   picks in completed matches") while a fetch is in flight. Switching filters/tabs
   changes the query key, so react-query briefly served the previous tab's rows as
