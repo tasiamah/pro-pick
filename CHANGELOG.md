@@ -48,13 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`1X2`, `BTTS`, `Over/Under 2.5`) without counts, so the section reads as market
   coverage instead of a home-win-heavy tally (`mobile/src/screens/AnalyticsScreen.tsx`,
   `mobile/src/screens/analyticsUtils.ts`).
-- **Matches "Completed" tab shows picks across all markets.** Finished-match
-  cards previously showed only the raw 1X2 (home/away) pick. They now read as a
-  track record: the model's pick for every market it covered (`1X2`, `BTTS`,
-  `Over/Under 2.5`) is shown, highest confidence first, with its real confidence
-  badge — rather than home/away alone. (Kept unfiltered rather than gated on the
-  Upcoming confidence bar, which the finished slate rarely clears, so the tab stays
-  populated.) (`mobile/src/utils/marketPicks.ts`, `mobile/src/screens/MatchesScreen.tsx`).
+- **Matches "Completed" tab now mirrors "Upcoming".** It previously showed every
+  finished fixture and always fell back to the raw 1X2 (home/away) pick, even when
+  the model wasn't confident. It now surfaces only matches the model made a
+  confident call on — high confidence, or lower confidence at high odds — and shows
+  those picks across all markets (`1X2`, `BTTS`, `Over/Under 2.5`) instead of just
+  home/away, using the same filter as Upcoming
+  (`mobile/src/screens/MatchesScreen.tsx`, `mobile/src/screens/matchesFilterUtils.ts`).
 
 ### Fixed
 - Home hero **Value Bets** now counts only bets on confident picks shown in the
