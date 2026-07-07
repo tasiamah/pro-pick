@@ -80,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   date is today. Previously a fixture whose kickoff had already passed but was
   never played or settled kept inflating the figure, so the card could read e.g.
   "3" with nothing actually on (`backend/app/services/analytics.py`,
-  `backend/app/api/analytics.py`).
+  `backend/app/api/analytics.py`, `backend/tests/unit/test_analytics.py`).
 - Home hero **Value Bets** now counts only bets on confident picks shown in the
   list below, instead of every upcoming value bet in the database
   (`mobile/src/screens/homeHeroUtils.ts`, `mobile/src/screens/HomeScreen.tsx`).
