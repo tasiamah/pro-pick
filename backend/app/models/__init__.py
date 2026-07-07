@@ -1,5 +1,6 @@
 from app.models.competition import Competition
 from app.models.device_push_token import DevicePushToken
+from app.models.market_odds import MarketOdds
 from app.models.market_prediction import MarketPrediction
 from app.models.match import Match
 from app.models.match_notification_preference import MatchNotificationPreference
@@ -15,6 +16,7 @@ __all__ = [
     "Team",
     "Match",
     "Odds",
+    "MarketOdds",
     "Prediction",
     "MarketPrediction",
     "ValueBet",

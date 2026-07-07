@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.competition import Competition
+    from app.models.market_odds import MarketOdds
+    from app.models.market_prediction import MarketPrediction
+    from app.models.odds import Odds
+    from app.models.prediction import Prediction
+    from app.models.team import Team
+    from app.models.value_bet import ValueBet
 
 
 class Match(Base):
@@ -33,6 +42,9 @@ class Match(Base):
     away_team: Mapped["Team"] = relationship(foreign_keys=[away_team_id])
 
     odds: Mapped[list["Odds"]] = relationship(
+        back_populates="match", cascade="all, delete-orphan"
+    )
+    market_odds: Mapped[list["MarketOdds"]] = relationship(
         back_populates="match", cascade="all, delete-orphan"
     )
     predictions: Mapped[list["Prediction"]] = relationship(

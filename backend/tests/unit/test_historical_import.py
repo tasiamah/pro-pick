@@ -7,11 +7,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import Base
-from app.models import Competition, Match, Odds, Team
+from app.ml.market_labels import MARKET_BTTS, MARKET_OVER_UNDER_25
+from app.models import Competition, MarketOdds, Match, Odds, Team
 from app.services.data_ingestion import FootballApiError
 from app.services.historical_import import (
     MAX_CONSECUTIVE_ODDS_FAILURES,
     HistoricalDataImporter,
+    extract_market_odds,
     extract_match_winner_odds,
     map_fixture_status,
     parse_kickoff,
@@ -184,6 +186,95 @@ def test_extract_match_winner_odds_reads_home_draw_away_values() -> None:
     odds = extract_match_winner_odds(bookmaker)
 
     assert odds == ("Bet365", 1.85, 3.4, 4.2)
+
+
+def market_odds_bookmaker() -> dict:
+    return {
+        "name": "Bet365",
+        "bets": [
+            {
+                "name": "Match Winner",
+                "values": [
+                    {"value": "Home", "odd": "1.85"},
+                    {"value": "Draw", "odd": "3.40"},
+                    {"value": "Away", "odd": "4.20"},
+                ],
+            },
+            {
+                "name": "Both Teams Score",
+                "values": [
+                    {"value": "Yes", "odd": "1.80"},
+                    {"value": "No", "odd": "2.00"},
+                ],
+            },
+            {
+                "name": "Goals Over/Under",
+                "values": [
+                    {"value": "Over 1.5", "odd": "1.30"},
+                    {"value": "Over 2.5", "odd": "1.90"},
+                    {"value": "Under 2.5", "odd": "1.95"},
+                    {"value": "Over 3.5", "odd": "3.10"},
+                ],
+            },
+        ],
+    }
+
+
+def test_extract_market_odds_keeps_btts_and_the_2_5_over_under_line() -> None:
+    result = extract_market_odds(market_odds_bookmaker())
+
+    # BTTS yes/no plus only the 2.5 Over/Under line, mapped to canonical keys.
+    assert result == [
+        (MARKET_BTTS, "yes", 1.80),
+        (MARKET_BTTS, "no", 2.00),
+        (MARKET_OVER_UNDER_25, "over", 1.90),
+        (MARKET_OVER_UNDER_25, "under", 1.95),
+    ]
+
+
+def test_extract_market_odds_ignores_unrelated_and_malformed_values() -> None:
+    bookmaker = {
+        "name": "Bet365",
+        "bets": [
+            {"name": "Double Chance", "values": [{"value": "Home/Draw", "odd": "1.2"}]},
+            {
+                "name": "Both Teams Score",
+                "values": [
+                    {"value": "Yes", "odd": "not-a-number"},
+                    {"value": "No", "odd": "2.00"},
+                ],
+            },
+        ],
+    }
+
+    assert extract_market_odds(bookmaker) == [(MARKET_BTTS, "no", 2.00)]
+
+
+def test_import_persists_market_odds_and_upserts(db_session: Session) -> None:
+    fixture = sample_fixture()
+    client = StubFootballApiClient(
+        fixtures={(39, 2024): [fixture]},
+        odds={1001: [{"bookmakers": [market_odds_bookmaker()]}]},
+    )
+    importer = HistoricalDataImporter(db_session, client=client)
+
+    importer.import_league_season(league_id=39, season=2024)
+
+    stored = {
+        (row.market, row.outcome): row.odd for row in db_session.query(MarketOdds).all()
+    }
+    assert stored == {
+        (MARKET_BTTS, "yes"): 1.80,
+        (MARKET_BTTS, "no"): 2.00,
+        (MARKET_OVER_UNDER_25, "over"): 1.90,
+        (MARKET_OVER_UNDER_25, "under"): 1.95,
+    }
+    # 1X2 odds still land alongside the new market odds.
+    assert db_session.query(Odds).count() == 1
+
+    # Re-importing updates existing rows in place rather than duplicating them.
+    importer.import_fixture_items([fixture], default_season=2024)
+    assert db_session.query(MarketOdds).count() == 4
 
 
 def test_import_league_season_persists_fixture_scores_and_odds(

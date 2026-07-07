@@ -30,6 +30,9 @@ export type MarketPick = {
   probabilities: Record<string, number>;
   recommended_outcome: string;
   confidence: number;
+  // Best bookmaker price for the recommended outcome, when we have odds for this
+  // market. Absent when the market wasn't priced by the provider.
+  odds?: number | null;
 };
 
 export type Match = {

@@ -47,6 +47,9 @@ class MarketPickOut(BaseModel):
     probabilities: dict[str, float]
     recommended_outcome: str
     confidence: float
+    # Best available bookmaker price for the recommended outcome, when we have
+    # odds for this market. Lets clients price BTTS/Over-Under picks like 1X2.
+    odds: float | None = None
 
 
 class PredictionOut(BaseModel):

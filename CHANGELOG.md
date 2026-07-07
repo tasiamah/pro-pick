@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **BTTS / Over-Under 2.5 bookmaker odds ingestion.** Odds import now parses the
+  "Both Teams Score" and "Goals Over/Under" (2.5 line) bet blocks alongside 1X2
+  and stores them in a new `market_odds` table (one row per match/bookmaker/
+  market/outcome). Each market pick in the `/matches` responses carries the best
+  available price for its recommended outcome (`MarketPickOut.odds`). This lets
+  the app price BTTS/Over-Under picks the same way it prices 1X2, so the
+  "a long price needs less confidence" relaxation now applies to secondary
+  markets too: a BTTS/Over-Under pick at odds ≥ 3.5 clears the relaxed floor
+  (0.45) instead of the fixed 0.70 threshold, matching the 1X2 behaviour.
 - GitHub Actions workflow to auto-deploy Render after CI passes on `main`
   (`.github/workflows/deploy-render.yml`; set `RENDER_DEPLOY_HOOK_URL` in repo
   secrets — see `backend/README.md`).
@@ -66,6 +75,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`mobile/src/screens/MatchesScreen.tsx`, `mobile/src/screens/matchesFilterUtils.ts`).
 
 ### Fixed
+- Analytics **Predictions Today** ("Active matches") now counts only matches that
+  have not yet kicked off later today (UTC), instead of every match whose kickoff
+  date is today. Previously a fixture whose kickoff had already passed but was
+  never played or settled kept inflating the figure, so the card could read e.g.
+  "3" with nothing actually on (`backend/app/services/analytics.py`,
+  `backend/app/api/analytics.py`).
 - Home hero **Value Bets** now counts only bets on confident picks shown in the
   list below, instead of every upcoming value bet in the database
   (`mobile/src/screens/homeHeroUtils.ts`, `mobile/src/screens/HomeScreen.tsx`).

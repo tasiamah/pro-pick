@@ -23,6 +23,7 @@ function marketPick(
   market: MarketPick['market'],
   confidence: number,
   recommended_outcome: string,
+  odds?: number,
 ): MarketPick {
   return {
     market,
@@ -30,6 +31,7 @@ function marketPick(
     probabilities: {},
     recommended_outcome,
     confidence,
+    odds,
   };
 }
 
@@ -109,19 +111,54 @@ describe('isConfidentMarketPick', () => {
     });
     expect(isConfidentMarketPick(entry, 'btts')).toBe(false);
   });
+
+  it('lets a high-odds secondary market through below the canonical threshold', () => {
+    // BTTS priced at 3.8 (>=3.5) only needs to clear the relaxed floor.
+    const entry = match(1, {
+      ...pred(0.4, 0.3, 0.3),
+      markets: [marketPick('over_under_25', 0.5, 'over', 3.8)],
+    });
+    expect(isConfidentMarketPick(entry, 'over_under_25')).toBe(true);
+  });
+
+  it('still drops a short-priced secondary market below the threshold', () => {
+    const entry = match(1, {
+      ...pred(0.4, 0.3, 0.3),
+      markets: [marketPick('over_under_25', 0.5, 'over', 1.8)],
+    });
+    expect(isConfidentMarketPick(entry, 'over_under_25')).toBe(false);
+  });
 });
 
 describe('isHighConfidenceSecondaryPick', () => {
   it('shows a secondary market at or above the canonical threshold', () => {
-    expect(isHighConfidenceSecondaryPick(CANONICAL_CONFIDENCE_THRESHOLD)).toBe(true);
-    expect(isHighConfidenceSecondaryPick(0.82)).toBe(true);
+    expect(
+      isHighConfidenceSecondaryPick(marketPick('btts', CANONICAL_CONFIDENCE_THRESHOLD, 'yes')),
+    ).toBe(true);
+    expect(isHighConfidenceSecondaryPick(marketPick('btts', 0.82, 'yes'))).toBe(true);
   });
 
-  it('hides a secondary market below the canonical threshold', () => {
-    expect(isHighConfidenceSecondaryPick(CANONICAL_CONFIDENCE_THRESHOLD - 0.01)).toBe(
+  it('hides a short-priced secondary market below the canonical threshold', () => {
+    expect(
+      isHighConfidenceSecondaryPick(
+        marketPick('btts', CANONICAL_CONFIDENCE_THRESHOLD - 0.01, 'yes'),
+      ),
+    ).toBe(false);
+    expect(isHighConfidenceSecondaryPick(marketPick('btts', 0.55, 'yes', 1.8))).toBe(
       false,
     );
-    expect(isHighConfidenceSecondaryPick(0.55)).toBe(false);
+  });
+
+  it('lets a high-odds secondary market through down to the relaxed floor', () => {
+    // odds >= 3.5 -> relaxed floor: 0.55 clears 0.45 but would fail 0.70.
+    expect(isHighConfidenceSecondaryPick(marketPick('btts', 0.55, 'yes', 4.0))).toBe(
+      true,
+    );
+    expect(
+      isHighConfidenceSecondaryPick(
+        marketPick('btts', HIGH_ODDS_CONFIDENCE_FLOOR - 0.02, 'yes', 4.0),
+      ),
+    ).toBe(false);
   });
 });
 

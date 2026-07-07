@@ -11,7 +11,15 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Competition, Match, Odds, Team
+from app.ml.market_labels import (
+    BTTS_NO,
+    BTTS_YES,
+    MARKET_BTTS,
+    MARKET_OVER_UNDER_25,
+    OVER,
+    UNDER,
+)
+from app.models import Competition, MarketOdds, Match, Odds, Team
 from app.services.data_ingestion import FootballApiClient, FootballApiError
 from app.services.match_enrichment import capture_previous_odds
 
@@ -20,6 +28,15 @@ logger = logging.getLogger(__name__)
 FINISHED_STATUS_CODES = frozenset({"FT", "AET", "PEN", "AWD", "WO"})
 LIVE_STATUS_CODES = frozenset({"1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT"})
 MATCH_WINNER_BET_NAMES = frozenset({"Match Winner", "1X2", "Home/Draw/Away"})
+BTTS_BET_NAMES = frozenset(
+    {"Both Teams Score", "Both Teams To Score", "Both Teams to Score"}
+)
+OVER_UNDER_BET_NAMES = frozenset({"Goals Over/Under", "Over/Under"})
+# API-Football labels each outcome as free text; map the ones we model to our
+# canonical outcome keys. The Over/Under bet lists every line (1.5, 2.5, 3.5...),
+# so we keep only the 2.5 total.
+BTTS_OUTCOME_VALUES = {"yes": BTTS_YES, "no": BTTS_NO}
+OVER_UNDER_OUTCOME_VALUES = {"over 2.5": OVER, "under 2.5": UNDER}
 
 DEFAULT_LEAGUE_IDS = (39, 140, 135, 78, 61)
 FREE_TIER_SYNC_LEAGUE_IDS = (39, 140, 1)
@@ -106,6 +123,42 @@ def extract_match_winner_odds(
         return name, values["Home"], values["Draw"], values["Away"]
 
     return None
+
+
+def _parse_odd(raw: object) -> float | None:
+    try:
+        odd = float(raw)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return odd if odd > 1.0 else None
+
+
+def extract_market_odds(bookmaker: dict) -> list[tuple[str, str, float]]:
+    """Pull BTTS and Over/Under 2.5 outcome prices from a bookmaker block.
+
+    Returns ``(market, outcome, odd)`` tuples using our canonical market/outcome
+    keys (e.g. ``("btts", "yes", 1.8)``). Bets other than BTTS / Over-Under, the
+    non-2.5 Over/Under lines, and malformed prices are skipped, so a partial or
+    unexpected payload never raises.
+    """
+    results: list[tuple[str, str, float]] = []
+    for bet in bookmaker.get("bets", []):
+        if bet.get("name") in BTTS_BET_NAMES:
+            market, mapping = MARKET_BTTS, BTTS_OUTCOME_VALUES
+        elif bet.get("name") in OVER_UNDER_BET_NAMES:
+            market, mapping = MARKET_OVER_UNDER_25, OVER_UNDER_OUTCOME_VALUES
+        else:
+            continue
+
+        for item in bet.get("values", []):
+            outcome = mapping.get(str(item.get("value", "")).strip().lower())
+            if outcome is None:
+                continue
+            odd = _parse_odd(item.get("odd"))
+            if odd is not None:
+                results.append((market, outcome, odd))
+
+    return results
 
 
 class HistoricalDataImporter:
@@ -404,12 +457,14 @@ class HistoricalDataImporter:
         for entry in payload:
             for bookmaker in entry.get("bookmakers", []):
                 odds_values = extract_match_winner_odds(bookmaker)
-                if odds_values is None:
-                    continue
+                if odds_values is not None:
+                    name, home, draw, away = odds_values
+                    self._upsert_odds(match.id, name, home, draw, away)
+                    imported += 1
 
-                name, home, draw, away = odds_values
-                self._upsert_odds(match.id, name, home, draw, away)
-                imported += 1
+                book_name = bookmaker.get("name") or "average"
+                for market, outcome, odd in extract_market_odds(bookmaker):
+                    self._upsert_market_odds(match.id, book_name, market, outcome, odd)
 
         return imported
 
@@ -439,5 +494,36 @@ class HistoricalDataImporter:
                 home=home,
                 draw=draw,
                 away=away,
+            )
+        )
+
+    def _upsert_market_odds(
+        self,
+        match_id: int,
+        bookmaker: str,
+        market: str,
+        outcome: str,
+        odd: float,
+    ) -> None:
+        existing = self.db.scalar(
+            select(MarketOdds).where(
+                MarketOdds.match_id == match_id,
+                MarketOdds.bookmaker == bookmaker,
+                MarketOdds.market == market,
+                MarketOdds.outcome == outcome,
+            )
+        )
+
+        if existing is not None:
+            existing.odd = odd
+            return
+
+        self.db.add(
+            MarketOdds(
+                match_id=match_id,
+                bookmaker=bookmaker,
+                market=market,
+                outcome=outcome,
+                odd=odd,
             )
         )
