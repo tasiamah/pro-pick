@@ -111,6 +111,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`mobile/src/screens/MatchesScreen.tsx`, `mobile/src/screens/matchesFilterUtils.ts`).
 
 ### Fixed
+- **Live notification poll no longer torches the API quota.** The poll (every
+  1–3 minutes) loaded *every* scheduled/live match in the DB and, for each one
+  without confirmed line-ups, made a `fixtures/lineups` call — so with a full
+  upcoming slate (~1000+ fixtures) it fired ~1000+ provider calls per cycle and
+  also re-pulled the whole multi-day fixture window each poll. That exhausted the
+  provider quota within minutes, after which *all* fetches failed and matches
+  stopped settling (finished games stuck as `scheduled`, missing from Completed).
+  The poll now only processes matches that are live or scheduled within
+  `LIVE_POLL_LOOKBACK_HOURS` / `LIVE_POLL_LOOKAHEAD_HOURS` of now, and fetches
+  their status by fixture ID (≈one call per cycle) instead of the full date
+  window (`backend/app/services/match_notification_events.py`,
+  `backend/app/core/config.py`).
 - **Played matches now self-heal into the Completed tab.** The live sync only
   re-fetched fixtures within its `sync_date_offsets` window (e.g. `-1..+7`), so a
   match whose result day fell outside a successful run's window (a missed/failed

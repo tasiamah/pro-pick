@@ -109,6 +109,13 @@ class Settings(BaseSettings):
     notification_test_secret: str = ""
     live_notification_poll_minutes: int = Field(default=3, ge=1, le=60)
     scheduler_live_notifications_enabled: bool = True
+    # The live poll only processes matches near their kickoff — imminent (for
+    # line-up/kick-off events) or recently started/finished (for live events and
+    # full-time settlement). Without this bound the poll would fetch line-ups for
+    # *every* future scheduled match every cycle (one API call each), exhausting
+    # the provider quota within minutes and starving the rest of the pipeline.
+    live_poll_lookahead_hours: int = Field(default=3, ge=0, le=48)
+    live_poll_lookback_hours: int = Field(default=6, ge=0, le=48)
 
     def finished_backfill_since(self, now: datetime) -> datetime:
         """Earliest kickoff the finished-match backfill should cover.
