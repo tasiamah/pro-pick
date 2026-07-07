@@ -74,9 +74,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   none clear the confidence bar: competition-aware fixture text, no match count,
   and off-season note (`mobile/src/components/EmptyState.tsx`,
   `mobile/src/screens/matchesFilterUtils.ts`).
-- Matches **Completed** tab now loads fixtures from the last **90 days** (was 14)
-  and requests up to 200 rows, so recent tournament results stay in the browse
-  window while still showing only confident picks (`mobile/src/screens/MatchesScreen.tsx`).
+- Matches **Completed** tab now loads fixtures from the last **90 days** (was 14),
+  so recent tournament results stay in the browse window while still showing only
+  confident picks (`mobile/src/screens/MatchesScreen.tsx`).
+- **Matches lists now load in pages instead of one large request.** The Completed
+  tab previously fetched up to 200 rows in a single call; it now uses a new
+  `useMatchesInfinite` hook (offset/limit paging over `/matches`) to render a
+  first page of 30 immediately and stream the remaining pages in the background,
+  with a footer spinner while more load. Reaching a short page ends paging, so
+  smaller tabs still fetch a single page (`mobile/src/api/hooks.ts`,
+  `mobile/src/api/queryKeys.ts`, `mobile/src/screens/MatchesScreen.tsx`).
 - Finished-match prediction backfill now covers the **current calendar year to
   date** (Jan 1 → now) by default instead of a rolling 14-day window, so the
   Completed tab reflects the whole season across all leagues in the database
@@ -100,6 +107,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`mobile/src/screens/MatchesScreen.tsx`, `mobile/src/screens/matchesFilterUtils.ts`).
 
 ### Fixed
+- Matches tab no longer flashes a misleading empty state (e.g. "No confident
+  picks in completed matches") while a fetch is in flight. Switching filters/tabs
+  changes the query key, so react-query briefly served the previous tab's rows as
+  placeholder data that filtered down to nothing; an in-flight placeholder fetch
+  with nothing to show now renders the loading spinner instead
+  (`mobile/src/screens/MatchesScreen.tsx`).
 - Analytics **Predictions Today** ("Active matches") now counts only matches that
   have not yet kicked off later today (UTC), instead of every match whose kickoff
   date is today. Previously a fixture whose kickoff had already passed but was
