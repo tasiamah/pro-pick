@@ -35,6 +35,9 @@ class Match(Base):
     odds: Mapped[list["Odds"]] = relationship(
         back_populates="match", cascade="all, delete-orphan"
     )
+    market_odds: Mapped[list["MarketOdds"]] = relationship(
+        back_populates="match", cascade="all, delete-orphan"
+    )
     predictions: Mapped[list["Prediction"]] = relationship(
         back_populates="match", cascade="all, delete-orphan"
     )

@@ -122,6 +122,21 @@ def to_market_pick_out(row: MarketPrediction) -> MarketPickOut:
     )
 
 
+def best_market_odd(match: Match, market: str, outcome: str) -> float | None:
+    """Best (highest) bookmaker price for a market outcome, or None if unpriced.
+
+    Mirrors the 1X2 "best available price" view: a bettor takes the top price
+    across books, and a longer price is what justifies relaxing the confidence
+    bar for the pick.
+    """
+    prices = [
+        row.odd
+        for row in match.market_odds
+        if row.market == market and row.outcome == outcome
+    ]
+    return max(prices) if prices else None
+
+
 def build_market_picks(
     match: Match,
     db: Session | None = None,
@@ -130,24 +145,30 @@ def build_market_picks(
 ) -> list[MarketPickOut]:
     stored = latest_market_predictions(match)
     if stored:
-        return [to_market_pick_out(row) for row in stored]
-    if db is None or not allow_live_prediction:
+        picks = [to_market_pick_out(row) for row in stored]
+    elif db is None or not allow_live_prediction:
         return []
+    else:
+        from app.services.market_prediction import predict_all_markets
 
-    from app.services.market_prediction import predict_all_markets
+        picks = [
+            MarketPickOut(
+                market=result.market,
+                model_version=result.model_version,
+                probabilities=result.probabilities,
+                recommended_outcome=recommended_market_outcome(
+                    result.market, result.probabilities
+                ),
+                confidence=round(
+                    market_confidence(result.market, result.probabilities), 4
+                ),
+            )
+            for result in predict_all_markets(db, match)
+        ]
 
-    return [
-        MarketPickOut(
-            market=result.market,
-            model_version=result.model_version,
-            probabilities=result.probabilities,
-            recommended_outcome=recommended_market_outcome(
-                result.market, result.probabilities
-            ),
-            confidence=round(market_confidence(result.market, result.probabilities), 4),
-        )
-        for result in predict_all_markets(db, match)
-    ]
+    for pick in picks:
+        pick.odds = best_market_odd(match, pick.market, pick.recommended_outcome)
+    return picks
 
 
 def _result_for_team(match: Match, team_id: int) -> FormResult:

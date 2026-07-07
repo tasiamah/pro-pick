@@ -1,5 +1,6 @@
-import type { MatchDetail } from '../api/types';
+import type { MarketPick, MatchDetail } from '../api/types';
 import { getConfidence } from '../components/matchCard/matchCardUtils';
+import { classifyOddsTier } from '../components/demo/demoUtils';
 import { classifyMatchOddsTier } from '../screens/homeMatchUtils';
 import type { MarketId } from './marketLabels';
 import { isSecondaryMarketId } from './marketLabels';
@@ -30,21 +31,16 @@ function matchConfidence(match: MatchDetail): number | null {
   return match.prediction == null ? null : getConfidence(match.prediction);
 }
 
-function secondaryMarketConfidence(
-  match: MatchDetail,
-  market: MarketId,
-): number | null {
-  if (market === '1x2') {
-    return matchConfidence(match);
-  }
-
-  const pick = match.prediction?.markets?.find((entry) => entry.market === market);
-  return pick?.confidence ?? null;
-}
-
 /** The confidence bar a match's 1X2 pick must clear, given its odds tier. */
 function confidenceBarForMatch(match: MatchDetail): number {
   return classifyMatchOddsTier(match) === 'high'
+    ? HIGH_ODDS_CONFIDENCE_FLOOR
+    : CANONICAL_CONFIDENCE_THRESHOLD;
+}
+
+/** The confidence bar a secondary-market pick must clear, given its price. */
+function confidenceBarForSecondaryPick(pick: MarketPick): number {
+  return pick.odds != null && classifyOddsTier(pick.odds) === 'high'
     ? HIGH_ODDS_CONFIDENCE_FLOOR
     : CANONICAL_CONFIDENCE_THRESHOLD;
 }
@@ -64,11 +60,12 @@ export function isConfidentMatch(match: MatchDetail): boolean {
 
 /**
  * Whether a secondary-market pick (BTTS, Over/Under 2.5) is confident enough to
- * surface. Secondary markets always require the high-confidence threshold (the
- * odds-tier relaxation applies only to the primary 1X2 pick).
+ * surface. High-odds picks are judged against the relaxed floor — the same
+ * "a long price needs less confidence" rule the 1X2 pick uses — while shorter
+ * prices and unpriced markets must clear the fixed high-confidence threshold.
  */
-export function isHighConfidenceSecondaryPick(confidence: number): boolean {
-  return confidence >= CANONICAL_CONFIDENCE_THRESHOLD;
+export function isHighConfidenceSecondaryPick(pick: MarketPick): boolean {
+  return pick.confidence >= confidenceBarForSecondaryPick(pick);
 }
 
 /** Whether a specific market pick on a match is confident enough to show. */
@@ -81,10 +78,6 @@ export function isConfidentMarketPick(match: MatchDetail, market: MarketId): boo
     return false;
   }
 
-  const confidence = secondaryMarketConfidence(match, market);
-  if (confidence == null) {
-    return false;
-  }
-
-  return isHighConfidenceSecondaryPick(confidence);
+  const pick = match.prediction?.markets?.find((entry) => entry.market === market);
+  return pick != null && isHighConfidenceSecondaryPick(pick);
 }

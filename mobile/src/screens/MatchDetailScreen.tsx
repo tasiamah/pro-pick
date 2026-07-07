@@ -182,9 +182,7 @@ type SecondaryMarketsSectionProps = {
 
 function SecondaryMarketsSection({ markets }: SecondaryMarketsSectionProps) {
   const ordered = markets.filter(
-    (pick) =>
-      isSecondaryMarketId(pick.market) &&
-      isHighConfidenceSecondaryPick(pick.confidence),
+    (pick) => isSecondaryMarketId(pick.market) && isHighConfidenceSecondaryPick(pick),
   );
 
   if (ordered.length === 0) {
