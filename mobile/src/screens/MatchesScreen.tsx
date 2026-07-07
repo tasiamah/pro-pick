@@ -129,26 +129,24 @@ export function MatchesScreen({ navigation }: Props) {
     ],
   );
 
-  // Upcoming and completed both only surface matches the model actually made a
-  // confident call on (across 1X2, BTTS and Over/Under 2.5), so the Completed
-  // tab mirrors Upcoming instead of showing every finished fixture's raw 1X2.
-  const showsConfidentPicksOnly =
-    statusFilter === 'upcoming' || statusFilter === 'completed';
-
-  const confidentBrowse = useMemo(
+  // Upcoming only surfaces matches the model made a confident call on. Completed
+  // and live show every match: completed cards render the model's picks across
+  // all markets (a track record), so they aren't filtered out here.
+  const upcomingBrowse = useMemo(
     () => filterHighConfidenceMatchesWithPicks(filteredMatches),
     [filteredMatches],
   );
 
   const visibleMatches = useMemo(
-    () => (showsConfidentPicksOnly ? confidentBrowse.matches : filteredMatches),
-    [confidentBrowse.matches, filteredMatches, showsConfidentPicksOnly],
+    () =>
+      statusFilter === 'upcoming' ? upcomingBrowse.matches : filteredMatches,
+    [filteredMatches, statusFilter, upcomingBrowse.matches],
   );
 
   const qualifyingPicksByMatchId = useMemo(
     () =>
-      showsConfidentPicksOnly ? confidentBrowse.picksByMatchId : undefined,
-    [confidentBrowse.picksByMatchId, showsConfidentPicksOnly],
+      statusFilter === 'upcoming' ? upcomingBrowse.picksByMatchId : undefined,
+    [statusFilter, upcomingBrowse.picksByMatchId],
   );
 
   const gridRows = useMemo(

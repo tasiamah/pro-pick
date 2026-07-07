@@ -153,40 +153,14 @@ describe('matchesFilterUtils', () => {
     expect(filtered.map((match) => match.id)).toEqual([1]);
   });
 
-  it('shows every live match but filters completed to confident picks', () => {
+  it('shows all live and completed matches without the confidence filter', () => {
     const liveMatches = [
       { ...baseMatch, id: 10, status: 'live' },
       { ...baseMatch, id: 11, status: 'live', prediction: null },
     ];
 
     expect(selectMatchesForDisplay(liveMatches, 'live')).toEqual(liveMatches);
-
-    const confidentCompleted: MatchDetail = {
-      ...baseMatch,
-      id: 12,
-      status: 'finished',
-      prediction: {
-        match_id: 12,
-        model_version: 'stub',
-        prob_home: 0.78,
-        prob_draw: 0.14,
-        prob_away: 0.08,
-      },
-    };
-    // baseMatch's 0.55 home probability sits below the confidence bar, so a
-    // finished match reusing it is dropped just like an unconfident upcoming one.
-    const unconfidentCompleted: MatchDetail = {
-      ...baseMatch,
-      id: 13,
-      status: 'finished',
-    };
-
-    expect(
-      selectMatchesForDisplay(
-        [confidentCompleted, unconfidentCompleted],
-        'completed',
-      ).map((match) => match.id),
-    ).toEqual([12]);
+    expect(selectMatchesForDisplay(liveMatches, 'completed')).toEqual(liveMatches);
   });
 
   it('returns contextual empty messages', () => {
@@ -196,6 +170,9 @@ describe('matchesFilterUtils', () => {
     expect(getMatchesEmptyMessage('live', 'all', '')).toBe(
       'No live matches right now.',
     );
+    expect(getMatchesEmptyMessage('completed', 'all', '')).toBe(
+      'No completed matches in this list.',
+    );
     expect(getMatchesEmptyMessage('upcoming', 'high', '')).toBe(
       'No high odds matches in this list.',
     );
@@ -204,12 +181,6 @@ describe('matchesFilterUtils', () => {
     );
     expect(getMatchesEmptyMessage('upcoming', 'all', '', true)).toBe(
       'No confident picks in this list.',
-    );
-    expect(getMatchesEmptyMessage('completed', 'all', '')).toBe(
-      'No completed matches in this list.',
-    );
-    expect(getMatchesEmptyMessage('completed', 'all', '', true)).toBe(
-      'No confident picks in completed matches.',
     );
   });
 });

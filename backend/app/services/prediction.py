@@ -9,7 +9,7 @@ tagged with a fallback version so callers keep working before training runs.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -19,7 +19,10 @@ from app.ml.baseline import predict_outcome_probabilities
 from app.ml.features import build_features
 from app.ml.storage import ModelBundle, active_model_path, load_model
 from app.models import Match, Prediction
-from app.services.historical_import import UPCOMING_MATCH_STATUSES
+from app.services.historical_import import (
+    FINISHED_MATCH_STATUS,
+    UPCOMING_MATCH_STATUSES,
+)
 
 NEUTRAL_PROBABILITIES = {"home": 0.40, "draw": 0.28, "away": 0.32}
 FALLBACK_VERSION = "fallback"
@@ -174,6 +177,74 @@ def refresh_predictions_for_upcoming(
         result = predict_match(db, match, model_bundle=bundle)
         if not _prediction_changed(_latest_prediction(match), result):
             continue
+        _persist_prediction(db, match, result)
+        refreshed += 1
+
+    if refreshed:
+        db.commit()
+    return refreshed
+
+
+def refresh_predictions_for_recent_finished(
+    db: Session,
+    *,
+    now: datetime | None = None,
+    model_bundle: ModelBundle | None = None,
+    window_days: int | None = None,
+    max_matches: int | None = None,
+) -> int:
+    """Backfill real 1X2 predictions for recently finished matches.
+
+    Predictions are only refreshed while a match is upcoming, so matches that
+    finished before the model/features were ready keep the neutral ``fallback``
+    row they were seeded with (a flat 0.40/0.28/0.32), and the Completed tab shows
+    a meaningless "home" pick. This re-predicts finished matches within a recent
+    window using the active model and point-in-time features (leakage-safe), so
+    their picks reflect the real model. Matches already on the current model
+    version are skipped without rebuilding features, so repeat syncs are cheap.
+    """
+    bundle = model_bundle if model_bundle is not None else load_active_model()
+    if bundle is None:
+        return 0
+
+    resolved_now = _naive_utc_now(now)
+    window = (
+        window_days
+        if window_days is not None
+        else settings.finished_backfill_window_days
+    )
+    cap = (
+        max_matches
+        if max_matches is not None
+        else settings.finished_backfill_max_matches
+    )
+    if cap <= 0:
+        return 0
+    since = resolved_now - timedelta(days=window)
+
+    matches = db.scalars(
+        select(Match)
+        .options(selectinload(Match.predictions))
+        .where(
+            Match.status == FINISHED_MATCH_STATUS,
+            Match.kickoff >= since,
+            Match.kickoff < resolved_now,
+        )
+        .order_by(Match.kickoff.desc())
+    ).all()
+
+    refreshed = 0
+    processed = 0
+    for match in matches:
+        if processed >= cap:
+            break
+        latest = _latest_prediction(match)
+        if latest is not None and latest.model_version == bundle.metadata.version:
+            continue
+        result = predict_match(db, match, model_bundle=bundle)
+        if not _prediction_changed(latest, result):
+            continue
+        processed += 1
         _persist_prediction(db, match, result)
         refreshed += 1
 

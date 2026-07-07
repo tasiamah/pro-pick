@@ -78,7 +78,25 @@ describe('getQualifyingPicksForMatch', () => {
 });
 
 describe('getMatchCardDisplayPicks', () => {
-  it('falls back to the primary 1X2 pick on finished matches without qualifying picks', () => {
+  it('shows every market pick for finished matches, sorted, regardless of confidence', () => {
+    const finishedMatch: MatchDetail = {
+      ...baseMatch,
+      status: 'finished',
+      home_goals: 1,
+      away_goals: 2,
+    };
+
+    // Track record: BTTS (0.78), Over/Under (0.56) and the sub-0.70 1X2 (0.52)
+    // all show, highest confidence first — not just the 1X2 pick.
+    const picks = getMatchCardDisplayPicks(finishedMatch);
+    expect(picks.map((pick) => pick.market)).toEqual([
+      'btts',
+      'over_under_25',
+      '1x2',
+    ]);
+  });
+
+  it('shows the 1X2 pick on finished matches with no secondary markets', () => {
     const finishedMatch: MatchDetail = {
       ...baseMatch,
       status: 'finished',

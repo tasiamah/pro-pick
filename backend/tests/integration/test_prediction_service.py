@@ -24,6 +24,7 @@ from app.services.prediction import (
     FALLBACK_VERSION,
     generate_prediction,
     predict_match,
+    refresh_predictions_for_recent_finished,
     refresh_predictions_for_upcoming,
     reset_model_cache,
     value_bet_probabilities,
@@ -176,6 +177,80 @@ def test_refresh_predictions_for_upcoming_rewrites_on_feature_change(
 
     assert refreshed == 1
     assert db_session.query(Prediction).filter_by(match_id=upcoming.id).count() == 2
+
+
+def test_refresh_finished_predictions_backfills_recent(db_session: Session) -> None:
+    _seed(db_session)
+    bundle = _trained_bundle(db_session)
+    kwargs = {
+        "now": BASE + timedelta(days=6),
+        "model_bundle": bundle,
+        "window_days": 14,
+    }
+
+    refreshed = refresh_predictions_for_recent_finished(db_session, **kwargs)
+    again = refresh_predictions_for_recent_finished(db_session, **kwargs)
+
+    # Every finished match in the window gets a real prediction, then no-op.
+    assert refreshed == len(RESULTS)
+    assert again == 0
+
+
+def test_refresh_finished_predictions_replaces_stale_fallback(
+    db_session: Session,
+) -> None:
+    _seed(db_session)
+    bundle = _trained_bundle(db_session)
+    target = db_session.scalars(select(Match).where(Match.status == "finished")).first()
+    db_session.add(
+        Prediction(
+            match_id=target.id,
+            model_version=FALLBACK_VERSION,
+            prob_home=0.40,
+            prob_draw=0.28,
+            prob_away=0.32,
+        )
+    )
+    db_session.commit()
+
+    refreshed = refresh_predictions_for_recent_finished(
+        db_session, now=BASE + timedelta(days=6), model_bundle=bundle, window_days=14
+    )
+
+    assert refreshed == len(RESULTS)
+    versions = set(
+        db_session.scalars(
+            select(Prediction.model_version).where(Prediction.match_id == target.id)
+        )
+    )
+    assert versions == {FALLBACK_VERSION, "test-v1"}
+
+
+def test_refresh_finished_predictions_respects_window(db_session: Session) -> None:
+    _seed(db_session)
+    bundle = _trained_bundle(db_session)
+
+    # since = now - 2d = BASE+4, so only the BASE+4 and BASE+5 matches qualify.
+    windowed = refresh_predictions_for_recent_finished(
+        db_session, now=BASE + timedelta(days=6), model_bundle=bundle, window_days=2
+    )
+
+    assert windowed == 2
+
+
+def test_refresh_finished_predictions_respects_max_matches(db_session: Session) -> None:
+    _seed(db_session)
+    bundle = _trained_bundle(db_session)
+
+    capped = refresh_predictions_for_recent_finished(
+        db_session,
+        now=BASE + timedelta(days=6),
+        model_bundle=bundle,
+        window_days=14,
+        max_matches=2,
+    )
+
+    assert capped == 2
 
 
 def test_predict_match_falls_back_without_model(

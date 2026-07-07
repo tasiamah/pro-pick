@@ -42,17 +42,38 @@ export function buildPrimaryPredictionPick(match: MatchDetail): DisplayPick | nu
 }
 
 export function getMatchCardDisplayPicks(match: MatchDetail): DisplayPick[] {
-  const qualifying = getQualifyingPicksForMatch(match);
-  if (qualifying.length > 0) {
-    return qualifying;
+  // Finished matches read as a track record: show the model's pick for every
+  // market it covered (1X2, BTTS, Over/Under 2.5) regardless of confidence, so
+  // the Completed tab stays populated and isn't limited to the 1X2 pick. Live
+  // and upcoming still only surface confident picks.
+  if (match.status === 'finished') {
+    return getAllMarketPicks(match);
   }
 
-  if (match.status !== 'finished') {
+  return getQualifyingPicksForMatch(match);
+}
+
+export function getAllMarketPicks(match: MatchDetail): DisplayPick[] {
+  const primary = buildPrimaryPredictionPick(match);
+  if (!primary) {
     return [];
   }
 
-  const fallback = buildPrimaryPredictionPick(match);
-  return fallback ? [fallback] : [];
+  const picks: DisplayPick[] = [primary];
+
+  for (const marketPick of match.prediction?.markets ?? []) {
+    if (!isSecondaryMarketId(marketPick.market)) {
+      continue;
+    }
+
+    picks.push({
+      market: marketPick.market,
+      label: formatMarketPickLabel(marketPick),
+      confidence: marketPick.confidence,
+    });
+  }
+
+  return sortDisplayPicksByConfidence(picks);
 }
 
 export function getQualifyingPicksForMatch(match: MatchDetail): DisplayPick[] {
