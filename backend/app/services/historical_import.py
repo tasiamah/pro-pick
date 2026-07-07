@@ -182,9 +182,7 @@ class HistoricalDataImporter:
         since: datetime | None = None,
     ) -> ImportSummary:
         total = ImportSummary()
-        combos = [
-            (league_id, season) for league_id in league_ids for season in seasons
-        ]
+        combos = [(league_id, season) for league_id in league_ids for season in seasons]
         for index, (league_id, season) in enumerate(combos, start=1):
             if progress is not None:
                 progress(
@@ -196,9 +194,7 @@ class HistoricalDataImporter:
             )
             if progress is not None:
                 failed = (
-                    f", {result.odds_failed} odds failed"
-                    if result.odds_failed
-                    else ""
+                    f", {result.odds_failed} odds failed" if result.odds_failed else ""
                 )
                 progress(
                     f"[{index}/{len(combos)}] league {league_id} season {season}: "
