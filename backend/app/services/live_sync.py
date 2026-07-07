@@ -208,8 +208,16 @@ def settle_overdue_matches(
         except (FootballApiError, httpx.HTTPError):
             logger.exception("Overdue settlement fetch failed for fixtures %s", chunk)
             continue
-        if fixtures:
+        if not fixtures:
+            continue
+        # Isolate the import per chunk: a malformed payload or DB error on one
+        # chunk must not abort the remaining chunks (or lose the whole call to the
+        # broad handler in run_live_sync). Roll back the failed chunk and go on.
+        try:
             importer.import_fixture_items(fixtures)
+        except Exception:
+            db.rollback()
+            logger.exception("Overdue settlement import failed for fixtures %s", chunk)
 
     settled = db.scalar(
         select(func.count())
